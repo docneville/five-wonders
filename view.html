@@ -13,6 +13,37 @@
   />
 
   <style>
+    .fw-header {
+      height: 48px;
+      background: #111827;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      font-size: 14px;
+    }
+
+    .fw-header-title {
+      font-weight: 500;
+      color: #e5e7eb;
+    }
+
+    .fw-header-nav a {
+      color: #9ca3af;
+      text-decoration: none;
+      font-size: 13px;
+      margin-left: 10px;
+    }
+
+    .fw-header-nav a:first-child {
+      margin-left: 0;
+    }
+
+    .fw-header-nav a:hover {
+      color: #e5e7eb;
+      text-decoration: underline;
+    }
+
     html, body {
       height: 100%;
       margin: 0;
@@ -42,18 +73,17 @@
   </style>
 </head>
 <body>
-  <div style="position:absolute;top:0;left:0;right:0;height:48px;
-              display:flex;align-items:center;justify-content:space-between;
-              padding:0 16px;
-              background:#111827;color:white;font-weight:500;z-index:1000;">
-    <div>Five Wonders – Map</div>
-    <div style="font-size:13px;">
-      <a href="index.html" style="color:#9ca3af;text-decoration:none;margin-right:8px;">Home</a>
-      <a href="add-place.html" style="color:#9ca3af;text-decoration:none;margin-right:8px;">Add</a>
-      <a href="edit-places.html" style="color:#9ca3af;text-decoration:none;margin-right:8px;">Edit</a>
-      <a href="about.html" style="color:#9ca3af;text-decoration:none;">About</a>
-    </div>
-  </div>
+  <header class="fw-header">
+    <div class="fw-header-title">Five Wonders</div>
+    <nav class="fw-header-nav">
+      <a href="index.html">Home</a>
+      <a href="add-place.html">Add</a>
+      <a href="edit-places.html">Edit</a>
+      <a href="view.html">View</a>
+      <a href="about.html">About</a>
+    </nav>
+  </header>
+
 
   <div id="map" style="position:absolute;top:48px;left:0;right:0;bottom:0;"></div>
 
