@@ -484,14 +484,15 @@
           return;
         }
 
-        let data: any = {};
+        let data = {};
         try {
           data = JSON.parse(text);
         } catch (err) {
           console.error("JSON parse error from manage-places list:", err, text);
         }
 
-        userPlaces = Array.isArray(data.places) ? data.places : [];
+        const places = Array.isArray(data.places) ? data.places : [];
+        userPlaces = places;
         renderPlaceList();
         sidebarStatusEl.textContent = "";
       } catch (err) {
@@ -534,7 +535,7 @@
           return;
         }
 
-        let data: any = {};
+        let data = {};
         try {
           data = JSON.parse(text);
         } catch (err) {
@@ -591,7 +592,7 @@
           return;
         }
 
-        let data: any = {};
+        let data = {};
         try {
           data = JSON.parse(text);
         } catch (err) {
