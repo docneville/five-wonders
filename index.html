@@ -49,8 +49,9 @@
       margin: 0;
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       min-height: 100vh;
-      background: radial-gradient(circle at top, #1f2937 0, #020617 55%);
-      color: #e5e7eb;
+      /* Lighter, soft background */
+      background: radial-gradient(circle at top, #e0ecff 0, #f9fafb 55%);
+      color: #111827;
     }
 
     .fw-home-main {
@@ -58,31 +59,47 @@
       display: flex;
       align-items: center;
       justify-content: center;
+      padding: 24px 12px 32px;
     }
 
     .card {
-      background: rgba(15, 23, 42, 0.95);
+      background: #ffffff;
       border-radius: 18px;
-      box-shadow: 0 20px 45px rgba(0, 0, 0, 0.45);
+      box-shadow: 0 20px 45px rgba(15, 23, 42, 0.18);
       padding: 24px 24px 20px;
       width: 100%;
-      max-width: 420px;
-      border: 1px solid rgba(148, 163, 184, 0.35);
+      max-width: 460px;
+      border: 1px solid rgba(148, 163, 184, 0.25);
+    }
+
+    .logo-wrap {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 10px;
+    }
+
+    .logo-img {
+      max-width: 260px;
+      width: 100%;
+      height: auto;
+      /* Subtle depth */
+      filter: drop-shadow(0 8px 18px rgba(15, 23, 42, 0.25));
     }
 
     .title {
-      font-size: 22px;
+      font-size: 20px;
       font-weight: 700;
-      letter-spacing: 0.04em;
+      letter-spacing: 0.12em;
       text-transform: uppercase;
       text-align: center;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
+      color: #111827;
     }
 
     .subtitle {
       font-size: 13px;
       text-align: center;
-      color: #9ca3af;
+      color: #4b5563;
       margin-bottom: 20px;
     }
 
@@ -90,6 +107,7 @@
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 10px;
+      margin-top: 4px;
     }
 
     .btn {
@@ -123,16 +141,16 @@
     }
 
     .btn-secondary {
-      background: #020617;
-      color: #e5e7eb;
-      border-color: rgba(148, 163, 184, 0.5);
+      background: #f3f4f6;
+      color: #111827;
+      border-color: rgba(148, 163, 184, 0.6);
     }
 
     .btn-secondary:hover {
-      background: #020617;
-      border-color: #e5e7eb;
+      background: #e5e7eb;
+      border-color: #111827;
       transform: translateY(-1px);
-      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.8);
+      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
     }
 
     .footer {
@@ -143,7 +161,7 @@
     }
 
     .footer a {
-      color: #9ca3af;
+      color: #4b5563;
       text-decoration: none;
     }
 
@@ -166,7 +184,11 @@
 
   <main class="fw-home-main">
     <div class="card">
-      <div class="title">Five Wonders</div>
+      <div class="logo-wrap">
+        <img src="five-wonders-logo.png" alt="Five Wonders logo" class="logo-img" />
+      </div>
+
+      <!-- Optional small text under the logo -->
       <div class="subtitle">
         Save and share the places your friends truly love.
       </div>
