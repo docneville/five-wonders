@@ -447,9 +447,8 @@
 
       const res = await fetch(SUPABASE_FUNCTION_URL, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        // No explicit Content-Type header: browser will use a simple type,
+        // avoiding CORS preflight. The Edge Function can still do req.json().
         body: JSON.stringify(payload),
       });
 
