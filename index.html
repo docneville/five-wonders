@@ -60,8 +60,7 @@
   <script type="module">
     import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-    // TODO: fill these in from Supabase settings
-    const SUPABASE_URL = "https://ekpssonwtztubqfihlqm.supabase.co";        // e.g. https://ekpssonwtztubqfihlqm.supabase.co
+    const SUPABASE_URL = "https://ekpssonwtztubqfihlqm.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVrcHNzb253dHp0dWJxZmlobHFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM1Njg2MjAsImV4cCI6MjA3OTE0NDYyMH0.R1_-ctf-6NsVUJEApf4N591lA9TPRCJQFzhrDVRbr_4";
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -80,14 +79,25 @@
 
     async function loadPlaces() {
       const { data, error } = await supabase
-        .from("places")
-        .select("id, title, raw_text, notes, latitude, longitude, created_at")
+        .from("places_with_profiles")
+        .select(`
+          id,
+          title,
+          raw_text,
+          notes,
+          latitude,
+          longitude,
+          created_at,
+          first_name,
+          last_name,
+          username
+        `)
         .not("latitude", "is", null)
         .not("longitude", "is", null)
         .order("created_at", { ascending: false });
 
       if (error) {
-        console.error("Error loading places:", error);
+        console.error("Error loading places_with_profiles:", error);
         alert("Error loading places – check console/logs.");
         return;
       }
@@ -113,6 +123,12 @@
           ? new Date(place.created_at).toLocaleString()
           : "";
 
+        // Choose which field to show as the "Saved by" name
+        const savedBy =
+          place.first_name ||
+          place.username ||
+          (place.last_name ? `Friend (${place.last_name})` : "Someone");
+
         const popupHtml = `
           <div class="place-popup">
             <div class="place-title">${escapeHtml(title)}</div>
@@ -122,8 +138,15 @@
                 : ""
             }
             ${
-              createdAt
-                ? `<div class="place-meta">Saved: ${escapeHtml(createdAt)}</div>`
+              createdAt || savedBy
+                ? `<div class="place-meta">
+                     ${createdAt ? `Saved: ${escapeHtml(createdAt)}` : ""}
+                     ${
+                       savedBy
+                         ? `<br/>Saved by ${escapeHtml(savedBy)}`
+                         : ""
+                     }
+                   </div>`
                 : ""
             }
           </div>
@@ -154,3 +177,4 @@
   </script>
 </body>
 </html>
+
