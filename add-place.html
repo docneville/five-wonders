@@ -152,7 +152,7 @@
         <div class="section-title">1. Find a place</div>
         <label for="search-input">Search</label>
         <div style="display:flex;gap:4px;">
-          <input type="text" id="search-input" placeholder="Taylor Shellfish Farms, Bow, WA" />
+          <input type="text" id="search-input" placeholder="Larsen's Bakery, Seattle" />
           <button id="search-btn" class="secondary">Go</button>
         </div>
         <div class="small-help">
@@ -163,14 +163,21 @@
 
       <div style="margin-top:12px;">
         <div class="section-title">2. Details</div>
+
         <label for="place-name">Place name</label>
         <input type="text" id="place-name" placeholder="Name of the place" />
 
         <label for="place-address">Address / description</label>
-        <textarea id="place-address" placeholder="Address or description from the map"></textarea>
+        <textarea
+          id="place-address"
+          placeholder="Address or description from the map"
+        ></textarea>
 
         <label for="user-note">Your note</label>
-        <textarea id="user-note" placeholder="Why you love this place (what to order, best time to go, etc.)"></textarea>
+        <textarea
+          id="user-note"
+          placeholder="Why you love this place (what to order, when to go, etc.)"
+        ></textarea>
       </div>
 
       <div style="margin-top:12px;display:flex;justify-content:space-between;align-items:center;">
@@ -190,73 +197,175 @@
   ></script>
 
   <script type="module">
-    // URL of your Edge Function
+    // ====== CONFIG ======
     const SUPABASE_FUNCTION_URL =
       "https://ekpssonwtztubqfihlqm.supabase.co/functions/v1/ingest-shortcut";
 
-    // ---- Token handling (invite code) ----
-    const TOKEN_STORAGE_KEY = "five_wonders_user_token";
+    const USER_TOKEN_STORAGE_KEY = "fivewonders_user_token";
+
+    // ====== TOKEN HANDLING (invite code) ======
+    function getQueryParam(name) {
+      const params = new URLSearchParams(window.location.search);
+      return params.get(name);
+    }
 
     function getUserToken() {
-      return localStorage.getItem(TOKEN_STORAGE_KEY);
+      return localStorage.getItem(USER_TOKEN_STORAGE_KEY);
     }
 
     function setUserToken(token) {
-      if (token && typeof token === "string") {
-        localStorage.setItem(TOKEN_STORAGE_KEY, token);
+      localStorage.setItem(USER_TOKEN_STORAGE_KEY, token);
+    }
+
+    function renderTokenSection() {
+      const container = document.getElementById("token-section");
+      container.innerHTML = "";
+
+      const token = getUserToken();
+
+      if (!token) {
+        const div = document.createElement("div");
+        div.className = "token-warning";
+        div.innerHTML = `
+          <strong>Invite code required</strong><br/>
+          Paste your personal invite code once. It will be remembered on this device.
+          <div style="margin-top:4px;">
+            <input type="text" id="token-input" placeholder="Paste invite code" style="width:100%;margin-top:4px;" />
+            <button id="token-save-btn" class="primary" style="margin-top:4px;">Save invite code</button>
+          </div>
+        `;
+        container.appendChild(div);
+
+        document.getElementById("token-save-btn").onclick = () => {
+          const value = (document.getElementById("token-input").value || "").trim();
+          if (!value) {
+            alert("Please paste the invite code you were given.");
+            return;
+          }
+          setUserToken(value);
+          renderTokenSection();
+        };
+      } else {
+        const div = document.createElement("div");
+        div.className = "small-help";
+        div.innerHTML =
+          "Invite code is set on this device. If you need to change it, clear browser storage.";
+        container.appendChild(div);
       }
     }
 
-    // Capture ?token=... from URL once and store it
-    (function initTokenFromUrl() {
-      const url = new URL(window.location.href);
-      const urlToken = url.searchParams.get("token");
-      if (urlToken) {
-        setUserToken(urlToken);
+    // On first load, also accept ?token=... or ?t=... and store it
+    (function bootstrapTokenFromQuery() {
+      const qToken = getQueryParam("token") || getQueryParam("t");
+      if (qToken && !getUserToken()) {
+        setUserToken(qToken);
       }
     })();
 
-    // ---- DOM elements ----
+    renderTokenSection();
+
+    // ====== DOM ELEMENTS ======
     const searchInput = document.getElementById("search-input");
-    const searchButton = document.getElementById("search-button");
+    const searchBtn = document.getElementById("search-btn");
     const searchResultsEl = document.getElementById("search-results");
 
     const placeNameInput = document.getElementById("place-name");
     const placeAddressInput = document.getElementById("place-address");
     const userNoteInput = document.getElementById("user-note");
 
-    const selectedInfoEl = document.getElementById("selected-info");
-    const savePlaceButton = document.getElementById("save-place");
+    const selectedCoordsEl = document.getElementById("selected-coords");
+    const saveBtn = document.getElementById("save-btn");
 
-    // ---- Map setup ----
-    const map = L.map("map");
+    // ====== MAP SETUP ======
+    const map = L.map("map").setView([39.5, -98.35], 4); // roughly center of US
+
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       maxZoom: 19,
       attribution: "&copy; OpenStreetMap contributors",
     }).addTo(map);
 
-    // Default center (roughly France; you can change)
-    map.setView([48.8566, 2.3522], 5);
-
-    let selectedLatLng = null; // { lat, lon }
-    let marker = null;
+    let selectedLatLng = null;        // { lat, lon }
+    let selectedAddress = null;       // full Nominatim address object
+    let selectedExtratags = null;     // full Nominatim extratags object
+    let selectedMarker = null;
 
     function ensureMarker(lat, lon) {
-      if (!marker) {
-        marker = L.marker([lat, lon]).addTo(map);
+      if (!selectedMarker) {
+        selectedMarker = L.marker([lat, lon]).addTo(map);
       } else {
-        marker.setLatLng([lat, lon]);
+        selectedMarker.setLatLng([lat, lon]);
       }
     }
 
     function updateSelectedInfo(lat, lon) {
-      if (!selectedInfoEl) return;
-      selectedInfoEl.textContent = `Selected: ${lat.toFixed(6)}, ${lon.toFixed(6)}`;
+      if (selectedCoordsEl) {
+        selectedCoordsEl.textContent = `Selected: ${lat.toFixed(6)}, ${lon.toFixed(6)}`;
+      }
     }
 
-    // Central helper: update the "Details" section from any selection
+    // Extract normalized address fields (global-ish)
+    function extractAddressParts(address = {}) {
+      const streetLine1 = [address.house_number, address.road]
+        .filter(Boolean)
+        .join(" ") || null;
+
+      const streetLine2 = [
+        address.neighbourhood,
+        address.suburb,
+        address.city_district,
+      ]
+        .filter(Boolean)
+        .join(", ") || null;
+
+      const city =
+        address.city ||
+        address.town ||
+        address.village ||
+        address.hamlet ||
+        address.municipality ||
+        null;
+
+      const stateRegion =
+        address.state ||
+        address.state_district ||
+        address.region ||
+        address.province ||
+        null;
+
+      const postalCode = address.postcode || null;
+      const country = address.country || null;
+      const countryCode = address.country_code || null;
+
+      return {
+        streetLine1,
+        streetLine2,
+        city,
+        stateRegion,
+        postalCode,
+        country,
+        countryCode,
+      };
+    }
+
+    // Extract contact-ish info from extratags
+    function extractContactInfo(extratags = {}) {
+      const phone =
+        extratags.phone ||
+        extratags["contact:phone"] ||
+        null;
+
+      const website =
+        extratags.website ||
+        extratags["contact:website"] ||
+        null;
+
+      const openingHours = extratags.opening_hours || null;
+
+      return { phone, website, openingHours };
+    }
+
+    // Central helper: always overwrite Details + selectedLatLng + marker
     function updateDetailsFromSelection({ name, address, lat, lon }) {
-        // ALWAYS overwrite, even if the user typed something before
       if (placeNameInput) {
         placeNameInput.value = name || "";
       }
@@ -276,18 +385,18 @@
       }
     }
 
-
-    // ---- Search via Nominatim ----
+    // ====== NOMINATIM SEARCH ======
     async function searchPlaces(query) {
-      if (!query) return;
+      if (!query.trim()) return;
 
       searchResultsEl.innerHTML = "Searching…";
 
       const params = new URLSearchParams({
-        q: query,
         format: "jsonv2",
+        q: query,
         addressdetails: "1",
-        limit: "7",
+        extratags: "1",
+        limit: "8",
       });
 
       const url = `https://nominatim.openstreetmap.org/search?${params.toString()}`;
@@ -321,13 +430,11 @@
 
       results.forEach((r) => {
         const div = document.createElement("div");
-        div.style.padding = "4px 6px";
-        div.style.cursor = "pointer";
-        div.style.borderBottom = "1px solid #e5e7eb";
+        div.className = "search-item";
 
         const primary =
           r.display_name?.split(",")[0]?.trim() ||
-          r.namedetails?.name ||
+          (r.namedetails && r.namedetails.name) ||
           "(unnamed place)";
 
         div.innerHTML = `
@@ -350,27 +457,27 @@
       const lon = parseFloat(result.lon);
       if (Number.isNaN(lat) || Number.isNaN(lon)) return;
 
-      selectedLatLng = { lat, lon };
-      ensureMarker(lat, lon);
-      map.setView([lat, lon], 16);
-
       const primary =
         result.display_name?.split(",")[0]?.trim() ||
-        result.namedetails?.name ||
+        (result.namedetails && result.namedetails.name) ||
         "";
 
-      const address = result.display_name || "";
+      const fullAddress = result.display_name || "";
 
-      // **Always** update Details when a new result is selected
+      selectedAddress = result.address || null;
+      selectedExtratags = result.extratags || null;
+
       updateDetailsFromSelection({
         name: primary,
-        address,
+        address: fullAddress,
         lat,
         lon,
       });
+
+      map.setView([lat, lon], 16);
     }
 
-    // ---- Reverse geocode on map click ----
+    // ====== REVERSE GEOCODE ON MAP CLICK ======
     async function reverseGeocodeAndUpdate(lat, lon) {
       try {
         const params = new URLSearchParams({
@@ -378,13 +485,13 @@
           lat: String(lat),
           lon: String(lon),
           addressdetails: "1",
+          extratags: "1",
         });
 
         const url = `https://nominatim.openstreetmap.org/reverse?${params.toString()}`;
+
         const res = await fetch(url, {
-          headers: {
-            "Accept-Language": "en",
-          },
+          headers: { "Accept-Language": "en" },
         });
 
         if (!res.ok) {
@@ -392,22 +499,28 @@
         }
 
         const data = await res.json();
+
         const primary =
           data.name ||
           data.display_name?.split(",")[0]?.trim() ||
           "";
 
-        const address = data.display_name || "";
+        const fullAddress = data.display_name || "";
+
+        selectedAddress = data.address || null;
+        selectedExtratags = data.extratags || null;
 
         updateDetailsFromSelection({
           name: primary,
-          address,
+          address: fullAddress,
           lat,
           lon,
         });
       } catch (err) {
         console.error("Reverse geocode error:", err);
-        // Fallback: at least show lat/lon in address
+        selectedAddress = null;
+        selectedExtratags = null;
+
         updateDetailsFromSelection({
           name: "",
           address: `Lat ${lat.toFixed(6)}, Lon ${lon.toFixed(6)}`,
@@ -420,24 +533,19 @@
     map.on("click", async (e) => {
       const lat = e.latlng.lat;
       const lon = e.latlng.lng;
-
-      selectedLatLng = { lat, lon };
-      ensureMarker(lat, lon);
-
-      // **Also update the Details section when the map is clicked**
       await reverseGeocodeAndUpdate(lat, lon);
     });
 
-    // ---- Save place to Edge Function ----
+    // ====== SAVE TO SUPABASE (via Edge Function) ======
     async function savePlace() {
       const token = getUserToken();
       if (!token) {
-        alert("You need to open this link with a valid invite code (?token=…) first.");
+        alert("You need to set your invite code before saving a place.");
         return;
       }
 
       if (!selectedLatLng) {
-        alert("Please select a location via search or by clicking on the map.");
+        alert("Please select a location on the map (via search or map click).");
         return;
       }
 
@@ -450,6 +558,9 @@
         return;
       }
 
+      const addressParts = extractAddressParts(selectedAddress || {});
+      const contact = extractContactInfo(selectedExtratags || {});
+
       const payload = {
         place_name,
         place_address,
@@ -457,6 +568,21 @@
         longitude: selectedLatLng.lon,
         user_note,
         user_token: token,
+
+        // Extra OSM data (not yet used by the Edge Function unless you update it)
+        osm_address: selectedAddress,
+        osm_extratags: selectedExtratags,
+        // You can also send normalized fields later if you decide to handle them in the function:
+        // street_line1: addressParts.streetLine1,
+        // street_line2: addressParts.streetLine2,
+        // city: addressParts.city,
+        // state_region: addressParts.stateRegion,
+        // postal_code: addressParts.postalCode,
+        // country: addressParts.country,
+        // country_code: addressParts.countryCode,
+        // phone: contact.phone,
+        // website: contact.website,
+        // opening_hours: contact.openingHours,
       };
 
       console.log("Saving place with payload:", payload);
@@ -465,8 +591,8 @@
       try {
         res = await fetch(SUPABASE_FUNCTION_URL, {
           method: "POST",
-          // No explicit Content-Type to avoid CORS preflight;
-          // Edge Function still uses req.json() successfully.
+          // No explicit Content-Type header => avoids CORS preflight;
+          // the Edge Function still uses req.json() successfully.
           body: JSON.stringify(payload),
         });
       } catch (err) {
@@ -486,38 +612,32 @@
       console.log("Saved place. Response:", text);
       alert("Place saved to Five Wonders ✅");
 
-      // Keep name/address as a breadcrumb, clear the note for the next entry
+      // Clear only the note; keep name/address/location for next tweak
       userNoteInput.value = "";
     }
 
-    // ---- Wire up UI events ----
-    if (searchButton) {
-      searchButton.addEventListener("click", () => {
+    // ====== WIRE UP EVENTS ======
+    searchBtn.onclick = () => {
+      const q = (searchInput.value || "").trim();
+      if (q) searchPlaces(q);
+    };
+
+    searchInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
         const q = (searchInput.value || "").trim();
         if (q) searchPlaces(q);
-      });
-    }
+      }
+    });
 
-    if (searchInput) {
-      searchInput.addEventListener("keydown", (e) => {
-        if (e.key === "Enter") {
-          e.preventDefault();
-          const q = (searchInput.value || "").trim();
-          if (q) searchPlaces(q);
-        }
+    saveBtn.onclick = () => {
+      savePlace().catch((err) => {
+        console.error("Unexpected error in savePlace:", err);
+        alert("Unexpected error – see console.");
       });
-    }
+    };
 
-    if (savePlaceButton) {
-      savePlaceButton.addEventListener("click", () => {
-        savePlace().catch((err) => {
-          console.error("Unexpected error in savePlace:", err);
-          alert("Unexpected error – see console.");
-        });
-      });
-    }
-
-    // ---- Simple HTML escape helper ----
+    // ====== ESCAPE HELPER ======
     function escapeHtml(str) {
       return String(str)
         .replace(/&/g, "&amp;")
@@ -527,6 +647,5 @@
         .replace(/'/g, "&#039;");
     }
   </script>
-
 </body>
 </html>
