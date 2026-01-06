@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Five Wonders Map</title>
+
+  <!-- Leaflet CSS -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""
+  />
+
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    .leaflet-popup-content {
+      font-size: 14px;
+      line-height: 1.4;
+    }
+
+    .place-title {
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .place-notes {
+      margin-top: 4px;
+      color: #444;
+    }
+
+    .place-meta {
+      font-size: 12px;
+      color: #666;
+      margin-top: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div style="position:absolute;top:0;left:0;right:0;height:48px;
+              display:flex;align-items:center;justify-content:space-between;
+              padding:0 16px;
+              background:#111827;color:white;font-weight:500;z-index:1000;">
+    <div>Five Wonders – Map</div>
+    <div style="font-size:13px;">
+      <a href="index.html" style="color:#9ca3af;text-decoration:none;margin-right:8px;">Home</a>
+      <a href="add-place.html" style="color:#9ca3af;text-decoration:none;margin-right:8px;">Add</a>
+      <a href="edit-places.html" style="color:#9ca3af;text-decoration:none;margin-right:8px;">Edit</a>
+      <a href="about.html" style="color:#9ca3af;text-decoration:none;">About</a>
+    </div>
+  </div>
+
+  <div id="map" style="position:absolute;top:48px;left:0;right:0;bottom:0;"></div>
+
+  <!-- Leaflet JS -->
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""
+  ></script>
+
+  <!-- App script (ES module) -->
+  <script type="module">
+    import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+    const SUPABASE_URL = "https://ekpssonwtztubqfihlqm.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVrcHNzb253dHp0dWJxZmlobHFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM1Njg2MjAsImV4cCI6MjA3OTE0NDYyMH0.R1_-ctf-6NsVUJEApf4N591lA9TPRCJQFzhrDVRbr_4";
+
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // Initialize the Leaflet map
+    const map = L.map("map");
+
+    // Base map layer (OpenStreetMap)
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+      attribution: "&copy; OpenStreetMap contributors",
+    }).addTo(map);
+
+    // Default view until we have data
+    map.setView([39.5, -98.35], 4); // roughly center of US
+
+    async function loadPlaces() {
+      const { data, error } = await supabase
+        .from("places_with_profiles")
+        .select(`
+          id,
+          title,
+          raw_text,
+          notes,
+          latitude,
+          longitude,
+          created_at,
+          first_name,
+          last_name,
+          username
+        `)
+        .not("latitude", "is", null)
+        .not("longitude", "is", null)
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error("Error loading places_with_profiles:", error);
+        alert("Error loading places – check console/logs.");
+        return;
+      }
+
+      if (!data || data.length === 0) {
+        console.log("No places with coordinates yet.");
+        return;
+      }
+
+      const bounds = L.latLngBounds([]);
+
+      data.forEach((place) => {
+        const lat = place.latitude;
+        const lon = place.longitude;
+
+        if (typeof lat !== "number" || typeof lon !== "number") {
+          return;
+        }
+
+        const title = place.title || "(Untitled place)";
+        const notes = place.notes || "";
+        const createdAt = place.created_at
+          ? new Date(place.created_at).toLocaleString()
+          : "";
+
+        // Choose which field to show as the "Saved by" name
+        const savedBy =
+          place.first_name ||
+          place.username ||
+          (place.last_name ? `Friend (${place.last_name})` : "Someone");
+
+        const popupHtml = `
+          <div class="place-popup">
+            <div class="place-title">${escapeHtml(title)}</div>
+            ${
+              notes
+                ? `<div class="place-notes">${escapeHtml(notes)}</div>`
+                : ""
+            }
+            ${
+              createdAt || savedBy
+                ? `<div class="place-meta">
+                     ${createdAt ? `Saved: ${escapeHtml(createdAt)}` : ""}
+                     ${
+                       savedBy
+                         ? `<br/>Saved by ${escapeHtml(savedBy)}`
+                         : ""
+                     }
+                   </div>`
+                : ""
+            }
+          </div>
+        `;
+
+        const marker = L.marker([lat, lon]).addTo(map);
+        marker.bindPopup(popupHtml);
+
+        bounds.extend([lat, lon]);
+      });
+
+      if (bounds.isValid()) {
+        map.fitBounds(bounds.pad(0.1)); // add a little padding
+      }
+    }
+
+    // Simple HTML escaping for popup content
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    loadPlaces();
+  </script>
+</body>
+</html>
+

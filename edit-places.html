@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Edit Places – Five Wonders</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      color-scheme: light dark;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      min-height: 100vh;
+      background: #020617;
+      color: #e5e7eb;
+    }
+
+    header {
+      height: 48px;
+      background: #111827;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      font-size: 14px;
+    }
+
+    header a {
+      color: #9ca3af;
+      text-decoration: none;
+      font-size: 13px;
+    }
+
+    header a:hover {
+      color: #e5e7eb;
+      text-decoration: underline;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      height: calc(100vh - 48px);
+    }
+
+    .sidebar {
+      border-right: 1px solid #1f2937;
+      padding: 10px;
+      overflow-y: auto;
+      background: #020617;
+    }
+
+    .main {
+      padding: 14px;
+      overflow-y: auto;
+      background: radial-gradient(circle at top, #0b1120 0, #020617 60%);
+    }
+
+    .token-warning {
+      font-size: 11px;
+      color: #92400e;
+      background: #fef3c7;
+      border: 1px solid #facc15;
+      border-radius: 4px;
+      padding: 6px 8px;
+      margin-bottom: 8px;
+    }
+
+    .token-warning input {
+      width: 100%;
+      margin-top: 4px;
+    }
+
+    .small-help {
+      font-size: 11px;
+      color: #6b7280;
+    }
+
+    .section-title {
+      font-size: 13px;
+      font-weight: 600;
+      margin: 8px 0 4px;
+    }
+
+    .place-list {
+      margin-top: 6px;
+      border-radius: 6px;
+      border: 1px solid #1f2937;
+      overflow: hidden;
+    }
+
+    .place-row {
+      padding: 6px 8px;
+      font-size: 13px;
+      border-bottom: 1px solid #111827;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .place-row:last-child {
+      border-bottom: none;
+    }
+
+    .place-row:hover {
+      background: #111827;
+    }
+
+    .place-row.active {
+      background: #1f2937;
+    }
+
+    .place-row-title {
+      font-weight: 500;
+    }
+
+    .place-row-note {
+      font-size: 11px;
+      color: #9ca3af;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 8px;
+      border-radius: 999px;
+      border: 1px solid #334155;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #9ca3af;
+      margin-bottom: 6px;
+    }
+
+    h1 {
+      font-size: 20px;
+      margin: 4px 0 10px;
+    }
+
+    label {
+      font-size: 12px;
+      font-weight: 500;
+      display: block;
+      margin-top: 8px;
+      margin-bottom: 2px;
+    }
+
+    input[type="text"],
+    textarea {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 6px 8px;
+      border-radius: 4px;
+      border: 1px solid #4b5563;
+      font-size: 13px;
+      font-family: inherit;
+      background: #020617;
+      color: #e5e7eb;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+
+    .row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-top: 8px;
+      font-size: 12px;
+      color: #9ca3af;
+    }
+
+    button {
+      border-radius: 999px;
+      border: none;
+      padding: 7px 12px;
+      font-size: 13px;
+      cursor: pointer;
+      font-weight: 500;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .btn-primary {
+      background: #22c55e;
+      color: #022c22;
+    }
+
+    .btn-primary:hover {
+      background: #16a34a;
+    }
+
+    .btn-danger {
+      background: #ef4444;
+      color: #fef2f2;
+    }
+
+    .btn-danger:hover {
+      background: #dc2626;
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: #9ca3af;
+    }
+
+    .btn-ghost:hover {
+      color: #e5e7eb;
+      background: #111827;
+    }
+
+    .actions {
+      margin-top: 12px;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .status-msg {
+      font-size: 12px;
+      color: #9ca3af;
+      margin-top: 4px;
+    }
+
+    .empty-state {
+      font-size: 13px;
+      color: #9ca3af;
+      margin-top: 12px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div>Five Wonders – Edit Places</div>
+    <div>
+      <a href="index.html">Home</a> ·
+      <a href="add-place.html">Add</a> ·
+      <a href="view.html">View</a> ·
+      <a href="about.html">About</a>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <div id="token-section"></div>
+
+      <div class="section-title">Your places</div>
+      <div class="small-help">
+        Select a place to edit the title or note, or delete it.
+      </div>
+
+      <div id="place-list" class="place-list"></div>
+      <div id="sidebar-status" class="small-help" style="margin-top:6px;"></div>
+    </aside>
+
+    <main class="main">
+      <div class="pill">Edit</div>
+      <h1>Edit a saved place</h1>
+      <p class="small-help">
+        Choose one of your places on the left, update the details, then click <strong>Save changes</strong>.
+      </p>
+
+      <div id="edit-panel">
+        <p class="empty-state" id="empty-message">
+          No place selected yet. Choose one from the list on the left.
+        </p>
+
+        <div id="edit-form" style="display:none;">
+          <label for="edit-title">Place name</label>
+          <input type="text" id="edit-title" />
+
+          <label for="edit-address">Address / description</label>
+          <textarea id="edit-address" readonly></textarea>
+
+          <label for="edit-note">Your note</label>
+          <textarea id="edit-note"></textarea>
+
+          <div class="row">
+            <span id="edit-meta"></span>
+          </div>
+
+          <div class="actions">
+            <button id="save-changes-btn" class="btn-primary">Save changes</button>
+            <button id="delete-btn" class="btn-danger">Delete place</button>
+            <button id="cancel-btn" class="btn-ghost">Cancel</button>
+          </div>
+
+          <div id="edit-status" class="status-msg"></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script type="module">
+    const USER_TOKEN_STORAGE_KEY = "fivewonders_user_token";
+
+    function getUserToken() {
+      return localStorage.getItem(USER_TOKEN_STORAGE_KEY);
+    }
+
+    function setUserToken(token) {
+      localStorage.setItem(USER_TOKEN_STORAGE_KEY, token);
+    }
+
+    function getQueryParam(name) {
+      const params = new URLSearchParams(window.location.search);
+      return params.get(name);
+    }
+
+    (function bootstrapTokenFromQuery() {
+      const qToken = getQueryParam("token") || getQueryParam("t");
+      if (qToken && !getUserToken()) {
+        setUserToken(qToken);
+      }
+    })();
+
+    function renderTokenSection() {
+      const container = document.getElementById("token-section");
+      container.innerHTML = "";
+
+      const token = getUserToken();
+
+      if (!token) {
+        const div = document.createElement("div");
+        div.className = "token-warning";
+        div.innerHTML = `
+          <strong>Invite code required</strong><br/>
+          Paste your personal invite code once. It will be remembered on this device.
+          <div>
+            <input type="text" id="token-input" placeholder="Paste invite code" />
+            <button id="token-save-btn">Save</button>
+          </div>
+        `;
+        container.appendChild(div);
+
+        document.getElementById("token-save-btn").onclick = () => {
+          const value = (document.getElementById("token-input").value || "").trim();
+          if (!value) {
+            alert("Please paste the invite code you were given.");
+            return;
+          }
+          setUserToken(value);
+          renderTokenSection();
+          loadUserPlaces();
+        };
+      } else {
+        const div = document.createElement("div");
+        div.className = "small-help";
+        div.innerHTML =
+          "Invite code is set on this device. You’ll only see places linked to this code.";
+        container.appendChild(div);
+      }
+    }
+
+    renderTokenSection();
+
+    let userPlaces = [];
+    let activePlaceId = null;
+
+    const placeListEl = document.getElementById("place-list");
+    const sidebarStatusEl = document.getElementById("sidebar-status");
+
+    const emptyMessageEl = document.getElementById("empty-message");
+    const editFormEl = document.getElementById("edit-form");
+    const editTitleInput = document.getElementById("edit-title");
+    const editAddressInput = document.getElementById("edit-address");
+    const editNoteInput = document.getElementById("edit-note");
+    const editMetaEl = document.getElementById("edit-meta");
+    const editStatusEl = document.getElementById("edit-status");
+
+    const saveChangesBtn = document.getElementById("save-changes-btn");
+    const deleteBtn = document.getElementById("delete-btn");
+    const cancelBtn = document.getElementById("cancel-btn");
+
+    function renderPlaceList() {
+      placeListEl.innerHTML = "";
+
+      if (!userPlaces || userPlaces.length === 0) {
+        placeListEl.innerHTML =
+          '<div class="small-help" style="padding:6px 8px;">No places found for this invite code yet.</div>';
+        return;
+      }
+
+      userPlaces.forEach((p) => {
+        const row = document.createElement("div");
+        row.className =
+          "place-row" + (p.id === activePlaceId ? " active" : "");
+        row.dataset.id = p.id;
+
+        const title = p.title || "(Untitled place)";
+        const note = p.notes || "";
+
+        row.innerHTML = `
+          <div class="place-row-title">${escapeHtml(title)}</div>
+          ${
+            note
+              ? `<div class="place-row-note">${escapeHtml(note)}</div>`
+              : ""
+          }
+        `;
+
+        row.onclick = () => {
+          selectPlace(p.id);
+        };
+
+        placeListEl.appendChild(row);
+      });
+    }
+
+    function selectPlace(placeId) {
+      const place = userPlaces.find((p) => p.id === placeId);
+      if (!place) return;
+
+      activePlaceId = placeId;
+      renderPlaceList();
+
+      emptyMessageEl.style.display = "none";
+      editFormEl.style.display = "block";
+
+      editTitleInput.value = place.title || "";
+      editAddressInput.value = place.raw_text || "";
+      editNoteInput.value = place.notes || "";
+
+      if (place.created_at) {
+        const d = new Date(place.created_at);
+        editMetaEl.textContent = "Created: " + d.toLocaleString();
+      } else {
+        editMetaEl.textContent = "";
+      }
+
+      editStatusEl.textContent = "";
+    }
+
+    cancelBtn.onclick = () => {
+      activePlaceId = null;
+      renderPlaceList();
+      editFormEl.style.display = "none";
+      emptyMessageEl.style.display = "block";
+      editStatusEl.textContent = "";
+    };
+
+    async function loadUserPlaces() {
+      const token = getUserToken();
+      if (!token) {
+        sidebarStatusEl.textContent = "Set your invite code to load places.";
+        return;
+      }
+
+      sidebarStatusEl.textContent = "Loading places…";
+
+      try {
+        // TODO: wire to Edge Function that returns places for this user_token
+        userPlaces = [];
+        renderPlaceList();
+        sidebarStatusEl.textContent = "";
+      } catch (err) {
+        console.error("Error loading places:", err);
+        sidebarStatusEl.textContent = "Error loading places.";
+      }
+    }
+
+    async function saveChanges() {
+      if (!activePlaceId) return;
+
+      const token = getUserToken();
+      if (!token) {
+        alert("Missing invite code.");
+        return;
+      }
+
+      const newTitle = (editTitleInput.value || "").trim();
+      const newNote = (editNoteInput.value || "").trim();
+
+      editStatusEl.textContent = "Saving changes…";
+
+      // TODO: call manage-places Edge Function with action=update
+      const idx = userPlaces.findIndex((p) => p.id === activePlaceId);
+      if (idx !== -1) {
+        userPlaces[idx].title = newTitle;
+        userPlaces[idx].notes = newNote;
+      }
+
+      renderPlaceList();
+      editStatusEl.textContent = "Changes saved locally (backend wiring TODO).";
+    }
+
+    async function deletePlace() {
+      if (!activePlaceId) return;
+
+      const token = getUserToken();
+      if (!token) {
+        alert("Missing invite code.");
+        return;
+      }
+
+      if (!confirm("Delete this place? This cannot be undone.")) {
+        return;
+      }
+
+      editStatusEl.textContent = "Deleting…";
+
+      // TODO: call manage-places Edge Function with action=delete
+      userPlaces = userPlaces.filter((p) => p.id !== activePlaceId);
+      activePlaceId = null;
+      renderPlaceList();
+      editFormEl.style.display = "none";
+      emptyMessageEl.style.display = "block";
+      editStatusEl.textContent = "Deleted locally (backend wiring TODO).";
+    }
+
+    saveChangesBtn.onclick = () => {
+      saveChanges().catch((err) => {
+        console.error("Unexpected save error:", err);
+        editStatusEl.textContent = "Unexpected error – see console.";
+      });
+    };
+
+    deleteBtn.onclick = () => {
+      deletePlace().catch((err) => {
+        console.error("Unexpected delete error:", err);
+        editStatusEl.textContent = "Unexpected error – see console.";
+      });
+    };
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    loadUserPlaces();
+  </script>
+</body>
+</html>
