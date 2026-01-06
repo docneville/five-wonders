@@ -76,6 +76,10 @@
       margin-top: 4px;
     }
 
+    .token-warning button {
+      margin-top: 4px;
+    }
+
     .small-help {
       font-size: 11px;
       color: #6b7280;
@@ -305,6 +309,8 @@
 
   <script type="module">
     const USER_TOKEN_STORAGE_KEY = "fivewonders_user_token";
+    const MANAGE_PLACES_URL =
+      "https://ekpssonwtztubqfihlqm.supabase.co/functions/v1/manage-places";
 
     function getUserToken() {
       return localStorage.getItem(USER_TOKEN_STORAGE_KEY);
@@ -319,6 +325,7 @@
       return params.get(name);
     }
 
+    // Bootstrap token from URL once, if present
     (function bootstrapTokenFromQuery() {
       const qToken = getQueryParam("token") || getQueryParam("t");
       if (qToken && !getUserToken()) {
@@ -461,12 +468,34 @@
       sidebarStatusEl.textContent = "Loading places…";
 
       try {
-        // TODO: wire to Edge Function that returns places for this user_token
-        userPlaces = [];
+        const res = await fetch(MANAGE_PLACES_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "list",
+            user_token: token,
+          }),
+        });
+
+        const text = await res.text();
+        if (!res.ok) {
+          console.error("Error response from manage-places (list):", res.status, text);
+          sidebarStatusEl.textContent = "Error loading places.";
+          return;
+        }
+
+        let data: any = {};
+        try {
+          data = JSON.parse(text);
+        } catch (err) {
+          console.error("JSON parse error from manage-places list:", err, text);
+        }
+
+        userPlaces = Array.isArray(data.places) ? data.places : [];
         renderPlaceList();
         sidebarStatusEl.textContent = "";
       } catch (err) {
-        console.error("Error loading places:", err);
+        console.error("Network error loading places:", err);
         sidebarStatusEl.textContent = "Error loading places.";
       }
     }
@@ -485,15 +514,48 @@
 
       editStatusEl.textContent = "Saving changes…";
 
-      // TODO: call manage-places Edge Function with action=update
-      const idx = userPlaces.findIndex((p) => p.id === activePlaceId);
-      if (idx !== -1) {
-        userPlaces[idx].title = newTitle;
-        userPlaces[idx].notes = newNote;
-      }
+      try {
+        const res = await fetch(MANAGE_PLACES_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "update",
+            user_token: token,
+            place_id: activePlaceId,
+            title: newTitle,
+            notes: newNote,
+          }),
+        });
 
-      renderPlaceList();
-      editStatusEl.textContent = "Changes saved locally (backend wiring TODO).";
+        const text = await res.text();
+        if (!res.ok) {
+          console.error("Error response from manage-places (update):", res.status, text);
+          editStatusEl.textContent = "Error saving changes.";
+          return;
+        }
+
+        let data: any = {};
+        try {
+          data = JSON.parse(text);
+        } catch (err) {
+          console.error("JSON parse error from manage-places update:", err, text);
+        }
+
+        if (data.status === "ok") {
+          const idx = userPlaces.findIndex((p) => p.id === activePlaceId);
+          if (idx !== -1) {
+            userPlaces[idx].title = newTitle;
+            userPlaces[idx].notes = newNote;
+          }
+          renderPlaceList();
+          editStatusEl.textContent = "Changes saved.";
+        } else {
+          editStatusEl.textContent = "Error saving changes.";
+        }
+      } catch (err) {
+        console.error("Network error saving changes:", err);
+        editStatusEl.textContent = "Error saving changes.";
+      }
     }
 
     async function deletePlace() {
@@ -511,13 +573,54 @@
 
       editStatusEl.textContent = "Deleting…";
 
-      // TODO: call manage-places Edge Function with action=delete
-      userPlaces = userPlaces.filter((p) => p.id !== activePlaceId);
-      activePlaceId = null;
-      renderPlaceList();
-      editFormEl.style.display = "none";
-      emptyMessageEl.style.display = "block";
-      editStatusEl.textContent = "Deleted locally (backend wiring TODO).";
+      try {
+        const res = await fetch(MANAGE_PLACES_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "delete",
+            user_token: token,
+            place_id: activePlaceId,
+          }),
+        });
+
+        const text = await res.text();
+        if (!res.ok) {
+          console.error("Error response from manage-places (delete):", res.status, text);
+          editStatusEl.textContent = "Error deleting place.";
+          return;
+        }
+
+        let data: any = {};
+        try {
+          data = JSON.parse(text);
+        } catch (err) {
+          console.error("JSON parse error from manage-places delete:", err, text);
+        }
+
+        if (data.status === "ok") {
+          userPlaces = userPlaces.filter((p) => p.id !== activePlaceId);
+          activePlaceId = null;
+          renderPlaceList();
+          editFormEl.style.display = "none";
+          emptyMessageEl.style.display = "block";
+          editStatusEl.textContent = "Place deleted.";
+        } else {
+          editStatusEl.textContent = "Error deleting place.";
+        }
+      } catch (err) {
+        console.error("Network error deleting place:", err);
+        editStatusEl.textContent = "Error deleting place.";
+      }
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
     }
 
     saveChangesBtn.onclick = () => {
@@ -534,15 +637,7 @@
       });
     };
 
-    function escapeHtml(str) {
-      return String(str)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
-    }
-
+    // Initial load
     loadUserPlaces();
   </script>
 </body>
