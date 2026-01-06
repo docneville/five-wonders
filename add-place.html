@@ -256,16 +256,26 @@
 
     // Central helper: update the "Details" section from any selection
     function updateDetailsFromSelection({ name, address, lat, lon }) {
+        // ALWAYS overwrite, even if the user typed something before
       if (placeNameInput) {
         placeNameInput.value = name || "";
       }
       if (placeAddressInput) {
         placeAddressInput.value = address || "";
       }
-      if (typeof lat === "number" && typeof lon === "number") {
+
+      if (
+        typeof lat === "number" &&
+        typeof lon === "number" &&
+        !Number.isNaN(lat) &&
+        !Number.isNaN(lon)
+      ) {
+        selectedLatLng = { lat, lon };
+        ensureMarker(lat, lon);
         updateSelectedInfo(lat, lon);
       }
     }
+
 
     // ---- Search via Nominatim ----
     async function searchPlaces(query) {
