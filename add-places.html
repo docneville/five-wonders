@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Five Wonders – Add a Place</title>
+
+  <!-- Leaflet CSS -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""
+  />
+
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    #app {
+      display: grid;
+      grid-template-columns: 340px 1fr;
+      grid-template-rows: 48px 1fr;
+      grid-template-areas:
+        "header header"
+        "sidebar map";
+      height: 100%;
+    }
+
+    header {
+      grid-area: header;
+      background: #111827;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 16px;
+    }
+
+    #sidebar {
+      grid-area: sidebar;
+      border-right: 1px solid #e5e7eb;
+      padding: 12px;
+      box-sizing: border-box;
+      overflow-y: auto;
+    }
+
+    #map {
+      grid-area: map;
+    }
+
+    .section-title {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 4px;
+      margin-top: 8px;
+    }
+
+    label {
+      font-size: 12px;
+      font-weight: 500;
+      display: block;
+      margin-top: 8px;
+      margin-bottom: 2px;
+    }
+
+    input[type="text"],
+    textarea {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 6px 8px;
+      border-radius: 4px;
+      border: 1px solid #d1d5db;
+      font-size: 13px;
+      font-family: inherit;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 60px;
+    }
+
+    button {
+      border-radius: 4px;
+      border: none;
+      padding: 6px 10px;
+      font-size: 13px;
+      cursor: pointer;
+      font-weight: 500;
+    }
+
+    button.primary {
+      background: #111827;
+      color: white;
+    }
+
+    button.secondary {
+      background: #e5e7eb;
+      color: #111827;
+    }
+
+    #search-results {
+      margin-top: 6px;
+      max-height: 140px;
+      overflow-y: auto;
+      border: 1px solid #e5e7eb;
+      border-radius: 4px;
+    }
+
+    .search-item {
+      padding: 6px 8px;
+      font-size: 12px;
+      cursor: pointer;
+      border-bottom: 1px solid #f3f4f6;
+    }
+
+    .search-item:last-child {
+      border-bottom: none;
+    }
+
+    .search-item:hover {
+      background: #f3f4f6;
+    }
+
+    .token-warning {
+      font-size: 11px;
+      color: #92400e;
+      background: #fef3c7;
+      border: 1px solid #facc15;
+      border-radius: 4px;
+      padding: 6px 8px;
+      margin-bottom: 8px;
+    }
+
+    .small-help {
+      font-size: 11px;
+      color: #6b7280;
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <header>Five Wonders – Add a Place</header>
+
+    <div id="sidebar">
+      <div id="token-section"></div>
+
+      <div>
+        <div class="section-title">1. Find a place</div>
+        <label for="search-input">Search</label>
+        <div style="display:flex;gap:4px;">
+          <input type="text" id="search-input" placeholder="Taylor Shellfish Farms, Bow, WA" />
+          <button id="search-btn" class="secondary">Go</button>
+        </div>
+        <div class="small-help">
+          Uses OpenStreetMap search. Or click directly on the map to pick a location.
+        </div>
+        <div id="search-results"></div>
+      </div>
+
+      <div style="margin-top:12px;">
+        <div class="section-title">2. Details</div>
+        <label for="place-name">Place name</label>
+        <input type="text" id="place-name" placeholder="Name of the place" />
+
+        <label for="place-address">Address / description</label>
+        <textarea id="place-address" placeholder="Address or description from the map"></textarea>
+
+        <label for="user-note">Your note</label>
+        <textarea id="user-note" placeholder="Why you love this place (what to order, best time to go, etc.)"></textarea>
+      </div>
+
+      <div style="margin-top:12px;display:flex;justify-content:space-between;align-items:center;">
+        <div class="small-help" id="selected-coords">No location selected yet.</div>
+        <button id="save-btn" class="primary">Save place</button>
+      </div>
+    </div>
+
+    <div id="map"></div>
+  </div>
+
+  <!-- Leaflet JS -->
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""
+  ></script>
+
+  <script type="module">
+    // ====== CONFIG ======
+    const SUPABASE_FUNCTION_URL =
+      "https://ekpssonwtztubqfihlqm.supabase.co/functions/v1/ingest-shortcut";
+
+    const USER_TOKEN_STORAGE_KEY = "fivewonders_user_token";
+
+    // ====== USER TOKEN HANDLING ======
+    function getQueryParam(name) {
+      const params = new URLSearchParams(window.location.search);
+      return params.get(name);
+    }
+
+    function getUserToken() {
+      return localStorage.getItem(USER_TOKEN_STORAGE_KEY);
+    }
+
+    function setUserToken(token) {
+      localStorage.setItem(USER_TOKEN_STORAGE_KEY, token);
+    }
+
+    function renderTokenSection() {
+      const container = document.getElementById("token-section");
+      container.innerHTML = "";
+
+      const token = getUserToken();
+
+      if (!token) {
+        const div = document.createElement("div");
+        div.className = "token-warning";
+        div.innerHTML = `
+          <strong>Invite code required</strong><br/>
+          Paste your personal invite code once. It will be remembered on this device.
+          <div style="margin-top:4px;">
+            <input type="text" id="token-input" placeholder="Paste invite code" style="width:100%;margin-top:4px;" />
+            <button id="token-save-btn" class="primary" style="margin-top:4px;">Save invite code</button>
+          </div>
+        `;
+        container.appendChild(div);
+
+        document.getElementById("token-save-btn").onclick = () => {
+          const value = (document.getElementById("token-input").value || "").trim();
+          if (!value) {
+            alert("Please paste the invite code you were given.");
+            return;
+          }
+          setUserToken(value);
+          renderTokenSection();
+        };
+      } else {
+        const div = document.createElement("div");
+        div.className = "small-help";
+        div.innerHTML =
+          "Invite code is set on this device. If you need to change it, clear browser storage.";
+        container.appendChild(div);
+      }
+    }
+
+    // On first load, also accept ?token=... or ?t=... and store it
+    (function bootstrapTokenFromQuery() {
+      const qToken = getQueryParam("token") || getQueryParam("t");
+      if (qToken && !getUserToken()) {
+        setUserToken(qToken);
+      }
+    })();
+
+    renderTokenSection();
+
+    // ====== MAP SETUP ======
+    const map = L.map("map").setView([39.5, -98.35], 4); // US-ish default
+
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+      attribution: "&copy; OpenStreetMap contributors",
+    }).addTo(map);
+
+    let selectedMarker = null;
+    let selectedLatLng = null;
+
+    function setSelectedLocation(lat, lon, options = {}) {
+      selectedLatLng = { lat, lon };
+
+      if (!selectedMarker) {
+        selectedMarker = L.marker([lat, lon]).addTo(map);
+      } else {
+        selectedMarker.setLatLng([lat, lon]);
+      }
+
+      map.setView([lat, lon], options.zoom || 15);
+
+      const coordsEl = document.getElementById("selected-coords");
+      coordsEl.textContent = `Selected: ${lat.toFixed(5)}, ${lon.toFixed(5)}`;
+    }
+
+    // Click on map to pick a location (reverse geocode for address)
+    map.on("click", async (e) => {
+      const { lat, lng } = e.latlng;
+      setSelectedLocation(lat, lng, { zoom: 15 });
+
+      try {
+        const addr = await reverseGeocode(lat, lng);
+        if (addr) {
+          const addrField = document.getElementById("place-address");
+          if (!addrField.value) {
+            addrField.value = addr.display_name || "";
+          }
+          const nameField = document.getElementById("place-name");
+          if (!nameField.value && addr.name) {
+            nameField.value = addr.name;
+          }
+        }
+      } catch (err) {
+        console.warn("Reverse geocode failed:", err);
+      }
+    });
+
+    // ====== OPENSTREETMAP SEARCH ======
+    async function searchPlaces(query) {
+      const url =
+        "https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=8&q=" +
+        encodeURIComponent(query);
+
+      const res = await fetch(url, {
+        headers: {
+          // politely identify app per Nominatim policy
+          "Accept-Language": "en",
+        },
+      });
+
+      if (!res.ok) {
+        throw new Error("Search failed: " + (await res.text()));
+      }
+
+      return res.json();
+    }
+
+    async function reverseGeocode(lat, lon) {
+      const url =
+        "https://nominatim.openstreetmap.org/reverse?format=jsonv2&addressdetails=1&lat=" +
+        encodeURIComponent(lat) +
+        "&lon=" +
+        encodeURIComponent(lon);
+
+      const res = await fetch(url, {
+        headers: {
+          "Accept-Language": "en",
+        },
+      });
+
+      if (!res.ok) return null;
+      return res.json();
+    }
+
+    const searchInput = document.getElementById("search-input");
+    const searchBtn = document.getElementById("search-btn");
+    const searchResultsEl = document.getElementById("search-results");
+
+    searchBtn.onclick = async () => {
+      const q = (searchInput.value || "").trim();
+      if (!q) {
+        alert("Enter something to search (e.g., a place name or address).");
+        return;
+      }
+
+      searchBtn.disabled = true;
+      searchBtn.textContent = "…";
+      searchResultsEl.innerHTML = "";
+
+      try {
+        const results = await searchPlaces(q);
+        if (!results || results.length === 0) {
+          searchResultsEl.innerHTML =
+            '<div class="small-help" style="padding:4px 6px;">No results found.</div>';
+          return;
+        }
+
+        results.forEach((r) => {
+          const item = document.createElement("div");
+          item.className = "search-item";
+          item.textContent = r.display_name;
+          item.onclick = () => {
+            const lat = parseFloat(r.lat);
+            const lon = parseFloat(r.lon);
+            if (isNaN(lat) || isNaN(lon)) return;
+
+            setSelectedLocation(lat, lon, { zoom: 16 });
+
+            const nameField = document.getElementById("place-name");
+            const addrField = document.getElementById("place-address");
+
+            if (!nameField.value) {
+              // Try a nicer name if possible
+              const addr = r.address || {};
+              nameField.value =
+                r.name ||
+                addr.restaurant ||
+                addr.cafe ||
+                addr.bar ||
+                addr.shop ||
+                addr.road ||
+                "Unnamed place";
+            }
+
+            if (!addrField.value) {
+              addrField.value = r.display_name || "";
+            }
+          };
+          searchResultsEl.appendChild(item);
+        });
+      } catch (err) {
+        console.error("Search error:", err);
+        alert("Error searching places – see console.");
+      } finally {
+        searchBtn.disabled = false;
+        searchBtn.textContent = "Go";
+      }
+    };
+
+    // Enter key triggers search
+    searchInput.addEventListener("keyup", (e) => {
+      if (e.key === "Enter") searchBtn.click();
+    });
+
+    // ====== SAVE TO SUPABASE (via Edge Function) ======
+    async function savePlace() {
+      const token = getUserToken();
+      if (!token) {
+        alert("You need to set your invite code before saving a place.");
+        return;
+      }
+
+      if (!selectedLatLng) {
+        alert("Please select a location on the map (via search or map click).");
+        return;
+      }
+
+      const place_name = (document.getElementById("place-name").value || "").trim();
+      const place_address = (document.getElementById("place-address").value || "").trim();
+      const user_note = (document.getElementById("user-note").value || "").trim();
+
+      if (!place_name) {
+        alert("Please enter a place name.");
+        return;
+      }
+
+      const payload = {
+        place_name,
+        place_address,
+        latitude: selectedLatLng.lat,
+        longitude: selectedLatLng.lon,
+        user_note,
+        user_token: token,
+      };
+
+      console.log("Saving place with payload:", payload);
+
+      const res = await fetch(SUPABASE_FUNCTION_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const text = await res.text();
+      if (!res.ok) {
+        console.error("Error from ingest-shortcut:", res.status, text);
+        alert("Error saving place – see console for details.");
+        return;
+      }
+
+      console.log("Saved place. Response:", text);
+      alert("Place saved to Five Wonders ✅");
+
+      // Optionally clear notes but keep location, name, address
+      document.getElementById("user-note").value = "";
+    }
+
+    document.getElementById("save-btn").onclick = () => {
+      savePlace().catch((err) => {
+        console.error("Unexpected save error:", err);
+        alert("Unexpected error – see console.");
+      });
+    };
+  </script>
+</body>
+</html>
