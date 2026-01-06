@@ -6,44 +6,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     :root {
-      color-scheme: light dark;
+      color-scheme: light;
     }
 
     * {
       box-sizing: border-box;
     }
-
-    .fw-header {
-      height: 48px;
-      background: #111827;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 16px;
-      font-size: 14px;
-    }
-
-    .fw-header-title {
-      font-weight: 500;
-      color: #e5e7eb;
-    }
-
-    .fw-header-nav a {
-      color: #9ca3af;
-      text-decoration: none;
-      font-size: 13px;
-      margin-left: 10px;
-    }
-
-    .fw-header-nav a:first-child {
-      margin-left: 0;
-    }
-
-    .fw-header-nav a:hover {
-      color: #e5e7eb;
-      text-decoration: underline;
-    }
-
 
     body {
       margin: 0;
@@ -53,28 +21,43 @@
       color: #111827;
     }
 
-
-    header {
+    /* Shared header */
+    .fw-header {
       height: 48px;
-      background: #111827;
+      background: #0f172a;
       display: flex;
       align-items: center;
       justify-content: space-between;
       padding: 0 16px;
       font-size: 14px;
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.4);
     }
 
-    header a {
-      color: #9ca3af;
-      text-decoration: none;
+    .fw-header-title {
+      font-weight: 600;
+      color: #e5e7eb;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
       font-size: 13px;
     }
 
-    header a:hover {
-      color: #e5e7eb;
+    .fw-header-nav a {
+      color: #cbd5f5;
+      text-decoration: none;
+      font-size: 13px;
+      margin-left: 14px;
+    }
+
+    .fw-header-nav a:first-child {
+      margin-left: 0;
+    }
+
+    .fw-header-nav a:hover {
+      color: #ffffff;
       text-decoration: underline;
     }
 
+    /* Layout */
     .layout {
       display: grid;
       grid-template-columns: 320px 1fr;
@@ -82,16 +65,16 @@
     }
 
     .sidebar {
-      border-right: 1px solid #1f2937;
+      border-right: 1px solid #e5e7eb;
       padding: 10px;
       overflow-y: auto;
-      background: #020617;
+      background: #f3f4f6;
     }
 
     .main {
-      padding: 14px;
+      padding: 16px 18px;
       overflow-y: auto;
-      background: radial-gradient(circle at top, #0b1120 0, #020617 60%);
+      background: radial-gradient(circle at top, #e5ecff 0, #ffffff 65%);
     }
 
     .token-warning {
@@ -111,6 +94,7 @@
 
     .token-warning button {
       margin-top: 4px;
+      font-size: 11px;
     }
 
     .small-help {
@@ -122,23 +106,27 @@
       font-size: 13px;
       font-weight: 600;
       margin: 8px 0 4px;
+      color: #111827;
     }
 
     .place-list {
       margin-top: 6px;
       border-radius: 6px;
-      border: 1px solid #1f2937;
+      border: 1px solid #e5e7eb;
       overflow: hidden;
+      background: #ffffff;
     }
 
     .place-row {
       padding: 6px 8px;
       font-size: 13px;
-      border-bottom: 1px solid #111827;
+      border-bottom: 1px solid #e5e7eb;
       cursor: pointer;
       display: flex;
       flex-direction: column;
       gap: 2px;
+      background: #ffffff;
+      color: #111827;
     }
 
     .place-row:last-child {
@@ -146,11 +134,11 @@
     }
 
     .place-row:hover {
-      background: #111827;
+      background: #e5e7eb;
     }
 
     .place-row.active {
-      background: #1f2937;
+      background: #dbeafe;
     }
 
     .place-row-title {
@@ -159,7 +147,7 @@
 
     .place-row-note {
       font-size: 11px;
-      color: #9ca3af;
+      color: #6b7280;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -170,17 +158,19 @@
       align-items: center;
       padding: 4px 8px;
       border-radius: 999px;
-      border: 1px solid #334155;
+      border: 1px solid #cbd5f5;
       font-size: 11px;
       text-transform: uppercase;
       letter-spacing: 0.08em;
-      color: #9ca3af;
+      color: #1d4ed8;
+      background: #e0edff;
       margin-bottom: 6px;
     }
 
     h1 {
       font-size: 20px;
       margin: 4px 0 10px;
+      color: #111827;
     }
 
     label {
@@ -189,6 +179,7 @@
       display: block;
       margin-top: 8px;
       margin-bottom: 2px;
+      color: #374151;
     }
 
     input[type="text"],
@@ -197,11 +188,11 @@
       box-sizing: border-box;
       padding: 6px 8px;
       border-radius: 4px;
-      border: 1px solid #4b5563;
+      border: 1px solid #d1d5db;
       font-size: 13px;
       font-family: inherit;
-      background: #020617;
-      color: #e5e7eb;
+      background: #ffffff;
+      color: #111827;
     }
 
     textarea {
@@ -215,7 +206,7 @@
       align-items: center;
       margin-top: 8px;
       font-size: 12px;
-      color: #9ca3af;
+      color: #6b7280;
     }
 
     button {
@@ -250,12 +241,12 @@
 
     .btn-ghost {
       background: transparent;
-      color: #9ca3af;
+      color: #6b7280;
     }
 
     .btn-ghost:hover {
-      color: #e5e7eb;
-      background: #111827;
+      color: #111827;
+      background: #e5e7eb;
     }
 
     .actions {
@@ -267,13 +258,13 @@
 
     .status-msg {
       font-size: 12px;
-      color: #9ca3af;
+      color: #6b7280;
       margin-top: 4px;
     }
 
     .empty-state {
       font-size: 13px;
-      color: #9ca3af;
+      color: #6b7280;
       margin-top: 12px;
     }
   </style>
@@ -289,7 +280,6 @@
       <a href="about.html">About</a>
     </nav>
   </header>
-
 
   <div class="layout">
     <aside class="sidebar">
@@ -308,7 +298,8 @@
       <div class="pill">Edit</div>
       <h1>Edit a saved place</h1>
       <p class="small-help">
-        Choose one of your places on the left, update the details, then click <strong>Save changes</strong>.
+        Choose one of your places on the left, update the details, then click
+        <strong>Save changes</strong>.
       </p>
 
       <div id="edit-panel">
@@ -599,7 +590,7 @@
 
       const token = getUserToken();
       if (!token) {
-        alert("Missing invite code.");
+        alert("Missing invite code.";
         return;
       }
 
