@@ -17,11 +17,15 @@
       margin: 0;
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       min-height: 100vh;
+      background: radial-gradient(circle at top, #1f2937 0, #020617 55%);
+      color: #e5e7eb;
+    }
+
+    .fw-home-main {
+      min-height: calc(100vh - 48px); /* full height minus header */
       display: flex;
       align-items: center;
       justify-content: center;
-      background: radial-gradient(circle at top, #1f2937 0, #020617 55%);
-      color: #e5e7eb;
     }
 
     .card {
@@ -112,23 +116,37 @@
     }
   </style>
 </head>
-<body>
-  <div class="card">
-    <div class="title">Five Wonders</div>
-    <div class="subtitle">
-      Save and share the places your friends truly love.
-    </div>
+  <body>
+    <header class="fw-header">
+      <div class="fw-header-title">Five Wonders</div>
+      <nav class="fw-header-nav">
+        <a href="index.html">Home</a>
+        <a href="add-place.html">Add</a>
+        <a href="edit-places.html">Edit</a>
+        <a href="view.html">View</a>
+        <a href="about.html">About</a>
+      </nav>
+    </header>
 
-    <div class="grid">
-      <a href="add-place.html" class="btn btn-primary">Add</a>
-      <a href="edit-places.html" class="btn btn-secondary">Edit</a>
-      <a href="view.html" class="btn btn-secondary">View</a>
-      <a href="about.html" class="btn btn-secondary">About</a>
-    </div>
+    <main class="fw-home-main">
+      <div class="card">
+        <div class="title">Five Wonders</div>
+        <div class="subtitle">
+          Save and share the places your friends truly love.
+        </div>
 
-    <div class="footer">
-      Invite-only beta · Curated by friends
-    </div>
-  </div>
-</body>
+        <div class="grid">
+          <a href="add-place.html" class="btn btn-primary">Add</a>
+          <a href="edit-places.html" class="btn btn-secondary">Edit</a>
+          <a href="view.html" class="btn btn-secondary">View</a>
+          <a href="about.html" class="btn btn-secondary">About</a>
+        </div>
+
+        <div class="footer">
+          Invite-only beta · Curated by friends
+        </div>
+      </div>
+    </main>
+  </body>
+
 </html>
