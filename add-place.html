@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <title>Five Wonders – Add a Place</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <!-- Leaflet CSS -->
   <link
@@ -13,8 +14,24 @@
   />
 
   <style>
+    /* =============================
+       Base + Header
+    ============================== */
+
+    html, body {
+      height: 100%;
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    /* Slightly scale up on mobile (affects rem usage below) */
+    :root { font-size: 16px; }
+    @media (max-width: 768px) {
+      :root { font-size: 18px; }
+    }
 
     .fw-header {
+      grid-area: header;
       height: 48px;
       background: #111827;
       display: flex;
@@ -22,10 +39,11 @@
       justify-content: space-between;
       padding: 0 16px;
       font-size: 14px;
+      box-sizing: border-box;
     }
 
     .fw-header-title {
-      font-weight: 500;
+      font-weight: 600;
       color: #e5e7eb;
     }
 
@@ -36,20 +54,16 @@
       margin-left: 10px;
     }
 
-    .fw-header-nav a:first-child {
-      margin-left: 0;
-    }
+    .fw-header-nav a:first-child { margin-left: 0; }
 
     .fw-header-nav a:hover {
       color: #e5e7eb;
       text-decoration: underline;
     }
 
-    html, body {
-      height: 100%;
-      margin: 0;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    }
+    /* =============================
+       Desktop Layout (unchanged)
+    ============================== */
 
     #app {
       display: grid;
@@ -59,17 +73,7 @@
         "header header"
         "sidebar map";
       height: 100%;
-    }
-
-    header {
-      grid-area: header;
-      background: #111827;
-      color: white;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 600;
-      font-size: 16px;
+      min-height: 0;
     }
 
     #sidebar {
@@ -78,11 +82,25 @@
       padding: 12px;
       box-sizing: border-box;
       overflow-y: auto;
+      min-height: 0;
+      background: white;
+    }
+
+    /* Wrap map so we can overlay the FAB */
+    #mapWrap {
+      grid-area: map;
+      position: relative;
+      min-height: 0;
     }
 
     #map {
-      grid-area: map;
+      width: 100%;
+      height: 100%;
     }
+
+    /* =============================
+       Sidebar UI (existing styles)
+    ============================== */
 
     .section-title {
       font-size: 14px;
@@ -149,13 +167,9 @@
       border-bottom: 1px solid #f3f4f6;
     }
 
-    .search-item:last-child {
-      border-bottom: none;
-    }
+    .search-item:last-child { border-bottom: none; }
 
-    .search-item:hover {
-      background: #f3f4f6;
-    }
+    .search-item:hover { background: #f3f4f6; }
 
     .token-warning {
       font-size: 11px;
@@ -172,26 +186,167 @@
       color: #6b7280;
     }
 
-    .add-page-shell {
-      padding: 12px 16px 16px;
-      margin-top: 4px;
+    /* =============================
+       Leaflet popup readability
+    ============================== */
+
+    .leaflet-popup-content {
+      font-size: 1rem;
+      line-height: 1.35;
     }
 
+    .leaflet-popup-content a,
+    .leaflet-popup-content button {
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
+    }
+
+    /* =============================
+       Mobile mode: map full screen + bottom sheet
+    ============================== */
+
+    @media (max-width: 768px) {
+      #app {
+        grid-template-columns: 1fr;
+        grid-template-rows: 48px 1fr;
+        grid-template-areas:
+          "header"
+          "map";
+      }
+
+      /* Sidebar will be moved into the sheet; hide it in layout */
+      #sidebar { display: none; }
+    }
+
+    /* Floating Action Button */
+    .fw-fab {
+      display: none;
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      bottom: 16px;
+      padding: 12px 16px;
+      border-radius: 999px;
+      border: 1px solid rgba(0,0,0,0.15);
+      background: white;
+      font-size: 1rem;
+      font-weight: 600;
+      box-shadow: 0 10px 24px rgba(0,0,0,0.18);
+      z-index: 900; /* above map tiles */
+      min-height: 44px;
+    }
+
+    @media (max-width: 768px) {
+      .fw-fab {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+      }
+    }
+
+    /* Bottom Sheet (mobile) */
+    .fw-sheet {
+      position: fixed;
+      left: 0; right: 0; bottom: 0;
+      height: 78vh;
+      background: #fff;
+      border-top-left-radius: 16px;
+      border-top-right-radius: 16px;
+      box-shadow: 0 14px 40px rgba(0,0,0,0.25);
+      transform: translateY(100%);
+      transition: transform 180ms ease;
+      z-index: 2000; /* above Leaflet */
+      border-top: 1px solid rgba(0,0,0,0.12);
+      box-sizing: border-box;
+    }
+
+    .fw-sheet--open { transform: translateY(0); }
+    .fw-sheet--peek { transform: translateY(55%); }
+    .fw-sheet--hidden { transform: translateY(100%); }
+
+    .fw-sheet-handle {
+      width: 44px;
+      height: 5px;
+      border-radius: 999px;
+      background: rgba(0,0,0,0.25);
+      margin: 10px auto 6px;
+    }
+
+    .fw-sheet-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      border-bottom: 1px solid rgba(0,0,0,0.10);
+    }
+
+    .fw-sheet-title {
+      font-weight: 700;
+      font-size: 1.05rem;
+    }
+
+    .fw-sheet-close {
+      border: none;
+      background: transparent;
+      font-size: 1.3rem;
+      padding: 8px;
+      min-height: 44px;
+      min-width: 44px;
+      cursor: pointer;
+    }
+
+    .fw-sheet-content {
+      padding: 12px 14px;
+      overflow: auto;
+      height: calc(78vh - 64px);
+      box-sizing: border-box;
+    }
+
+    /* Make inputs + buttons finger-friendly inside sheet on mobile */
+    @media (max-width: 768px) {
+      .section-title { font-size: 1rem; }
+      label { font-size: 0.9rem; }
+
+      input[type="text"], textarea {
+        font-size: 1rem;
+        padding: 10px 12px;
+        border-radius: 10px;
+      }
+
+      button {
+        font-size: 1rem;
+        padding: 10px 12px;
+        min-height: 44px;
+        border-radius: 10px;
+      }
+
+      .search-item {
+        font-size: 0.95rem;
+        padding: 10px 12px;
+      }
+
+      .small-help, .token-warning {
+        font-size: 0.9rem;
+      }
+
+      #search-results { max-height: 220px; }
+    }
   </style>
 </head>
+
 <body>
   <div id="app">
     <header class="fw-header">
-    <div class="fw-header-title">Five Wonders</div>
-    <nav class="fw-header-nav">
-      <a href="index.html">Home</a>
-      <a href="add-place.html">Add</a>
-      <a href="edit-places.html">Edit</a>
-      <a href="view.html">View</a>
-      <a href="about.html">About</a>
-    </nav>
+      <div class="fw-header-title">Five Wonders</div>
+      <nav class="fw-header-nav">
+        <a href="index.html">Home</a>
+        <a href="add-place.html">Add</a>
+        <a href="edit-places.html">Edit</a>
+        <a href="view.html">View</a>
+        <a href="about.html">About</a>
+      </nav>
     </header>
-
 
     <div id="sidebar">
       <div id="token-section"></div>
@@ -199,7 +354,7 @@
       <div>
         <div class="section-title">1. Find a place</div>
         <label for="search-input">Search</label>
-        <div style="display:flex;gap:4px;">
+        <div style="display:flex;gap:6px;align-items:center;">
           <input type="text" id="search-input" placeholder="Larsen's Bakery, Seattle" />
           <button id="search-btn" class="secondary">Go</button>
         </div>
@@ -228,13 +383,26 @@
         ></textarea>
       </div>
 
-      <div style="margin-top:12px;display:flex;justify-content:space-between;align-items:center;">
+      <div style="margin-top:12px;display:flex;justify-content:space-between;align-items:center;gap:10px;">
         <div class="small-help" id="selected-coords">No location selected yet.</div>
         <button id="save-btn" class="primary">Save place</button>
       </div>
     </div>
 
-    <div id="map"></div>
+    <div id="mapWrap">
+      <div id="map"></div>
+      <button id="openSheetBtn" class="fw-fab" type="button">Search / Details</button>
+    </div>
+
+    <!-- Mobile bottom sheet -->
+    <section id="mobileSheet" class="fw-sheet fw-sheet--hidden" aria-hidden="true">
+      <div class="fw-sheet-handle" id="sheetHandle" title="Tap to collapse/expand"></div>
+      <div class="fw-sheet-header">
+        <div class="fw-sheet-title">Add a place</div>
+        <button id="closeSheetBtn" class="fw-sheet-close" type="button" aria-label="Close">✕</button>
+      </div>
+      <div class="fw-sheet-content" id="mobileSheetContent"></div>
+    </section>
   </div>
 
   <!-- Leaflet JS -->
@@ -277,9 +445,9 @@
         div.innerHTML = `
           <strong>Invite code required</strong><br/>
           Paste your personal invite code once. It will be remembered on this device.
-          <div style="margin-top:4px;">
+          <div style="margin-top:6px;">
             <input type="text" id="token-input" placeholder="Paste invite code" style="width:100%;margin-top:4px;" />
-            <button id="token-save-btn" class="primary" style="margin-top:4px;">Save invite code</button>
+            <button id="token-save-btn" class="primary" style="margin-top:6px;">Save invite code</button>
           </div>
         `;
         container.appendChild(div);
@@ -414,12 +582,8 @@
 
     // Central helper: always overwrite Details + selectedLatLng + marker
     function updateDetailsFromSelection({ name, address, lat, lon }) {
-      if (placeNameInput) {
-        placeNameInput.value = name || "";
-      }
-      if (placeAddressInput) {
-        placeAddressInput.value = address || "";
-      }
+      if (placeNameInput) placeNameInput.value = name || "";
+      if (placeAddressInput) placeAddressInput.value = address || "";
 
       if (
         typeof lat === "number" &&
@@ -452,13 +616,9 @@
       let results;
       try {
         const res = await fetch(url, {
-          headers: {
-            "Accept-Language": "en",
-          },
+          headers: { "Accept-Language": "en" },
         });
-        if (!res.ok) {
-          throw new Error(`Nominatim HTTP ${res.status}`);
-        }
+        if (!res.ok) throw new Error(`Nominatim HTTP ${res.status}`);
         results = await res.json();
       } catch (err) {
         console.error("Nominatim search error:", err);
@@ -487,14 +647,10 @@
 
         div.innerHTML = `
           <div style="font-weight:600;">${escapeHtml(primary)}</div>
-          <div style="font-size:12px;color:#555;">${escapeHtml(
-            r.display_name || ""
-          )}</div>
+          <div style="font-size:12px;color:#555;">${escapeHtml(r.display_name || "")}</div>
         `;
 
-        div.addEventListener("click", () => {
-          selectSearchResult(r);
-        });
+        div.addEventListener("click", () => { selectSearchResult(r); });
 
         searchResultsEl.appendChild(div);
       });
@@ -515,12 +671,7 @@
       selectedAddress = result.address || null;
       selectedExtratags = result.extratags || null;
 
-      updateDetailsFromSelection({
-        name: primary,
-        address: fullAddress,
-        lat,
-        lon,
-      });
+      updateDetailsFromSelection({ name: primary, address: fullAddress, lat, lon });
 
       map.setView([lat, lon], 16);
     }
@@ -538,13 +689,8 @@
 
         const url = `https://nominatim.openstreetmap.org/reverse?${params.toString()}`;
 
-        const res = await fetch(url, {
-          headers: { "Accept-Language": "en" },
-        });
-
-        if (!res.ok) {
-          throw new Error(`Reverse geocode HTTP ${res.status}`);
-        }
+        const res = await fetch(url, { headers: { "Accept-Language": "en" } });
+        if (!res.ok) throw new Error(`Reverse geocode HTTP ${res.status}`);
 
         const data = await res.json();
 
@@ -558,12 +704,7 @@
         selectedAddress = data.address || null;
         selectedExtratags = data.extratags || null;
 
-        updateDetailsFromSelection({
-          name: primary,
-          address: fullAddress,
-          lat,
-          lon,
-        });
+        updateDetailsFromSelection({ name: primary, address: fullAddress, lat, lon });
       } catch (err) {
         console.error("Reverse geocode error:", err);
         selectedAddress = null;
@@ -606,8 +747,10 @@
         return;
       }
 
+      // Still computed (in case you want later), but not sent unless you add fields
       const addressParts = extractAddressParts(selectedAddress || {});
       const contact = extractContactInfo(selectedExtratags || {});
+      void addressParts; void contact;
 
       const payload = {
         place_name,
@@ -617,20 +760,8 @@
         user_note,
         user_token: token,
 
-        // Extra OSM data (not yet used by the Edge Function unless you update it)
         osm_address: selectedAddress,
         osm_extratags: selectedExtratags,
-        // You can also send normalized fields later if you decide to handle them in the function:
-        // street_line1: addressParts.streetLine1,
-        // street_line2: addressParts.streetLine2,
-        // city: addressParts.city,
-        // state_region: addressParts.stateRegion,
-        // postal_code: addressParts.postalCode,
-        // country: addressParts.country,
-        // country_code: addressParts.countryCode,
-        // phone: contact.phone,
-        // website: contact.website,
-        // opening_hours: contact.openingHours,
       };
 
       console.log("Saving place with payload:", payload);
@@ -684,6 +815,71 @@
         alert("Unexpected error – see console.");
       });
     };
+
+    // ====== MOBILE SHEET (responsive UI) ======
+    (function setupMobileSheet() {
+      const mq = window.matchMedia("(max-width: 768px)");
+
+      const sidebar = document.getElementById("sidebar");
+      const sheet = document.getElementById("mobileSheet");
+      const sheetContent = document.getElementById("mobileSheetContent");
+
+      const openBtn = document.getElementById("openSheetBtn");
+      const closeBtn = document.getElementById("closeSheetBtn");
+      const handle = document.getElementById("sheetHandle");
+
+      if (!sidebar || !sheet || !sheetContent) return;
+
+      function openSheet(mode = "open") {
+        sheet.classList.remove("fw-sheet--hidden", "fw-sheet--peek", "fw-sheet--open");
+        sheet.classList.add(mode === "peek" ? "fw-sheet--peek" : "fw-sheet--open");
+        sheet.setAttribute("aria-hidden", "false");
+      }
+
+      function closeSheet() {
+        sheet.classList.remove("fw-sheet--open", "fw-sheet--peek");
+        sheet.classList.add("fw-sheet--hidden");
+        sheet.setAttribute("aria-hidden", "true");
+      }
+
+      function togglePeek() {
+        if (sheet.classList.contains("fw-sheet--open")) openSheet("peek");
+        else openSheet("open");
+      }
+
+      // Move the existing sidebar DOM into the sheet on mobile.
+      // This keeps all your existing IDs + event handlers working.
+      let moved = false;
+
+      function applyMode(isMobile) {
+        if (isMobile && !moved) {
+          sheetContent.appendChild(sidebar); // moves the node, doesn't clone it
+          moved = true;
+
+          // Leaflet needs a resize signal when containers change
+          setTimeout(() => map.invalidateSize(), 50);
+
+          // Start in "peek" so users discover it
+          openSheet("peek");
+        } else if (!isMobile && moved) {
+          // Move it back into the grid (place before mapWrap)
+          const app = document.getElementById("app");
+          const mapWrap = document.getElementById("mapWrap");
+          if (app && mapWrap) app.insertBefore(sidebar, mapWrap);
+
+          moved = false;
+          closeSheet();
+          setTimeout(() => map.invalidateSize(), 50);
+        }
+      }
+
+      openBtn?.addEventListener("click", () => openSheet("open"));
+      closeBtn?.addEventListener("click", closeSheet);
+      handle?.addEventListener("click", togglePeek);
+
+      applyMode(mq.matches);
+      mq.addEventListener("change", (e) => applyMode(e.matches));
+    })();
 
     // ====== ESCAPE HELPER ======
     function escapeHtml(str) {
