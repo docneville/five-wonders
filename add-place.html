@@ -215,9 +215,21 @@
           "map";
       }
 
-      /* Sidebar will be moved into the sheet; hide it in layout */
-      #sidebar { display: none; }
+      /* Hide sidebar only when it is still in the desktop layout.
+        When JS moves it into the bottom sheet, it will get .in-sheet and become visible. */
+      #sidebar:not(.in-sheet) {
+        display: none;
+      }
+
+      /* When in the sheet, show it */
+      #sidebar.in-sheet {
+        display: block;
+        border-right: none;
+        padding: 0;          /* optional: sheet already has padding */
+        overflow: visible;   /* sheet handles scrolling */
+      }
     }
+
 
     /* Floating Action Button */
     .fw-fab {
@@ -853,6 +865,7 @@
 
       function applyMode(isMobile) {
         if (isMobile && !moved) {
+          sidebar.classList.add("in-sheet"); 
           sheetContent.appendChild(sidebar); // moves the node, doesn't clone it
           moved = true;
 
@@ -862,6 +875,7 @@
           // Start in "peek" so users discover it
           openSheet("peek");
         } else if (!isMobile && moved) {
+          sidebar.classList.remove("in-sheet");
           // Move it back into the grid (place before mapWrap)
           const app = document.getElementById("app");
           const mapWrap = document.getElementById("mapWrap");
