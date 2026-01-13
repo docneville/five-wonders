@@ -21,9 +21,7 @@
       background: #fff;
     }
 
-    /* =============================
-       Header (same palette as add/edit)
-    ============================== */
+    /* Header (match add/edit) */
     .fw-header {
       height: 48px;
       background: #111827;
@@ -33,7 +31,7 @@
       padding: 0 16px;
       box-sizing: border-box;
       position: relative;
-      z-index: 3000; /* above map */
+      z-index: 3000;
     }
 
     .fw-header-title {
@@ -46,41 +44,41 @@
     .fw-header-nav {
       display: flex;
       align-items: center;
-      gap: 10px;
     }
 
+    /* Match spacing style from your other pages (no gap) */
     .fw-header-nav a {
       color: #9ca3af;
       text-decoration: none;
       font-size: 13px;
-      padding: 6px 8px;
-      border-radius: 8px;
+      margin-left: 10px;
+      padding: 0;            /* important: other pages don't pad nav links */
+      border-radius: 0;      /* important: other pages don't round nav links */
       white-space: nowrap;
     }
+
+    .fw-header-nav a:first-child { margin-left: 0; }
 
     .fw-header-nav a:hover {
       color: #e5e7eb;
       text-decoration: underline;
     }
 
-    /* Mobile: turn nav into a horizontal scroll row */
+    /* Mobile: horizontal scroll without changing spacing */
     @media (max-width: 768px) {
-      .fw-header {
-        padding: 0 12px;
-      }
+      .fw-header { padding: 0 12px; }
 
       .fw-header-nav {
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
-        scrollbar-width: none; /* Firefox */
+        scrollbar-width: none;
         max-width: 70vw;
       }
       .fw-header-nav::-webkit-scrollbar { display: none; }
 
-      .fw-header-nav a {
-        flex: 0 0 auto;
-      }
+      .fw-header-nav a { flex: 0 0 auto; }
     }
+
 
     /* Map */
     #map {
