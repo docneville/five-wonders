@@ -320,7 +320,7 @@
       position: sticky;
       bottom: 0;
       display: flex;
-      justify-content: space-between;
+      justify-content: flex-end;
       align-items: center;
       gap: 12px;
 
@@ -355,13 +355,7 @@
       .save-btn {
         width: 100%;
       }
-
-      #selected-coords {
-        font-size: 0.85rem;
-        text-align: center;
-      }
     }
-
 
     /* Make inputs + buttons finger-friendly inside sheet on mobile */
     @media (max-width: 768px) {
@@ -430,10 +424,10 @@
         <label for="place-name">Place name</label>
         <input type="text" id="place-name" placeholder="Name of the place" />
 
-        <label for="place-address">Address / description</label>
+        <label for="place-address">Address</label>
         <textarea
           id="place-address"
-          placeholder="Address or description from the map"
+          placeholder="Street, City, State, Country"
         ></textarea>
 
         <label for="user-note">Your note</label>
@@ -444,7 +438,6 @@
       </div>
 
       <div class="save-row">
-        <div class="small-help" id="selected-coords">No location selected yet.</div>
         <button id="save-btn" class="primary save-btn">Save place</button>
       </div>
 
@@ -550,7 +543,6 @@
     const placeAddressInput = document.getElementById("place-address");
     const userNoteInput = document.getElementById("user-note");
 
-    const selectedCoordsEl = document.getElementById("selected-coords");
     const saveBtn = document.getElementById("save-btn");
 
     // ====== MAP SETUP ======
@@ -571,12 +563,6 @@
         selectedMarker = L.marker([lat, lon]).addTo(map);
       } else {
         selectedMarker.setLatLng([lat, lon]);
-      }
-    }
-
-    function updateSelectedInfo(lat, lon) {
-      if (selectedCoordsEl) {
-        selectedCoordsEl.textContent = `Selected: ${lat.toFixed(6)}, ${lon.toFixed(6)}`;
       }
     }
 
@@ -641,10 +627,21 @@
       return { phone, website, openingHours };
     }
 
+    function formatAddress(addressParts = {}) {
+      const parts = [
+        addressParts.streetLine1,
+        addressParts.city,
+        addressParts.stateRegion,
+        addressParts.country,
+      ].filter(Boolean);
+
+      return parts.join(", ");
+    }
+
     // Central helper: always overwrite Details + selectedLatLng + marker
-    function updateDetailsFromSelection({ name, address, lat, lon }) {
+    function updateDetailsFromSelection({ name, addressParts, lat, lon }) {
       if (placeNameInput) placeNameInput.value = name || "";
-      if (placeAddressInput) placeAddressInput.value = address || "";
+      if (placeAddressInput) placeAddressInput.value = formatAddress(addressParts);
 
       if (
         typeof lat === "number" &&
@@ -654,7 +651,6 @@
       ) {
         selectedLatLng = { lat, lon };
         ensureMarker(lat, lon);
-        updateSelectedInfo(lat, lon);
       }
     }
 
@@ -727,12 +723,12 @@
         (result.namedetails && result.namedetails.name) ||
         "";
 
-      const fullAddress = result.display_name || "";
-
       selectedAddress = result.address || null;
       selectedExtratags = result.extratags || null;
 
-      updateDetailsFromSelection({ name: primary, address: fullAddress, lat, lon });
+      const addressParts = extractAddressParts(selectedAddress || {});
+
+      updateDetailsFromSelection({ name: primary, addressParts, lat, lon });
 
       map.setView([lat, lon], 16);
     }
@@ -760,12 +756,12 @@
           data.display_name?.split(",")[0]?.trim() ||
           "";
 
-        const fullAddress = data.display_name || "";
-
         selectedAddress = data.address || null;
         selectedExtratags = data.extratags || null;
 
-        updateDetailsFromSelection({ name: primary, address: fullAddress, lat, lon });
+        const addressParts = extractAddressParts(selectedAddress || {});
+
+        updateDetailsFromSelection({ name: primary, addressParts, lat, lon });
       } catch (err) {
         console.error("Reverse geocode error:", err);
         selectedAddress = null;
@@ -773,10 +769,14 @@
 
         updateDetailsFromSelection({
           name: "",
-          address: `Lat ${lat.toFixed(6)}, Lon ${lon.toFixed(6)}`,
+          addressParts: { streetLine1: null, city: null, stateRegion: null, country: null },
           lat,
           lon,
         });
+
+        if (placeAddressInput) {
+          placeAddressInput.value = "Address not available (you can type one).";
+        }
       }
     }
 
@@ -914,7 +914,7 @@
 
       function applyMode(isMobile) {
         if (isMobile && !moved) {
-          sidebar.classList.add("in-sheet"); 
+          sidebar.classList.add("in-sheet");
           sheetContent.appendChild(sidebar); // moves the node, doesn't clone it
           moved = true;
 
@@ -949,7 +949,7 @@
       return String(str)
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
+        .replace(/>/g, "&lt;")
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#039;");
     }
