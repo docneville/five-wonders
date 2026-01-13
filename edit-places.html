@@ -4,149 +4,144 @@
   <meta charset="UTF-8" />
   <title>Edit Places – Five Wonders</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+
   <style>
-    :root {
-      color-scheme: light;
-    }
+    :root { color-scheme: light; font-size: 16px; }
+    @media (max-width: 768px) { :root { font-size: 18px; } }
 
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
-    body {
+    html, body {
+      height: 100%;
       margin: 0;
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      min-height: 100vh;
-      background: radial-gradient(circle at top, #e0ecff 0, #f9fafb 55%);
       color: #111827;
+      background: #ffffff;
     }
 
-    /* Shared header */
+    /* =============================
+       Shared header (align with add-place)
+    ============================== */
     .fw-header {
       height: 48px;
-      background: #0f172a;
+      background: #111827;
       display: flex;
       align-items: center;
       justify-content: space-between;
       padding: 0 16px;
       font-size: 14px;
-      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.4);
+      box-sizing: border-box;
     }
 
     .fw-header-title {
       font-weight: 600;
       color: #e5e7eb;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-      font-size: 13px;
+      letter-spacing: 0.02em;
+      text-transform: none;
+      font-size: 14px;
     }
 
     .fw-header-nav a {
-      color: #cbd5f5;
+      color: #9ca3af;
       text-decoration: none;
       font-size: 13px;
-      margin-left: 14px;
+      margin-left: 10px;
     }
 
-    .fw-header-nav a:first-child {
-      margin-left: 0;
-    }
+    .fw-header-nav a:first-child { margin-left: 0; }
 
     .fw-header-nav a:hover {
-      color: #ffffff;
+      color: #e5e7eb;
       text-decoration: underline;
     }
 
-    /* Layout */
-    .layout {
+    /* =============================
+       Desktop layout
+    ============================== */
+    #app {
       display: grid;
-      grid-template-columns: 320px 1fr;
-      height: calc(100vh - 48px);
+      grid-template-columns: 340px 1fr;
+      grid-template-rows: 48px 1fr;
+      grid-template-areas:
+        "header header"
+        "sidebar main";
+      height: 100%;
+      min-height: 0;
     }
 
-    .sidebar {
+    header.fw-header { grid-area: header; }
+
+    #sidebar {
+      grid-area: sidebar;
       border-right: 1px solid #e5e7eb;
-      padding: 10px;
+      padding: 12px;
       overflow-y: auto;
-      background: #f3f4f6;
+      min-height: 0;
+      background: #ffffff;
     }
 
-    .main {
+    #main {
+      grid-area: main;
       padding: 16px 18px;
       overflow-y: auto;
-      background: radial-gradient(circle at top, #e5ecff 0, #ffffff 65%);
+      min-height: 0;
+      background: #ffffff;
     }
 
+    /* =============================
+       Sidebar + form styles (kept familiar)
+    ============================== */
     .token-warning {
-      font-size: 11px;
+      font-size: 0.9rem;
       color: #92400e;
       background: #fef3c7;
       border: 1px solid #facc15;
-      border-radius: 4px;
-      padding: 6px 8px;
-      margin-bottom: 8px;
-    }
-
-    .token-warning input {
-      width: 100%;
-      margin-top: 4px;
-    }
-
-    .token-warning button {
-      margin-top: 4px;
-      font-size: 11px;
+      border-radius: 10px;
+      padding: 10px 12px;
+      margin-bottom: 10px;
     }
 
     .small-help {
-      font-size: 11px;
+      font-size: 0.85rem;
       color: #6b7280;
     }
 
     .section-title {
-      font-size: 13px;
-      font-weight: 600;
-      margin: 8px 0 4px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      margin: 10px 0 6px;
       color: #111827;
     }
 
     .place-list {
-      margin-top: 6px;
-      border-radius: 6px;
+      margin-top: 8px;
+      border-radius: 12px;
       border: 1px solid #e5e7eb;
       overflow: hidden;
       background: #ffffff;
     }
 
     .place-row {
-      padding: 6px 8px;
-      font-size: 13px;
-      border-bottom: 1px solid #e5e7eb;
+      padding: 10px 12px;
+      font-size: 0.95rem;
+      border-bottom: 1px solid #f3f4f6;
       cursor: pointer;
       display: flex;
       flex-direction: column;
-      gap: 2px;
+      gap: 4px;
       background: #ffffff;
       color: #111827;
     }
 
-    .place-row:last-child {
-      border-bottom: none;
-    }
+    .place-row:last-child { border-bottom: none; }
 
-    .place-row:hover {
-      background: #e5e7eb;
-    }
+    .place-row:hover { background: #f3f4f6; }
+    .place-row.active { background: #dbeafe; }
 
-    .place-row.active {
-      background: #dbeafe;
-    }
-
-    .place-row-title {
-      font-weight: 500;
-    }
+    .place-row-title { font-weight: 600; }
 
     .place-row-note {
-      font-size: 11px;
+      font-size: 0.85rem;
       color: #6b7280;
       white-space: nowrap;
       overflow: hidden;
@@ -156,150 +151,263 @@
     .pill {
       display: inline-flex;
       align-items: center;
-      padding: 4px 8px;
+      padding: 6px 10px;
       border-radius: 999px;
-      border: 1px solid #cbd5f5;
-      font-size: 11px;
+      border: 1px solid #d1d5db;
+      font-size: 0.75rem;
       text-transform: uppercase;
       letter-spacing: 0.08em;
-      color: #1d4ed8;
-      background: #e0edff;
-      margin-bottom: 6px;
+      color: #111827;
+      background: #f3f4f6;
+      margin-bottom: 10px;
     }
 
     h1 {
-      font-size: 20px;
-      margin: 4px 0 10px;
+      font-size: 1.25rem;
+      margin: 4px 0 8px;
       color: #111827;
     }
 
     label {
-      font-size: 12px;
-      font-weight: 500;
+      font-size: 0.9rem;
+      font-weight: 600;
       display: block;
-      margin-top: 8px;
-      margin-bottom: 2px;
+      margin-top: 10px;
+      margin-bottom: 6px;
       color: #374151;
     }
 
     input[type="text"],
     textarea {
       width: 100%;
-      box-sizing: border-box;
-      padding: 6px 8px;
-      border-radius: 4px;
+      padding: 10px 12px;
+      border-radius: 10px;
       border: 1px solid #d1d5db;
-      font-size: 13px;
+      font-size: 1rem;
       font-family: inherit;
       background: #ffffff;
       color: #111827;
     }
 
-    textarea {
-      resize: vertical;
-      min-height: 80px;
-    }
+    textarea { resize: vertical; min-height: 90px; }
 
     .row {
       display: flex;
       gap: 8px;
       align-items: center;
-      margin-top: 8px;
-      font-size: 12px;
+      margin-top: 10px;
+      font-size: 0.85rem;
       color: #6b7280;
     }
 
     button {
-      border-radius: 999px;
+      border-radius: 12px;
       border: none;
-      padding: 7px 12px;
-      font-size: 13px;
+      padding: 10px 12px;
+      font-size: 1rem;
       cursor: pointer;
-      font-weight: 500;
+      font-weight: 700;
       display: inline-flex;
       align-items: center;
-      gap: 4px;
+      justify-content: center;
+      gap: 6px;
+      min-height: 44px;
     }
 
-    .btn-primary {
-      background: #22c55e;
-      color: #022c22;
-    }
+    .btn-primary { background: #111827; color: #ffffff; }
+    .btn-primary:hover { background: #0b1220; }
 
-    .btn-primary:hover {
-      background: #16a34a;
-    }
-
-    .btn-danger {
-      background: #ef4444;
-      color: #fef2f2;
-    }
-
-    .btn-danger:hover {
-      background: #dc2626;
-    }
+    .btn-danger { background: #ef4444; color: #fff; }
+    .btn-danger:hover { background: #dc2626; }
 
     .btn-ghost {
-      background: transparent;
-      color: #6b7280;
+      background: #e5e7eb;
+      color: #111827;
+      font-weight: 700;
     }
 
-    .btn-ghost:hover {
-      color: #111827;
-      background: #e5e7eb;
-    }
+    .btn-ghost:hover { background: #d1d5db; }
 
     .actions {
-      margin-top: 12px;
+      margin-top: 14px;
       display: flex;
-      gap: 8px;
+      gap: 10px;
       align-items: center;
+      flex-wrap: wrap;
     }
 
     .status-msg {
-      font-size: 12px;
+      font-size: 0.9rem;
       color: #6b7280;
-      margin-top: 4px;
+      margin-top: 8px;
     }
 
     .empty-state {
-      font-size: 13px;
+      font-size: 0.95rem;
       color: #6b7280;
       margin-top: 12px;
     }
+
+    /* =============================
+       Mobile: bottom sheet for EDIT form (align with add-place)
+    ============================== */
+
+    @media (max-width: 768px) {
+      #app {
+        grid-template-columns: 1fr;
+        grid-template-rows: 48px 1fr;
+        grid-template-areas:
+          "header"
+          "sidebar";
+      }
+
+      /* show list full screen */
+      #main { display: none; }
+    }
+
+    /* Floating action button to open the edit sheet */
+    .fw-fab {
+      display: none;
+      position: fixed;
+      right: 16px;
+      bottom: calc(16px + env(safe-area-inset-bottom));
+      padding: 12px 14px;
+      border-radius: 999px;
+      border: 1px solid rgba(0,0,0,0.15);
+      background: white;
+      font-size: 1rem;
+      font-weight: 800;
+      box-shadow: 0 10px 24px rgba(0,0,0,0.18);
+      z-index: 2100;
+      min-height: 44px;
+      align-items: center;
+      justify-content: center;
+    }
+
+    @media (max-width: 768px) {
+      .fw-fab { display: inline-flex; }
+    }
+
+    /* Bottom Sheet */
+    .fw-sheet {
+      position: fixed;
+      left: 0; right: 0; bottom: 0;
+      height: 82vh;
+      background: #fff;
+      border-top-left-radius: 16px;
+      border-top-right-radius: 16px;
+      box-shadow: 0 14px 40px rgba(0,0,0,0.25);
+      transform: translateY(100%);
+      transition: transform 180ms ease;
+      z-index: 2200;
+      border-top: 1px solid rgba(0,0,0,0.12);
+    }
+
+    .fw-sheet--open { transform: translateY(0); }
+    .fw-sheet--peek { transform: translateY(55%); }
+    .fw-sheet--hidden { transform: translateY(100%); }
+
+    .fw-sheet-handle {
+      width: 44px;
+      height: 5px;
+      border-radius: 999px;
+      background: rgba(0,0,0,0.25);
+      margin: 10px auto 6px;
+    }
+
+    .fw-sheet-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      border-bottom: 1px solid rgba(0,0,0,0.10);
+    }
+
+    .fw-sheet-title {
+      font-weight: 800;
+      font-size: 1.05rem;
+    }
+
+    .fw-sheet-close {
+      border: none;
+      background: transparent;
+      font-size: 1.3rem;
+      padding: 8px;
+      min-height: 44px;
+      min-width: 44px;
+      cursor: pointer;
+    }
+
+    .fw-sheet-content {
+      padding: 12px 14px;
+      overflow: auto;
+      height: calc(82vh - 64px);
+      box-sizing: border-box;
+      padding-bottom: calc(110px + env(safe-area-inset-bottom));
+    }
+
+    /* Sticky action row inside sheet */
+    .action-row {
+      position: sticky;
+      bottom: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 10px;
+
+      padding: 12px 14px calc(12px + env(safe-area-inset-bottom));
+      margin-top: 16px;
+
+      background: white;
+      border-top: 1px solid rgba(0,0,0,0.12);
+      z-index: 10;
+    }
+
+    .action-row .btn-primary,
+    .action-row .btn-danger,
+    .action-row .btn-ghost {
+      width: 100%;
+    }
+
+    /* Hide sheet on desktop */
+    @media (min-width: 769px) {
+      .fw-sheet, .fw-fab { display: none !important; }
+    }
   </style>
 </head>
-<body>
-  <header class="fw-header">
-    <div class="fw-header-title">Five Wonders</div>
-    <nav class="fw-header-nav">
-      <a href="index.html">Home</a>
-      <a href="add-place.html">Add</a>
-      <a href="edit-places.html">Edit</a>
-      <a href="view.html">View</a>
-      <a href="about.html">About</a>
-    </nav>
-  </header>
 
-  <div class="layout">
-    <aside class="sidebar">
+<body>
+  <div id="app">
+    <header class="fw-header">
+      <div class="fw-header-title">Five Wonders</div>
+      <nav class="fw-header-nav">
+        <a href="index.html">Home</a>
+        <a href="add-place.html">Add</a>
+        <a href="edit-places.html">Edit</a>
+        <a href="view.html">View</a>
+        <a href="about.html">About</a>
+      </nav>
+    </header>
+
+    <!-- Sidebar/list (desktop sidebar, mobile main screen) -->
+    <aside id="sidebar">
       <div id="token-section"></div>
 
       <div class="section-title">Your places</div>
       <div class="small-help">
-        Select a place to edit the title or note, or delete it.
+        Tap a place to edit the title or note, or delete it.
       </div>
 
       <div id="place-list" class="place-list"></div>
-      <div id="sidebar-status" class="small-help" style="margin-top:6px;"></div>
+      <div id="sidebar-status" class="small-help" style="margin-top:8px;"></div>
     </aside>
 
-    <main class="main">
+    <!-- Desktop editor panel -->
+    <main id="main">
       <div class="pill">Edit</div>
       <h1>Edit a saved place</h1>
       <p class="small-help">
-        Choose one of your places on the left, update the details, then click
-        <strong>Save changes</strong>.
+        Choose one of your places on the left, update the details, then click <strong>Save changes</strong>.
       </p>
 
       <div id="edit-panel">
@@ -331,6 +439,47 @@
         </div>
       </div>
     </main>
+
+    <!-- Mobile FAB -->
+    <button id="openEditBtn" class="fw-fab" type="button" aria-label="Edit selected place">Edit</button>
+
+    <!-- Mobile bottom sheet -->
+    <section id="editSheet" class="fw-sheet fw-sheet--hidden" aria-hidden="true">
+      <div class="fw-sheet-handle" id="sheetHandle" title="Tap to collapse/expand"></div>
+      <div class="fw-sheet-header">
+        <div class="fw-sheet-title">Edit place</div>
+        <button id="closeSheetBtn" class="fw-sheet-close" type="button" aria-label="Close">✕</button>
+      </div>
+      <div class="fw-sheet-content">
+        <div id="mobile-edit-panel">
+          <p class="empty-state" id="mobile-empty-message">
+            No place selected yet. Choose one from the list, then tap <strong>Edit</strong>.
+          </p>
+
+          <div id="mobile-edit-form" style="display:none;">
+            <label for="m-edit-title">Place name</label>
+            <input type="text" id="m-edit-title" />
+
+            <label for="m-edit-address">Address / description</label>
+            <textarea id="m-edit-address" readonly></textarea>
+
+            <label for="m-edit-note">Your note</label>
+            <textarea id="m-edit-note"></textarea>
+
+            <div class="row">
+              <span id="m-edit-meta"></span>
+            </div>
+
+            <div class="action-row">
+              <button id="m-save-changes-btn" class="btn-primary">Save changes</button>
+              <button id="m-delete-btn" class="btn-danger">Delete place</button>
+              <button id="m-cancel-btn" class="btn-ghost">Close</button>
+              <div id="m-edit-status" class="status-msg"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
   </div>
 
   <script type="module">
@@ -371,9 +520,9 @@
         div.innerHTML = `
           <strong>Invite code required</strong><br/>
           Paste your personal invite code once. It will be remembered on this device.
-          <div>
-            <input type="text" id="token-input" placeholder="Paste invite code" />
-            <button id="token-save-btn">Save</button>
+          <div style="margin-top:10px;">
+            <input type="text" id="token-input" placeholder="Paste invite code" style="width:100%;margin-top:6px;" />
+            <button id="token-save-btn" class="btn-primary" style="margin-top:10px;">Save invite code</button>
           </div>
         `;
         container.appendChild(div);
@@ -405,6 +554,7 @@
     const placeListEl = document.getElementById("place-list");
     const sidebarStatusEl = document.getElementById("sidebar-status");
 
+    // Desktop elements
     const emptyMessageEl = document.getElementById("empty-message");
     const editFormEl = document.getElementById("edit-form");
     const editTitleInput = document.getElementById("edit-title");
@@ -412,24 +562,74 @@
     const editNoteInput = document.getElementById("edit-note");
     const editMetaEl = document.getElementById("edit-meta");
     const editStatusEl = document.getElementById("edit-status");
-
     const saveChangesBtn = document.getElementById("save-changes-btn");
     const deleteBtn = document.getElementById("delete-btn");
     const cancelBtn = document.getElementById("cancel-btn");
+
+    // Mobile sheet elements
+    const openEditBtn = document.getElementById("openEditBtn");
+    const editSheet = document.getElementById("editSheet");
+    const closeSheetBtn = document.getElementById("closeSheetBtn");
+    const sheetHandle = document.getElementById("sheetHandle");
+
+    const mEmptyMessageEl = document.getElementById("mobile-empty-message");
+    const mEditFormEl = document.getElementById("mobile-edit-form");
+    const mEditTitleInput = document.getElementById("m-edit-title");
+    const mEditAddressInput = document.getElementById("m-edit-address");
+    const mEditNoteInput = document.getElementById("m-edit-note");
+    const mEditMetaEl = document.getElementById("m-edit-meta");
+    const mEditStatusEl = document.getElementById("m-edit-status");
+    const mSaveBtn = document.getElementById("m-save-changes-btn");
+    const mDeleteBtn = document.getElementById("m-delete-btn");
+    const mCancelBtn = document.getElementById("m-cancel-btn");
+
+    function isMobile() {
+      return window.matchMedia("(max-width: 768px)").matches;
+    }
+
+    function openSheet(mode = "open") {
+      if (!editSheet) return;
+      editSheet.classList.remove("fw-sheet--hidden", "fw-sheet--peek", "fw-sheet--open");
+      editSheet.classList.add(mode === "peek" ? "fw-sheet--peek" : "fw-sheet--open");
+      editSheet.setAttribute("aria-hidden", "false");
+    }
+
+    function closeSheet() {
+      if (!editSheet) return;
+      editSheet.classList.remove("fw-sheet--open", "fw-sheet--peek");
+      editSheet.classList.add("fw-sheet--hidden");
+      editSheet.setAttribute("aria-hidden", "true");
+    }
+
+    function togglePeek() {
+      if (!editSheet) return;
+      if (editSheet.classList.contains("fw-sheet--open")) openSheet("peek");
+      else openSheet("open");
+    }
+
+    function setMobileFabEnabled(enabled) {
+      if (!openEditBtn) return;
+      openEditBtn.disabled = !enabled;
+      openEditBtn.style.opacity = enabled ? "1" : "0.55";
+      openEditBtn.style.pointerEvents = enabled ? "auto" : "none";
+    }
 
     function renderPlaceList() {
       placeListEl.innerHTML = "";
 
       if (!userPlaces || userPlaces.length === 0) {
         placeListEl.innerHTML =
-          '<div class="small-help" style="padding:6px 8px;">No places found for this invite code yet.</div>';
+          '<div class="small-help" style="padding:10px 12px;">No places found for this invite code yet.</div>';
+        setMobileFabEnabled(false);
         return;
       }
 
+      // FAB enabled if something selected
+      setMobileFabEnabled(!!activePlaceId);
+
       userPlaces.forEach((p) => {
         const row = document.createElement("div");
-        row.className =
-          "place-row" + (p.id === activePlaceId ? " active" : "");
+        row.className = "place-row" + (p.id === activePlaceId ? " active" : "");
         row.dataset.id = p.id;
 
         const title = p.title || "(Untitled place)";
@@ -437,19 +637,69 @@
 
         row.innerHTML = `
           <div class="place-row-title">${escapeHtml(title)}</div>
-          ${
-            note
-              ? `<div class="place-row-note">${escapeHtml(note)}</div>`
-              : ""
-          }
+          ${note ? `<div class="place-row-note">${escapeHtml(note)}</div>` : ""}
         `;
 
-        row.onclick = () => {
-          selectPlace(p.id);
-        };
+        row.onclick = () => selectPlace(p.id);
 
         placeListEl.appendChild(row);
       });
+    }
+
+    function populateEditor(place) {
+      // Desktop
+      if (emptyMessageEl && editFormEl) {
+        emptyMessageEl.style.display = "none";
+        editFormEl.style.display = "block";
+        editTitleInput.value = place.title || "";
+        editAddressInput.value = place.raw_text || "";
+        editNoteInput.value = place.notes || "";
+
+        if (place.created_at) {
+          const d = new Date(place.created_at);
+          editMetaEl.textContent = "Created: " + d.toLocaleString();
+        } else {
+          editMetaEl.textContent = "";
+        }
+        editStatusEl.textContent = "";
+      }
+
+      // Mobile sheet
+      if (mEmptyMessageEl && mEditFormEl) {
+        mEmptyMessageEl.style.display = "none";
+        mEditFormEl.style.display = "block";
+        mEditTitleInput.value = place.title || "";
+        mEditAddressInput.value = place.raw_text || "";
+        mEditNoteInput.value = place.notes || "";
+
+        if (place.created_at) {
+          const d = new Date(place.created_at);
+          mEditMetaEl.textContent = "Created: " + d.toLocaleString();
+        } else {
+          mEditMetaEl.textContent = "";
+        }
+        mEditStatusEl.textContent = "";
+      }
+    }
+
+    function clearEditor() {
+      activePlaceId = null;
+      renderPlaceList();
+
+      // Desktop
+      if (editFormEl && emptyMessageEl) {
+        editFormEl.style.display = "none";
+        emptyMessageEl.style.display = "block";
+      }
+      if (editStatusEl) editStatusEl.textContent = "";
+
+      // Mobile
+      if (mEditFormEl && mEmptyMessageEl) {
+        mEditFormEl.style.display = "none";
+        mEmptyMessageEl.style.display = "block";
+      }
+      if (mEditStatusEl) mEditStatusEl.textContent = "";
+      setMobileFabEnabled(false);
     }
 
     function selectPlace(placeId) {
@@ -458,31 +708,25 @@
 
       activePlaceId = placeId;
       renderPlaceList();
+      populateEditor(place);
 
-      emptyMessageEl.style.display = "none";
-      editFormEl.style.display = "block";
-
-      editTitleInput.value = place.title || "";
-      editAddressInput.value = place.raw_text || "";
-      editNoteInput.value = place.notes || "";
-
-      if (place.created_at) {
-        const d = new Date(place.created_at);
-        editMetaEl.textContent = "Created: " + d.toLocaleString();
-      } else {
-        editMetaEl.textContent = "";
-      }
-
-      editStatusEl.textContent = "";
+      // On mobile, don’t auto-open sheet; user taps FAB
+      // But enable it now that something is selected
+      setMobileFabEnabled(true);
     }
 
-    cancelBtn.onclick = () => {
-      activePlaceId = null;
-      renderPlaceList();
-      editFormEl.style.display = "none";
-      emptyMessageEl.style.display = "block";
-      editStatusEl.textContent = "";
-    };
+    // Desktop cancel
+    cancelBtn?.addEventListener("click", clearEditor);
+
+    // Mobile open sheet button
+    openEditBtn?.addEventListener("click", () => {
+      if (!activePlaceId) return;
+      openSheet("open");
+    });
+
+    closeSheetBtn?.addEventListener("click", closeSheet);
+    sheetHandle?.addEventListener("click", togglePeek);
+    mCancelBtn?.addEventListener("click", closeSheet);
 
     async function loadUserPlaces() {
       const token = getUserToken();
@@ -497,10 +741,7 @@
         const res = await fetch(MANAGE_PLACES_URL, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            action: "list",
-            user_token: token,
-          }),
+          body: JSON.stringify({ action: "list", user_token: token }),
         });
 
         const text = await res.text();
@@ -511,23 +752,21 @@
         }
 
         let data = {};
-        try {
-          data = JSON.parse(text);
-        } catch (err) {
-          console.error("JSON parse error from manage-places list:", err, text);
-        }
+        try { data = JSON.parse(text); }
+        catch (err) { console.error("JSON parse error from manage-places list:", err, text); }
 
-        const places = Array.isArray(data.places) ? data.places : [];
-        userPlaces = places;
+        userPlaces = Array.isArray(data.places) ? data.places : [];
+        activePlaceId = null;
         renderPlaceList();
         sidebarStatusEl.textContent = "";
+        clearEditor(); // ensure editors are reset
       } catch (err) {
         console.error("Network error loading places:", err);
         sidebarStatusEl.textContent = "Error loading places.";
       }
     }
 
-    async function saveChanges() {
+    async function saveChangesCommon({ title, notes, statusEl }) {
       if (!activePlaceId) return;
 
       const token = getUserToken();
@@ -536,10 +775,7 @@
         return;
       }
 
-      const newTitle = (editTitleInput.value || "").trim();
-      const newNote = (editNoteInput.value || "").trim();
-
-      editStatusEl.textContent = "Saving changes…";
+      statusEl.textContent = "Saving changes…";
 
       try {
         const res = await fetch(MANAGE_PLACES_URL, {
@@ -549,43 +785,40 @@
             action: "update",
             user_token: token,
             place_id: activePlaceId,
-            title: newTitle,
-            notes: newNote,
+            title,
+            notes,
           }),
         });
 
         const text = await res.text();
         if (!res.ok) {
           console.error("Error response from manage-places (update):", res.status, text);
-          editStatusEl.textContent = "Error saving changes.";
+          statusEl.textContent = "Error saving changes.";
           return;
         }
 
         let data = {};
-        try {
-          data = JSON.parse(text);
-        } catch (err) {
-          console.error("JSON parse error from manage-places update:", err, text);
-        }
+        try { data = JSON.parse(text); }
+        catch (err) { console.error("JSON parse error from manage-places update:", err, text); }
 
         if (data.status === "ok") {
           const idx = userPlaces.findIndex((p) => p.id === activePlaceId);
           if (idx !== -1) {
-            userPlaces[idx].title = newTitle;
-            userPlaces[idx].notes = newNote;
+            userPlaces[idx].title = title;
+            userPlaces[idx].notes = notes;
           }
           renderPlaceList();
-          editStatusEl.textContent = "Changes saved.";
+          statusEl.textContent = "Changes saved.";
         } else {
-          editStatusEl.textContent = "Error saving changes.";
+          statusEl.textContent = "Error saving changes.";
         }
       } catch (err) {
         console.error("Network error saving changes:", err);
-        editStatusEl.textContent = "Error saving changes.";
+        statusEl.textContent = "Error saving changes.";
       }
     }
 
-    async function deletePlace() {
+    async function deletePlaceCommon({ statusEl, afterDeleteCloseSheet = false }) {
       if (!activePlaceId) return;
 
       const token = getUserToken();
@@ -594,11 +827,9 @@
         return;
       }
 
-      if (!confirm("Delete this place? This cannot be undone.")) {
-        return;
-      }
+      if (!confirm("Delete this place? This cannot be undone.")) return;
 
-      editStatusEl.textContent = "Deleting…";
+      statusEl.textContent = "Deleting…";
 
       try {
         const res = await fetch(MANAGE_PLACES_URL, {
@@ -614,32 +845,76 @@
         const text = await res.text();
         if (!res.ok) {
           console.error("Error response from manage-places (delete):", res.status, text);
-          editStatusEl.textContent = "Error deleting place.";
+          statusEl.textContent = "Error deleting place.";
           return;
         }
 
         let data = {};
-        try {
-          data = JSON.parse(text);
-        } catch (err) {
-          console.error("JSON parse error from manage-places delete:", err, text);
-        }
+        try { data = JSON.parse(text); }
+        catch (err) { console.error("JSON parse error from manage-places delete:", err, text); }
 
         if (data.status === "ok") {
           userPlaces = userPlaces.filter((p) => p.id !== activePlaceId);
           activePlaceId = null;
           renderPlaceList();
-          editFormEl.style.display = "none";
-          emptyMessageEl.style.display = "block";
-          editStatusEl.textContent = "Place deleted.";
+
+          // Reset editors
+          if (editFormEl) editFormEl.style.display = "none";
+          if (emptyMessageEl) emptyMessageEl.style.display = "block";
+          if (editStatusEl) editStatusEl.textContent = "Place deleted.";
+
+          if (mEditFormEl) mEditFormEl.style.display = "none";
+          if (mEmptyMessageEl) mEmptyMessageEl.style.display = "block";
+          if (mEditStatusEl) mEditStatusEl.textContent = "Place deleted.";
+
+          setMobileFabEnabled(false);
+          if (afterDeleteCloseSheet) closeSheet();
         } else {
-          editStatusEl.textContent = "Error deleting place.";
+          statusEl.textContent = "Error deleting place.";
         }
       } catch (err) {
         console.error("Network error deleting place:", err);
-        editStatusEl.textContent = "Error deleting place.";
+        statusEl.textContent = "Error deleting place.";
       }
     }
+
+    // Desktop handlers
+    saveChangesBtn?.addEventListener("click", () => {
+      saveChangesCommon({
+        title: (editTitleInput.value || "").trim(),
+        notes: (editNoteInput.value || "").trim(),
+        statusEl: editStatusEl,
+      }).catch((err) => {
+        console.error("Unexpected save error:", err);
+        editStatusEl.textContent = "Unexpected error – see console.";
+      });
+    });
+
+    deleteBtn?.addEventListener("click", () => {
+      deletePlaceCommon({ statusEl: editStatusEl }).catch((err) => {
+        console.error("Unexpected delete error:", err);
+        editStatusEl.textContent = "Unexpected error – see console.";
+      });
+    });
+
+    // Mobile handlers
+    mSaveBtn?.addEventListener("click", () => {
+      saveChangesCommon({
+        title: (mEditTitleInput.value || "").trim(),
+        notes: (mEditNoteInput.value || "").trim(),
+        statusEl: mEditStatusEl,
+      }).catch((err) => {
+        console.error("Unexpected save error:", err);
+        mEditStatusEl.textContent = "Unexpected error – see console.";
+      });
+    });
+
+    mDeleteBtn?.addEventListener("click", () => {
+      deletePlaceCommon({ statusEl: mEditStatusEl, afterDeleteCloseSheet: true }).catch((err) => {
+        console.error("Unexpected delete error:", err);
+        mEditStatusEl.textContent = "Unexpected error – see console.";
+      });
+    });
 
     function escapeHtml(str) {
       return String(str)
@@ -650,22 +925,14 @@
         .replace(/'/g, "&#039;");
     }
 
-    saveChangesBtn.onclick = () => {
-      saveChanges().catch((err) => {
-        console.error("Unexpected save error:", err);
-        editStatusEl.textContent = "Unexpected error – see console.";
-      });
-    };
-
-    deleteBtn.onclick = () => {
-      deletePlace().catch((err) => {
-        console.error("Unexpected delete error:", err);
-        editStatusEl.textContent = "Unexpected error – see console.";
-      });
-    };
-
     // Initial load
     loadUserPlaces();
+
+    // Improve UX when rotating/resizing
+    window.addEventListener("resize", () => {
+      // If switching to desktop, ensure sheet closed
+      if (!isMobile()) closeSheet();
+    });
   </script>
 </body>
 </html>
