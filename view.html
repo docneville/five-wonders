@@ -21,7 +21,7 @@
       background: #fff;
     }
 
-    /* Header (match add/edit) */
+    /* EXACT match to add-place */
     .fw-header {
       height: 48px;
       background: #111827;
@@ -29,32 +29,20 @@
       align-items: center;
       justify-content: space-between;
       padding: 0 16px;
+      font-size: 14px;
       box-sizing: border-box;
-      position: relative;
-      z-index: 3000;
     }
 
     .fw-header-title {
       font-weight: 600;
       color: #e5e7eb;
-      font-size: 14px;
-      white-space: nowrap;
     }
 
-    .fw-header-nav {
-      display: flex;
-      align-items: center;
-    }
-
-    /* Match spacing style from your other pages (no gap) */
     .fw-header-nav a {
       color: #9ca3af;
       text-decoration: none;
       font-size: 13px;
       margin-left: 10px;
-      padding: 0;            /* important: other pages don't pad nav links */
-      border-radius: 0;      /* important: other pages don't round nav links */
-      white-space: nowrap;
     }
 
     .fw-header-nav a:first-child { margin-left: 0; }
@@ -64,28 +52,19 @@
       text-decoration: underline;
     }
 
-    /* Mobile: horizontal scroll without changing spacing */
+    /* Mobile ONLY: allow horizontal scroll, but don't change spacing */
     @media (max-width: 768px) {
-      .fw-header { padding: 0 12px; }
-
       .fw-header-nav {
+        display: flex;
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
         scrollbar-width: none;
-        max-width: 70vw;
       }
       .fw-header-nav::-webkit-scrollbar { display: none; }
 
       .fw-header-nav a { flex: 0 0 auto; }
     }
 
-
-    /* Map */
-    #map {
-      position: absolute;
-      top: 48px;
-      left: 0; right: 0; bottom: 0;
-    }
 
     /* =============================
        Bigger markers (simple CSS scale)
