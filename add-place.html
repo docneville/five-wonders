@@ -345,6 +345,23 @@
       padding-bottom: calc(90px + env(safe-area-inset-bottom));
     }
 
+    /* Mobile-only polish for Save button */
+    @media (max-width: 768px) {
+      .save-row {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .save-btn {
+        width: 100%;
+      }
+
+      #selected-coords {
+        font-size: 0.85rem;
+        text-align: center;
+      }
+    }
+
 
     /* Make inputs + buttons finger-friendly inside sheet on mobile */
     @media (max-width: 768px) {
