@@ -100,6 +100,7 @@
       cursor: pointer;
       text-decoration: none;
       transition: transform 0.08s ease-out, box-shadow 0.12s ease-out;
+      border: 1px solid transparent;
     }
 
     .btn-primary {
@@ -111,7 +112,7 @@
     .btn-secondary {
       background: #f3f4f6;
       color: #111827;
-      border: 1px solid rgba(148, 163, 184, 0.6);
+      border-color: rgba(148, 163, 184, 0.6);
     }
 
     .footer {
@@ -122,6 +123,7 @@
     }
 
     /* ---------------- Invite Gate ---------------- */
+    /* LOCKED BY DEFAULT: body starts with fw-locked */
     .fw-locked #app {
       filter: blur(6px);
       opacity: 0.35;
@@ -132,7 +134,7 @@
     #inviteGate {
       position: fixed;
       inset: 0;
-      display: none;
+      display: flex; /* visible by default */
       align-items: center;
       justify-content: center;
       padding: 24px;
@@ -141,7 +143,7 @@
     }
 
     #inviteGate .panel {
-      width: min(420px, 100%);
+      width: min(440px, 100%);
       background: white;
       border-radius: 14px;
       padding: 20px;
@@ -151,12 +153,14 @@
     #inviteGate h2 {
       margin: 0 0 8px;
       font-size: 18px;
+      color: #111827;
     }
 
     #inviteGate p {
       margin: 0 0 14px;
       font-size: 14px;
       color: #374151;
+      line-height: 1.35;
     }
 
     #inviteGate .row {
@@ -183,16 +187,39 @@
       cursor: pointer;
     }
 
+    #inviteGate button:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+    }
+
     #inviteGate .error {
       margin-top: 10px;
       font-size: 13px;
       color: #b91c1c;
       display: none;
     }
+
+    #inviteGate .meta {
+      margin-top: 12px;
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      font-size: 12px;
+      color: #6b7280;
+    }
+
+    #inviteGate .meta a {
+      color: #374151;
+      text-decoration: none;
+    }
+
+    #inviteGate .meta a:hover {
+      text-decoration: underline;
+    }
   </style>
 </head>
 
-<body>
+<body class="fw-locked">
   <header class="fw-header">
     <div class="fw-header-title">Five Wonders</div>
     <nav class="fw-header-nav">
@@ -208,7 +235,7 @@
     <main class="fw-home-main">
       <div class="card">
         <div class="logo-wrap">
-          <img src="five-wonders-logo.png" class="logo-img" />
+          <img src="five-wonders-logo.png" alt="Five Wonders logo" class="logo-img" />
         </div>
 
         <div class="subtitle">
@@ -230,7 +257,7 @@
   </div>
 
   <!-- Invite Gate -->
-  <div id="inviteGate">
+  <div id="inviteGate" role="dialog" aria-modal="true">
     <div class="panel">
       <h2>Invite code required</h2>
       <p>Enter your 8-character invite code to continue.</p>
@@ -238,18 +265,22 @@
       <form id="inviteForm">
         <div class="row">
           <input id="inviteCodeInput" placeholder="K7Q9M2FA" maxlength="12" />
-          <button type="submit">Unlock</button>
+          <button id="inviteBtn" type="submit">Unlock</button>
         </div>
         <div id="inviteError" class="error"></div>
+
+        <div class="meta">
+          <span id="gateStatus">Checking access…</span>
+          <a href="#" id="resetAccessLink">Reset access</a>
+        </div>
       </form>
     </div>
   </div>
 
   <script>
-    const supabase = window.supabase.createClient(
-      "https://ekpssonwtztubqfihlqm.supabase.co",
-      "YeyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVrcHNzb253dHp0dWJxZmlobHFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM1Njg2MjAsImV4cCI6MjA3OTE0NDYyMH0.R1_-ctf-6NsVUJEApf4N591lA9TPRCJQFzhrDVRbr_4"
-    );
+    // --- Supabase config ---
+    const SUPABASE_URL = "https://ekpssonwtztubqfihlqm.supabase.co";
+    const SUPABASE_ANON_KEY = "YeyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVrcHNzb253dHp0dWJxZmlobHFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM1Njg2MjAsImV4cCI6MjA3OTE0NDYyMH0.R1_-ctf-6NsVUJEApf4N591lA9TPRCJQFzhrDVRbr_4";
 
     const LS_ID = "fw_profile_id";
     const LS_KEY = "fw_api_key";
@@ -257,12 +288,30 @@
     const gate = document.getElementById("inviteGate");
     const form = document.getElementById("inviteForm");
     const input = document.getElementById("inviteCodeInput");
+    const btn = document.getElementById("inviteBtn");
     const errorBox = document.getElementById("inviteError");
+    const statusEl = document.getElementById("gateStatus");
+    const resetLink = document.getElementById("resetAccessLink");
+
+    function setStatus(msg) {
+      statusEl.textContent = msg;
+    }
+
+    function showError(msg) {
+      errorBox.textContent = msg;
+      errorBox.style.display = "block";
+    }
+
+    function clearError() {
+      errorBox.textContent = "";
+      errorBox.style.display = "none";
+    }
 
     function lock() {
       document.body.classList.add("fw-locked");
       gate.style.display = "flex";
-      input.focus();
+      setStatus("Invite-only beta");
+      setTimeout(() => input.focus(), 0);
     }
 
     function unlock() {
@@ -270,38 +319,117 @@
       gate.style.display = "none";
     }
 
-    if (!localStorage.getItem(LS_KEY)) lock();
+    function resetAccess() {
+      localStorage.removeItem(LS_ID);
+      localStorage.removeItem(LS_KEY);
+    }
 
-    form.addEventListener("submit", async (e) => {
+    resetLink.addEventListener("click", (e) => {
       e.preventDefault();
-      errorBox.style.display = "none";
+      resetAccess();
+      clearError();
+      setStatus("Access reset. Enter invite code.");
+      lock();
+    });
 
-      let code = input.value.trim().toUpperCase().replace(/[\s-]/g, "");
-
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("id, api_key, is_active")
-        .eq("invite_code", code)
-        .maybeSingle();
-
-      if (error || !data || !data.is_active) {
-        errorBox.textContent = "Invalid invite code.";
-        errorBox.style.display = "block";
+    document.addEventListener("DOMContentLoaded", async () => {
+      // If Supabase failed to load, keep locked and show message
+      if (!window.supabase) {
+        setStatus("Error: Supabase library failed to load.");
+        showError("Please refresh. If this persists, check your network/adblocker.");
+        lock();
         return;
       }
 
-      localStorage.setItem(LS_ID, data.id);
-      localStorage.setItem(LS_KEY, data.api_key);
+      const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-      await supabase
-        .from("profiles")
-        .update({ invite_code_used_at: new Date().toISOString() })
-        .eq("id", data.id)
-        .is("invite_code_used_at", null);
+      // 1) If no api_key stored => stay locked
+      const storedApiKey = localStorage.getItem(LS_KEY);
+      if (!storedApiKey) {
+        setStatus("Enter invite code");
+        lock();
+        return;
+      }
 
-      unlock();
+      // 2) Verify stored api_key still corresponds to an active profile
+      try {
+        setStatus("Verifying saved access…");
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("id, is_active")
+          .eq("api_key", storedApiKey)
+          .maybeSingle();
+
+        if (error || !data || !data.is_active) {
+          resetAccess();
+          setStatus("Enter invite code");
+          lock();
+          return;
+        }
+
+        // Ensure profile id is stored too
+        localStorage.setItem(LS_ID, data.id);
+        unlock();
+      } catch (e) {
+        // If anything goes wrong, do NOT silently unlock
+        resetAccess();
+        setStatus("Enter invite code");
+        lock();
+      }
+
+      // Submit handler (invite code)
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        clearError();
+
+        let code = input.value.trim().toUpperCase().replace(/[\s-]/g, "");
+        if (!code) {
+          showError("Please enter your invite code.");
+          return;
+        }
+
+        btn.disabled = true;
+        btn.textContent = "Checking…";
+        setStatus("Validating…");
+
+        try {
+          const { data, error } = await supabase
+            .from("profiles")
+            .select("id, api_key, is_active")
+            .eq("invite_code", code)
+            .maybeSingle();
+
+          if (error) throw error;
+
+          if (!data || !data.is_active) {
+            showError("Invalid invite code.");
+            setStatus("Invite-only beta");
+            return;
+          }
+
+          localStorage.setItem(LS_ID, data.id);
+          localStorage.setItem(LS_KEY, data.api_key);
+
+          // Best-effort: mark invite used (RLS might block; ignore failure)
+          try {
+            await supabase
+              .from("profiles")
+              .update({ invite_code_used_at: new Date().toISOString() })
+              .eq("id", data.id)
+              .is("invite_code_used_at", null);
+          } catch (_) {}
+
+          unlock();
+        } catch (ex) {
+          console.error(ex);
+          showError("Could not validate the code. (RLS or network?)");
+          setStatus("Invite-only beta");
+        } finally {
+          btn.disabled = false;
+          btn.textContent = "Unlock";
+        }
+      });
     });
   </script>
 </body>
 </html>
-
