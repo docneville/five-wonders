@@ -12,7 +12,6 @@
     :root { color-scheme: light dark; }
     * { box-sizing: border-box; }
 
-    /* ---------------- Header ---------------- */
     .fw-header {
       height: 48px;
       background: #111827;
@@ -22,25 +21,16 @@
       padding: 0 16px;
       font-size: 14px;
     }
-
-    .fw-header-title {
-      font-weight: 500;
-      color: #e5e7eb;
-    }
-
+    .fw-header-title { font-weight: 500; color: #e5e7eb; }
     .fw-header-nav a {
       color: #9ca3af;
       text-decoration: none;
       font-size: 13px;
       margin-left: 10px;
     }
+    .fw-header-nav a:first-child { margin-left: 0; }
+    .fw-header-nav a:hover { color: #e5e7eb; text-decoration: underline; }
 
-    .fw-header-nav a:hover {
-      color: #e5e7eb;
-      text-decoration: underline;
-    }
-
-    /* ---------------- Page ---------------- */
     body {
       margin: 0;
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -68,12 +58,20 @@
     }
 
     .logo-wrap { display: flex; justify-content: center; margin-bottom: 10px; }
-
     .logo-img {
       max-width: 260px;
       width: 100%;
       height: auto;
       filter: drop-shadow(0 8px 18px rgba(15, 23, 42, 0.25));
+    }
+
+    .greeting {
+      font-size: 14px;
+      font-weight: 650;
+      text-align: center;
+      margin: 6px 0 2px;
+      color: #111827;
+      display: none;
     }
 
     .subtitle {
@@ -122,7 +120,21 @@
       color: #6b7280;
     }
 
-    /* ---------------- Invite Gate ---------------- */
+    .access-line {
+      margin-top: 10px;
+      font-size: 12px;
+      text-align: center;
+      color: #6b7280;
+      display: none;
+    }
+    .access-line a {
+      color: #374151;
+      text-decoration: none;
+      margin-left: 8px;
+    }
+    .access-line a:hover { text-decoration: underline; }
+
+    /* Invite Gate */
     .fw-locked #app {
       filter: blur(6px);
       opacity: 0.35;
@@ -133,7 +145,7 @@
     #inviteGate {
       position: fixed;
       inset: 0;
-      display: flex; /* visible by default */
+      display: none; /* IMPORTANT: hidden by default; we only show if not authenticated */
       align-items: center;
       justify-content: center;
       padding: 24px;
@@ -149,23 +161,10 @@
       box-shadow: 0 12px 40px rgba(0,0,0,0.35);
     }
 
-    #inviteGate h2 {
-      margin: 0 0 8px;
-      font-size: 18px;
-      color: #111827;
-    }
+    #inviteGate h2 { margin: 0 0 8px; font-size: 18px; color: #111827; }
+    #inviteGate p { margin: 0 0 14px; font-size: 14px; color: #374151; line-height: 1.35; }
 
-    #inviteGate p {
-      margin: 0 0 14px;
-      font-size: 14px;
-      color: #374151;
-      line-height: 1.35;
-    }
-
-    #inviteGate .row {
-      display: flex;
-      gap: 10px;
-    }
+    #inviteGate .row { display: flex; gap: 10px; }
 
     #inviteGate input {
       flex: 1;
@@ -186,10 +185,7 @@
       cursor: pointer;
     }
 
-    #inviteGate button:disabled {
-      opacity: 0.7;
-      cursor: not-allowed;
-    }
+    #inviteGate button:disabled { opacity: 0.7; cursor: not-allowed; }
 
     #inviteGate .error {
       margin-top: 10px;
@@ -212,13 +208,11 @@
       text-decoration: none;
     }
 
-    #inviteGate .meta a:hover {
-      text-decoration: underline;
-    }
+    #inviteGate .meta a:hover { text-decoration: underline; }
   </style>
 </head>
 
-<body class="fw-locked">
+<body>
   <header class="fw-header">
     <div class="fw-header-title">Five Wonders</div>
     <nav class="fw-header-nav">
@@ -237,6 +231,8 @@
           <img src="five-wonders-logo.png" alt="Five Wonders logo" class="logo-img" />
         </div>
 
+        <div id="greeting" class="greeting"></div>
+
         <div class="subtitle">
           Save and share the places your friends will truly love.
         </div>
@@ -251,6 +247,11 @@
         <div class="footer">
           Invite-only beta · Curated by friends
         </div>
+
+        <div id="accessLine" class="access-line">
+          Access is set on this device.
+          <a href="#" id="resetHomeAccessLink">Reset</a>
+        </div>
       </div>
     </main>
   </div>
@@ -263,7 +264,7 @@
 
       <form id="inviteForm">
         <div class="row">
-          <input id="inviteCodeInput" placeholder="K7Q9M2FA" maxlength="12" />
+          <input id="inviteCodeInput" placeholder="AJWRRHFN" maxlength="12" autocomplete="one-time-code" />
           <button id="inviteBtn" type="submit">Unlock</button>
         </div>
         <div id="inviteError" class="error"></div>
@@ -281,7 +282,7 @@
     const SUPABASE_URL = "https://ekpssonwtztubqfihlqm.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVrcHNzb253dHp0dWJxZmlobHFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM1Njg2MjAsImV4cCI6MjA3OTE0NDYyMH0.R1_-ctf-6NsVUJEApf4N591lA9TPRCJQFzhrDVRbr_4";
 
-    // New keys + legacy keys for compatibility
+    // Storage keys (new + legacy)
     const LS_ID = "fw_profile_id";
     const LS_KEY = "fw_api_key";
     const LS_ID_LEGACY = "profile_id";
@@ -295,20 +296,23 @@
     const statusEl = document.getElementById("gateStatus");
     const resetLink = document.getElementById("resetAccessLink");
 
+    const accessLine = document.getElementById("accessLine");
+    const resetHomeAccessLink = document.getElementById("resetHomeAccessLink");
+    const greetingEl = document.getElementById("greeting");
+
     function setStatus(msg) { statusEl.textContent = msg; }
     function showError(msg) { errorBox.textContent = msg; errorBox.style.display = "block"; }
     function clearError() { errorBox.textContent = ""; errorBox.style.display = "none"; }
 
-    function lock() {
-      document.body.classList.add("fw-locked");
-      gate.style.display = "flex";
-      setStatus("Enter invite code");
-      setTimeout(() => input.focus(), 0);
+    function getStoredApiKey() {
+      return localStorage.getItem(LS_KEY) || localStorage.getItem(LS_KEY_LEGACY);
     }
 
-    function unlock() {
-      document.body.classList.remove("fw-locked");
-      gate.style.display = "none";
+    function persistKeys(id, apiKey) {
+      localStorage.setItem(LS_ID, id);
+      localStorage.setItem(LS_KEY, apiKey);
+      localStorage.setItem(LS_ID_LEGACY, id);
+      localStorage.setItem(LS_KEY_LEGACY, apiKey);
     }
 
     function resetAccess() {
@@ -318,28 +322,49 @@
       localStorage.removeItem(LS_KEY_LEGACY);
     }
 
-    function getStoredApiKey() {
-      return localStorage.getItem(LS_KEY) || localStorage.getItem(LS_KEY_LEGACY);
+    function lock() {
+      document.body.classList.add("fw-locked");
+      gate.style.display = "flex";
+      setStatus("Enter invite code");
+      setTimeout(() => input.focus(), 0);
+      accessLine.style.display = "none";
+      greetingEl.style.display = "none";
     }
 
-    function persistKeys(id, apiKey) {
-      localStorage.setItem(LS_ID, id);
-      localStorage.setItem(LS_KEY, apiKey);
-      // legacy compatibility
-      localStorage.setItem(LS_ID_LEGACY, id);
-      localStorage.setItem(LS_KEY_LEGACY, apiKey);
+    function unlock() {
+      document.body.classList.remove("fw-locked");
+      gate.style.display = "none";
+      accessLine.style.display = "block";
     }
 
-    resetLink.addEventListener("click", (e) => {
-      e.preventDefault();
-      resetAccess();
-      clearError();
-      setStatus("Access reset. Enter invite code.");
-      lock();
-    });
+    function setGreeting(firstName) {
+      const name = (firstName || "").trim();
+      if (!name) {
+        greetingEl.style.display = "none";
+        return;
+      }
+      greetingEl.textContent = `Hello, ${name}!`;
+      greetingEl.style.display = "block";
+    }
+
+    function wireResetHandlers() {
+      const doReset = (e) => {
+        e.preventDefault();
+        resetAccess();
+        clearError();
+        setGreeting("");
+        lock();
+      };
+
+      resetLink.addEventListener("click", doReset);
+      resetHomeAccessLink.addEventListener("click", doReset);
+    }
 
     document.addEventListener("DOMContentLoaded", async () => {
+      wireResetHandlers();
+
       if (!window.supabase) {
+        // If Supabase fails, show the gate with an error message
         setStatus("Error: Supabase library failed to load.");
         showError("Please refresh. If this persists, check your network/adblocker.");
         lock();
@@ -349,23 +374,30 @@
       const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
       window._sb = sb;
 
-      // Verify stored api_key (if present)
+      // IMPORTANT: Don't show the gate by default.
+      // We'll only show it if we determine you're not authenticated.
       const storedApiKey = getStoredApiKey();
 
       if (storedApiKey) {
         try {
-          setStatus("Verifying saved access…");
+          // Validate silently without flashing the modal
           const { data, error } = await sb.rpc("validate_api_key", { p_key: storedApiKey });
 
           if (!error && data && data.length > 0) {
-            // ensure both key names are present going forward
+            // normalize storage
             persistKeys(data[0].id, storedApiKey);
+
+            // Try to read first_name if validate_api_key returns it
+            // (If it doesn't, this will just do nothing.)
+            setGreeting(data[0].first_name || data[0].firstname || "");
+
             unlock();
           } else {
             resetAccess();
             lock();
           }
         } catch (e) {
+          console.error("[FW] validate_api_key failed", e);
           resetAccess();
           lock();
         }
@@ -390,8 +422,9 @@
 
         try {
           const { data, error } = await sb.rpc("validate_invite", { p_code: code });
-          if (error) throw error;
+          console.log("[FW] validate_invite result", { data, error });
 
+          if (error) throw error;
           if (!data || data.length === 0) {
             showError("Invalid invite code.");
             setStatus("Enter invite code");
@@ -400,8 +433,13 @@
 
           const row = data[0];
           persistKeys(row.id, row.api_key);
+
+          // If validate_invite returns first_name, greet
+          setGreeting(row.first_name || row.firstname || "");
+
           unlock();
         } catch (ex) {
+          console.error("[FW] validate_invite failed", ex);
           showError("Could not validate the code.");
           setStatus("Enter invite code");
         } finally {
