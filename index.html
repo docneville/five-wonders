@@ -234,7 +234,7 @@
         <div id="greeting" class="greeting"></div>
 
         <div class="subtitle">
-          Save and share the places your friends will truly love.
+          Share the places your friends will love.
         </div>
 
         <div class="grid">
@@ -385,11 +385,11 @@
 
           if (!error && data && data.length > 0) {
             // normalize storage
-            persistKeys(data[0].id, storedApiKey);
+            persistKeys(data[0].id, data[0].api_key);
 
             // Try to read first_name if validate_api_key returns it
             // (If it doesn't, this will just do nothing.)
-            setGreeting(data[0].first_name || data[0].firstname || "");
+            setGreeting(data[0].first_name || "");
 
             unlock();
           } else {
