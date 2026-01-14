@@ -73,6 +73,22 @@
       bottom: 0;
     }
 
+    /* ===== Colored dot markers ===== */
+    .fw-dot {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      border: 2px solid #ffffff;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.35);
+    }
+
+    @media (max-width: 768px) {
+      .fw-dot {
+        width: 22px;
+        height: 22px;
+      }
+    }
+
     /* =============================
        Improve default Leaflet popup (desktop/tablet)
     ============================== */
@@ -105,7 +121,7 @@
     }
 
     /* =============================
-       Mobile: use our own full(er) screen sheet instead of tiny popup
+       Mobile: use our own fuller screen sheet instead of tiny popup
     ============================== */
     .fw-place-sheet {
       position: fixed;
@@ -167,44 +183,6 @@
     /* Only show the sheet patterns on mobile */
     @media (min-width: 769px) {
       .fw-place-sheet { display: none !important; }
-    }
-
-    /* =============================
-       Legend (friends/colors)
-    ============================== */
-    .fw-legend {
-      background: rgba(255,255,255,0.98);
-      padding: 10px 10px;
-      border-radius: 12px;
-      box-shadow: 0 10px 24px rgba(0,0,0,0.15);
-      border: 1px solid rgba(148,163,184,0.35);
-      font-size: 12px;
-      color: #111827;
-      max-width: 220px;
-    }
-    .fw-legend-title {
-      font-weight: 800;
-      margin-bottom: 6px;
-    }
-    .fw-legend-row {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-top: 6px;
-      line-height: 1.2;
-    }
-    .fw-legend-dot {
-      width: 10px;
-      height: 10px;
-      border-radius: 999px;
-      display: inline-block;
-      flex: 0 0 auto;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.12);
-    }
-    .fw-legend-name {
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
     }
   </style>
 </head>
@@ -291,7 +269,6 @@
     closePlaceSheetBtn?.addEventListener("click", closePlaceSheet);
     placeSheetHandle?.addEventListener("click", togglePeek);
 
-    // Close sheet when switching to desktop
     mqMobile.addEventListener("change", (e) => {
       if (!e.matches) closePlaceSheet();
     });
@@ -300,80 +277,34 @@
       return mqMobile.matches;
     }
 
-    // ===== Color-by-user helpers =====
-    function hashStringToInt(str) {
-      let h = 2166136261;
-      for (let i = 0; i < str.length; i++) {
-        h ^= str.charCodeAt(i);
-        h = Math.imul(h, 16777619);
+    // ===== Color per user_id =====
+    const userColorCache = new Map();
+
+    function colorForUser(key) {
+      const k = String(key || "unknown");
+      if (userColorCache.has(k)) return userColorCache.get(k);
+
+      // Simple stable hash -> hue
+      let hash = 0;
+      for (let i = 0; i < k.length; i++) {
+        hash = k.charCodeAt(i) + ((hash << 5) - hash);
+        hash |= 0; // keep 32-bit
       }
-      return (h >>> 0);
-    }
 
-    function colorFromProfileId(profileId) {
-      const h = hashStringToInt(String(profileId || "unknown"));
-      const hue = h % 360;
-      return `hsl(${hue} 75% 45%)`;
-    }
-
-    function makeColoredPinIcon(color) {
-      const svg = `
-        <svg xmlns="http://www.w3.org/2000/svg" width="34" height="46" viewBox="0 0 34 46">
-          <path d="M17 46C17 46 34 28.9 34 17C34 7.6 26.4 0 17 0C7.6 0 0 7.6 0 17C0 28.9 17 46 17 46Z"
-                fill="${color}" />
-          <circle cx="17" cy="17" r="6.5" fill="white" opacity="0.95"/>
-        </svg>
-      `;
-      return L.divIcon({
-        className: "",
-        html: svg,
-        iconSize: [34, 46],
-        iconAnchor: [17, 46],
-        popupAnchor: [0, -38],
-      });
-    }
-
-    const _iconCache = new Map();
-    function getIconForProfile(profileId) {
-      const key = String(profileId || "unknown");
-      if (_iconCache.has(key)) return _iconCache.get(key);
-      const icon = makeColoredPinIcon(colorFromProfileId(key));
-      _iconCache.set(key, icon);
-      return icon;
-    }
-
-    function addLegend(map, usersMap) {
-      // usersMap: Map(profileId -> { name, color })
-      const legend = L.control({ position: "bottomleft" });
-      legend.onAdd = function () {
-        const div = L.DomUtil.create("div", "fw-legend");
-        div.innerHTML = `<div class="fw-legend-title">Friends</div>`;
-        const rows = [...usersMap.values()]
-          .sort((a, b) => (a.name || "").localeCompare(b.name || ""))
-          .map(u => `
-            <div class="fw-legend-row">
-              <span class="fw-legend-dot" style="background:${u.color};"></span>
-              <span class="fw-legend-name">${escapeHtml(u.name || "Friend")}</span>
-            </div>
-          `)
-          .join("");
-
-        div.innerHTML += rows || `<div class="fw-legend-row"><span class="fw-legend-name">—</span></div>`;
-
-        // Prevent map drag/zoom when interacting with legend
-        L.DomEvent.disableClickPropagation(div);
-        L.DomEvent.disableScrollPropagation(div);
-
-        return div;
-      };
-      legend.addTo(map);
+      const hue = Math.abs(hash) % 360;
+      const color = `hsl(${hue}, 70%, 45%)`;
+      userColorCache.set(k, color);
+      return color;
     }
 
     function buildPlaceHtml({ title, notes, createdAt, savedBy }) {
       return `
         <div class="place-popup">
           <div class="place-title">${escapeHtml(title)}</div>
-          ${notes ? `<div class="place-notes">${escapeHtml(notes)}</div>` : `<div class="place-notes" style="color:#6b7280;">No note yet.</div>`}
+          ${notes
+            ? `<div class="place-notes">${escapeHtml(notes)}</div>`
+            : `<div class="place-notes" style="color:#6b7280;">No note yet.</div>`
+          }
           ${(createdAt || savedBy) ? `
             <div class="place-meta">
               ${createdAt ? `Saved: ${escapeHtml(createdAt)}` : ""}
@@ -384,12 +315,22 @@
       `;
     }
 
+    function makeDotIcon(color) {
+      return L.divIcon({
+        className: "",
+        html: `<div class="fw-dot" style="background:${color};"></div>`,
+        iconSize: [18, 18],
+        iconAnchor: [9, 9],
+        popupAnchor: [0, -10],
+      });
+    }
+
     async function loadPlaces() {
       const { data, error } = await supabase
         .from("places_with_profiles")
         .select(`
           id,
-          profile_id,
+          user_id,
           title,
           raw_text,
           notes,
@@ -416,7 +357,6 @@
       }
 
       const bounds = L.latLngBounds([]);
-      const users = new Map(); // profile_id -> { name, color }
 
       data.forEach((place) => {
         const lat = place.latitude;
@@ -432,18 +372,14 @@
           place.username ||
           (place.last_name ? `Friend (${place.last_name})` : "Someone");
 
-        // record user for legend
-        const pid = place.profile_id || "unknown";
-        if (!users.has(pid)) {
-          users.set(pid, { name: savedBy, color: colorFromProfileId(pid) });
-        }
-
         const html = buildPlaceHtml({ title, notes, createdAt, savedBy });
 
-        // Color-by-user icon
-        const marker = L.marker([lat, lon], {
-          icon: getIconForProfile(pid),
-        }).addTo(map);
+        // Use user_id as the stable per-user key for coloring
+        const userKey = place.user_id || "unknown";
+        const color = colorForUser(userKey);
+        const icon = makeDotIcon(color);
+
+        const marker = L.marker([lat, lon], { icon }).addTo(map);
 
         if (isMobile()) {
           marker.on("click", () => {
@@ -460,9 +396,6 @@
       if (bounds.isValid()) {
         map.fitBounds(bounds.pad(0.1));
       }
-
-      // Add legend once, after we know the users
-      addLegend(map, users);
     }
 
     function escapeHtml(str) {
