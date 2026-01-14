@@ -4,16 +4,15 @@
   <meta charset="UTF-8" />
   <title>Five Wonders</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
   <style>
-    :root {
-      color-scheme: light dark;
-    }
+    :root { color-scheme: light dark; }
+    * { box-sizing: border-box; }
 
-    * {
-      box-sizing: border-box;
-    }
-
-    /* Shared header styles */
+    /* ---------------- Header ---------------- */
     .fw-header {
       height: 48px;
       background: #111827;
@@ -36,26 +35,22 @@
       margin-left: 10px;
     }
 
-    .fw-header-nav a:first-child {
-      margin-left: 0;
-    }
-
     .fw-header-nav a:hover {
       color: #e5e7eb;
       text-decoration: underline;
     }
 
+    /* ---------------- Page ---------------- */
     body {
       margin: 0;
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       min-height: 100vh;
-      /* Lighter, soft background */
       background: radial-gradient(circle at top, #e0ecff 0, #f9fafb 55%);
       color: #111827;
     }
 
     .fw-home-main {
-      min-height: calc(100vh - 48px); /* full height minus header */
+      min-height: calc(100vh - 48px);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -72,28 +67,13 @@
       border: 1px solid rgba(148, 163, 184, 0.25);
     }
 
-    .logo-wrap {
-      display: flex;
-      justify-content: center;
-      margin-bottom: 10px;
-    }
+    .logo-wrap { display: flex; justify-content: center; margin-bottom: 10px; }
 
     .logo-img {
       max-width: 260px;
       width: 100%;
       height: auto;
-      /* Subtle depth */
       filter: drop-shadow(0 8px 18px rgba(15, 23, 42, 0.25));
-    }
-
-    .title {
-      font-size: 20px;
-      font-weight: 700;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      text-align: center;
-      margin-bottom: 6px;
-      color: #111827;
     }
 
     .subtitle {
@@ -107,7 +87,6 @@
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 10px;
-      margin-top: 4px;
     }
 
     .btn {
@@ -116,17 +95,11 @@
       justify-content: center;
       padding: 10px 12px;
       border-radius: 999px;
-      border: 1px solid transparent;
       font-size: 14px;
       font-weight: 500;
       cursor: pointer;
       text-decoration: none;
-      transition:
-        transform 0.08s ease-out,
-        box-shadow 0.12s ease-out,
-        background 0.12s,
-        border-color 0.12s;
-      white-space: nowrap;
+      transition: transform 0.08s ease-out, box-shadow 0.12s ease-out;
     }
 
     .btn-primary {
@@ -135,22 +108,10 @@
       box-shadow: 0 10px 25px rgba(34, 197, 94, 0.45);
     }
 
-    .btn-primary:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 14px 30px rgba(34, 197, 94, 0.55);
-    }
-
     .btn-secondary {
       background: #f3f4f6;
       color: #111827;
-      border-color: rgba(148, 163, 184, 0.6);
-    }
-
-    .btn-secondary:hover {
-      background: #e5e7eb;
-      border-color: #111827;
-      transform: translateY(-1px);
-      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
+      border: 1px solid rgba(148, 163, 184, 0.6);
     }
 
     .footer {
@@ -160,16 +121,77 @@
       color: #6b7280;
     }
 
-    .footer a {
-      color: #4b5563;
-      text-decoration: none;
+    /* ---------------- Invite Gate ---------------- */
+    .fw-locked #app {
+      filter: blur(6px);
+      opacity: 0.35;
+      pointer-events: none;
+      user-select: none;
     }
 
-    .footer a:hover {
-      text-decoration: underline;
+    #inviteGate {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background: rgba(17, 24, 39, 0.72);
+      z-index: 9999;
+    }
+
+    #inviteGate .panel {
+      width: min(420px, 100%);
+      background: white;
+      border-radius: 14px;
+      padding: 20px;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.35);
+    }
+
+    #inviteGate h2 {
+      margin: 0 0 8px;
+      font-size: 18px;
+    }
+
+    #inviteGate p {
+      margin: 0 0 14px;
+      font-size: 14px;
+      color: #374151;
+    }
+
+    #inviteGate .row {
+      display: flex;
+      gap: 10px;
+    }
+
+    #inviteGate input {
+      flex: 1;
+      padding: 10px 12px;
+      border: 1px solid #D1D5DB;
+      border-radius: 10px;
+      font-size: 14px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    #inviteGate button {
+      padding: 10px 14px;
+      border: 0;
+      border-radius: 10px;
+      background: #111827;
+      color: white;
+      cursor: pointer;
+    }
+
+    #inviteGate .error {
+      margin-top: 10px;
+      font-size: 13px;
+      color: #b91c1c;
+      display: none;
     }
   </style>
 </head>
+
 <body>
   <header class="fw-header">
     <div class="fw-header-title">Five Wonders</div>
@@ -182,28 +204,104 @@
     </nav>
   </header>
 
-  <main class="fw-home-main">
-    <div class="card">
-      <div class="logo-wrap">
-        <img src="five-wonders-logo.png" alt="Five Wonders logo" class="logo-img" />
-      </div>
+  <div id="app">
+    <main class="fw-home-main">
+      <div class="card">
+        <div class="logo-wrap">
+          <img src="five-wonders-logo.png" class="logo-img" />
+        </div>
 
-      <!-- Optional small text under the logo -->
-      <div class="subtitle">
-        Save and share the places your friends will truly love.
-      </div>
+        <div class="subtitle">
+          Save and share the places your friends will truly love.
+        </div>
 
-      <div class="grid">
-        <a href="add-place.html" class="btn btn-primary">Add</a>
-        <a href="edit-places.html" class="btn btn-secondary">Edit</a>
-        <a href="view.html" class="btn btn-secondary">View</a>
-        <a href="about.html" class="btn btn-secondary">About</a>
-      </div>
+        <div class="grid">
+          <a href="add-place.html" class="btn btn-primary">Add</a>
+          <a href="edit-places.html" class="btn btn-secondary">Edit</a>
+          <a href="view.html" class="btn btn-secondary">View</a>
+          <a href="about.html" class="btn btn-secondary">About</a>
+        </div>
 
-      <div class="footer">
-        Invite-only beta · Curated by friends
+        <div class="footer">
+          Invite-only beta · Curated by friends
+        </div>
       </div>
+    </main>
+  </div>
+
+  <!-- Invite Gate -->
+  <div id="inviteGate">
+    <div class="panel">
+      <h2>Invite code required</h2>
+      <p>Enter your 8-character invite code to continue.</p>
+
+      <form id="inviteForm">
+        <div class="row">
+          <input id="inviteCodeInput" placeholder="K7Q9M2FA" maxlength="12" />
+          <button type="submit">Unlock</button>
+        </div>
+        <div id="inviteError" class="error"></div>
+      </form>
     </div>
-  </main>
+  </div>
+
+  <script>
+    const supabase = window.supabase.createClient(
+      "https://ekpssonwtztubqfihlqm.supabase.co",
+      "YeyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVrcHNzb253dHp0dWJxZmlobHFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM1Njg2MjAsImV4cCI6MjA3OTE0NDYyMH0.R1_-ctf-6NsVUJEApf4N591lA9TPRCJQFzhrDVRbr_4"
+    );
+
+    const LS_ID = "fw_profile_id";
+    const LS_KEY = "fw_api_key";
+
+    const gate = document.getElementById("inviteGate");
+    const form = document.getElementById("inviteForm");
+    const input = document.getElementById("inviteCodeInput");
+    const errorBox = document.getElementById("inviteError");
+
+    function lock() {
+      document.body.classList.add("fw-locked");
+      gate.style.display = "flex";
+      input.focus();
+    }
+
+    function unlock() {
+      document.body.classList.remove("fw-locked");
+      gate.style.display = "none";
+    }
+
+    if (!localStorage.getItem(LS_KEY)) lock();
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      errorBox.style.display = "none";
+
+      let code = input.value.trim().toUpperCase().replace(/[\s-]/g, "");
+
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, api_key, is_active")
+        .eq("invite_code", code)
+        .maybeSingle();
+
+      if (error || !data || !data.is_active) {
+        errorBox.textContent = "Invalid invite code.";
+        errorBox.style.display = "block";
+        return;
+      }
+
+      localStorage.setItem(LS_ID, data.id);
+      localStorage.setItem(LS_KEY, data.api_key);
+
+      await supabase
+        .from("profiles")
+        .update({ invite_code_used_at: new Date().toISOString() })
+        .eq("id", data.id)
+        .is("invite_code_used_at", null);
+
+      unlock();
+    });
+  </script>
 </body>
 </html>
+
