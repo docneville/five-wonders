@@ -123,7 +123,6 @@
     }
 
     /* ---------------- Invite Gate ---------------- */
-    /* LOCKED BY DEFAULT: body starts with fw-locked */
     .fw-locked #app {
       filter: blur(6px);
       opacity: 0.35;
@@ -282,8 +281,11 @@
     const SUPABASE_URL = "https://ekpssonwtztubqfihlqm.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVrcHNzb253dHp0dWJxZmlobHFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM1Njg2MjAsImV4cCI6MjA3OTE0NDYyMH0.R1_-ctf-6NsVUJEApf4N591lA9TPRCJQFzhrDVRbr_4";
 
+    // New keys + legacy keys for compatibility
     const LS_ID = "fw_profile_id";
     const LS_KEY = "fw_api_key";
+    const LS_ID_LEGACY = "profile_id";
+    const LS_KEY_LEGACY = "api_key";
 
     const gate = document.getElementById("inviteGate");
     const form = document.getElementById("inviteForm");
@@ -312,6 +314,20 @@
     function resetAccess() {
       localStorage.removeItem(LS_ID);
       localStorage.removeItem(LS_KEY);
+      localStorage.removeItem(LS_ID_LEGACY);
+      localStorage.removeItem(LS_KEY_LEGACY);
+    }
+
+    function getStoredApiKey() {
+      return localStorage.getItem(LS_KEY) || localStorage.getItem(LS_KEY_LEGACY);
+    }
+
+    function persistKeys(id, apiKey) {
+      localStorage.setItem(LS_ID, id);
+      localStorage.setItem(LS_KEY, apiKey);
+      // legacy compatibility
+      localStorage.setItem(LS_ID_LEGACY, id);
+      localStorage.setItem(LS_KEY_LEGACY, apiKey);
     }
 
     resetLink.addEventListener("click", (e) => {
@@ -331,11 +347,10 @@
       }
 
       const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-      window._sb = sb; // makes debugging easy in DevTools
-      console.log("[FW] Supabase client ready", sb);
+      window._sb = sb;
 
       // Verify stored api_key (if present)
-      const storedApiKey = localStorage.getItem(LS_KEY);
+      const storedApiKey = getStoredApiKey();
 
       if (storedApiKey) {
         try {
@@ -343,14 +358,14 @@
           const { data, error } = await sb.rpc("validate_api_key", { p_key: storedApiKey });
 
           if (!error && data && data.length > 0) {
-            localStorage.setItem(LS_ID, data[0].id);
+            // ensure both key names are present going forward
+            persistKeys(data[0].id, storedApiKey);
             unlock();
           } else {
             resetAccess();
             lock();
           }
         } catch (e) {
-          console.error("[FW] validate_api_key failed", e);
           resetAccess();
           lock();
         }
@@ -375,8 +390,6 @@
 
         try {
           const { data, error } = await sb.rpc("validate_invite", { p_code: code });
-          console.log("[FW] validate_invite result", { data, error });
-
           if (error) throw error;
 
           if (!data || data.length === 0) {
@@ -386,11 +399,9 @@
           }
 
           const row = data[0];
-          localStorage.setItem(LS_ID, row.id);
-          localStorage.setItem(LS_KEY, row.api_key);
+          persistKeys(row.id, row.api_key);
           unlock();
         } catch (ex) {
-          console.error("[FW] validate_invite failed", ex);
           showError("Could not validate the code.");
           setStatus("Enter invite code");
         } finally {
@@ -400,6 +411,5 @@
       });
     });
   </script>
-
 </body>
 </html>

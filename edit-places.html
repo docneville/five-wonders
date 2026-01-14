@@ -5,6 +5,9 @@
   <title>Edit Places – Five Wonders</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
+  <!-- Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
   <style>
     :root { color-scheme: light; font-size: 16px; }
     @media (max-width: 768px) { :root { font-size: 18px; } }
@@ -19,9 +22,6 @@
       background: #ffffff;
     }
 
-    /* =============================
-       Shared header (align with add-place)
-    ============================== */
     .fw-header {
       height: 48px;
       background: #111827;
@@ -55,9 +55,6 @@
       text-decoration: underline;
     }
 
-    /* =============================
-       Desktop layout
-    ============================== */
     #app {
       display: grid;
       grid-template-columns: 340px 1fr;
@@ -88,9 +85,6 @@
       background: #ffffff;
     }
 
-    /* =============================
-       Sidebar + form styles (kept familiar)
-    ============================== */
     .token-warning {
       font-size: 0.9rem;
       color: #92400e;
@@ -248,10 +242,6 @@
       margin-top: 12px;
     }
 
-    /* =============================
-       Mobile: bottom sheet for EDIT form (align with add-place)
-    ============================== */
-
     @media (max-width: 768px) {
       #app {
         grid-template-columns: 1fr;
@@ -260,12 +250,9 @@
           "header"
           "sidebar";
       }
-
-      /* show list full screen */
       #main { display: none; }
     }
 
-    /* Floating action button to open the edit sheet */
     .fw-fab {
       display: none;
       position: fixed;
@@ -288,7 +275,6 @@
       .fw-fab { display: inline-flex; }
     }
 
-    /* Bottom Sheet */
     .fw-sheet {
       position: fixed;
       left: 0; right: 0; bottom: 0;
@@ -346,7 +332,6 @@
       padding-bottom: calc(110px + env(safe-area-inset-bottom));
     }
 
-    /* Sticky action row inside sheet */
     .action-row {
       position: sticky;
       bottom: 0;
@@ -369,7 +354,6 @@
       width: 100%;
     }
 
-    /* Hide sheet on desktop */
     @media (min-width: 769px) {
       .fw-sheet, .fw-fab { display: none !important; }
     }
@@ -389,7 +373,6 @@
       </nav>
     </header>
 
-    <!-- Sidebar/list (desktop sidebar, mobile main screen) -->
     <aside id="sidebar">
       <div id="token-section"></div>
 
@@ -402,7 +385,6 @@
       <div id="sidebar-status" class="small-help" style="margin-top:8px;"></div>
     </aside>
 
-    <!-- Desktop editor panel -->
     <main id="main">
       <div class="pill">Edit</div>
       <h1>Edit a saved place</h1>
@@ -440,10 +422,8 @@
       </div>
     </main>
 
-    <!-- Mobile FAB -->
     <button id="openEditBtn" class="fw-fab" type="button" aria-label="Edit selected place">Edit</button>
 
-    <!-- Mobile bottom sheet -->
     <section id="editSheet" class="fw-sheet fw-sheet--hidden" aria-hidden="true">
       <div class="fw-sheet-handle" id="sheetHandle" title="Tap to collapse/expand"></div>
       <div class="fw-sheet-header">
@@ -483,78 +463,145 @@
   </div>
 
   <script type="module">
-    const USER_TOKEN_STORAGE_KEY = "fivewonders_user_token";
+    // ===== Supabase + access model (same as index/add) =====
+    const SUPABASE_URL = "https://ekpssonwtztubqfihlqm.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVrcHNzb253dHp0dWJxZmlobHFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM1Njg2MjAsImV4cCI6MjA3OTE0NDYyMH0.R1_-ctf-6NsVUJEApf4N591lA9TPRCJQFzhrDVRbr_4";
+
+    const LS_ID = "fw_profile_id";
+    const LS_KEY = "fw_api_key";
+    const LS_ID_LEGACY = "profile_id";
+    const LS_KEY_LEGACY = "api_key";
+
     const MANAGE_PLACES_URL =
       "https://ekpssonwtztubqfihlqm.supabase.co/functions/v1/manage-places";
 
-    function getUserToken() {
-      return localStorage.getItem(USER_TOKEN_STORAGE_KEY);
+    if (!window.supabase) {
+      alert("Supabase failed to load. Please refresh.");
+      throw new Error("Supabase library not loaded.");
     }
 
-    function setUserToken(token) {
-      localStorage.setItem(USER_TOKEN_STORAGE_KEY, token);
+    const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    window._sb = sb;
+
+    function getStoredApiKey() {
+      return localStorage.getItem(LS_KEY) || localStorage.getItem(LS_KEY_LEGACY);
     }
 
-    function getQueryParam(name) {
-      const params = new URLSearchParams(window.location.search);
-      return params.get(name);
+    function persistKeys(id, apiKey) {
+      localStorage.setItem(LS_ID, id);
+      localStorage.setItem(LS_KEY, apiKey);
+      localStorage.setItem(LS_ID_LEGACY, id);
+      localStorage.setItem(LS_KEY_LEGACY, apiKey);
     }
 
-    // Bootstrap token from URL once, if present
-    (function bootstrapTokenFromQuery() {
-      const qToken = getQueryParam("token") || getQueryParam("t");
-      if (qToken && !getUserToken()) {
-        setUserToken(qToken);
-      }
-    })();
+    function resetAccess() {
+      localStorage.removeItem(LS_ID);
+      localStorage.removeItem(LS_KEY);
+      localStorage.removeItem(LS_ID_LEGACY);
+      localStorage.removeItem(LS_KEY_LEGACY);
+    }
 
-    function renderTokenSection() {
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    // ===== Token section UI =====
+    async function renderTokenSection() {
       const container = document.getElementById("token-section");
       container.innerHTML = "";
 
-      const token = getUserToken();
+      const apiKey = getStoredApiKey();
 
-      if (!token) {
-        const div = document.createElement("div");
-        div.className = "token-warning";
-        div.innerHTML = `
-          <strong>Invite code required</strong><br/>
-          Paste your personal invite code once. It will be remembered on this device.
-          <div style="margin-top:10px;">
-            <input type="text" id="token-input" placeholder="Paste invite code" style="width:100%;margin-top:6px;" />
-            <button id="token-save-btn" class="btn-primary" style="margin-top:10px;">Save invite code</button>
-          </div>
-        `;
-        container.appendChild(div);
+      // If we have a key, validate it
+      if (apiKey) {
+        try {
+          const { data, error } = await sb.rpc("validate_api_key", { p_key: apiKey });
+          if (!error && data && data.length > 0) {
+            persistKeys(data[0].id, apiKey);
 
-        document.getElementById("token-save-btn").onclick = () => {
-          const value = (document.getElementById("token-input").value || "").trim();
-          if (!value) {
-            alert("Please paste the invite code you were given.");
+            const div = document.createElement("div");
+            div.className = "small-help";
+            div.innerHTML = `
+              Access is set on this device.
+              <a href="#" id="resetAccessLink" style="margin-left:8px;">Reset</a>
+            `;
+            container.appendChild(div);
+
+            document.getElementById("resetAccessLink").onclick = (e) => {
+              e.preventDefault();
+              resetAccess();
+              clearEditor();
+              userPlaces = [];
+              renderPlaceList();
+              document.getElementById("sidebar-status").textContent = "Set invite code to load places.";
+              renderTokenSection();
+            };
+
+            return true;
+          }
+        } catch (_) {}
+        resetAccess();
+      }
+
+      // No key
+      const div = document.createElement("div");
+      div.className = "token-warning";
+      div.innerHTML = `
+        <strong>Invite code required</strong><br/>
+        Enter your 8-character invite code once. It will be remembered on this device.
+        <div style="margin-top:10px;">
+          <input type="text" id="invite-input" placeholder="AJWRRHFN" style="width:100%;margin-top:6px;text-transform:uppercase;letter-spacing:0.12em;" />
+          <button id="invite-save-btn" class="btn-primary" style="margin-top:10px;">Save invite code</button>
+        </div>
+      `;
+      container.appendChild(div);
+
+      document.getElementById("invite-save-btn").onclick = async () => {
+        const value = (document.getElementById("invite-input").value || "")
+          .trim()
+          .toUpperCase()
+          .replace(/[\s-]/g, "");
+
+        if (!value) {
+          alert("Please enter the invite code you were given.");
+          return;
+        }
+
+        try {
+          const { data, error } = await sb.rpc("validate_invite", { p_code: value });
+          if (error) throw error;
+          if (!data || data.length === 0) {
+            alert("Invalid invite code.");
             return;
           }
-          setUserToken(value);
-          renderTokenSection();
-          loadUserPlaces();
-        };
-      } else {
-        const div = document.createElement("div");
-        div.className = "small-help";
-        div.innerHTML =
-          "Invite code is set on this device. You’ll only see places linked to this code.";
-        container.appendChild(div);
-      }
+
+          const row = data[0];
+          persistKeys(row.id, row.api_key);
+
+          // load places now that access is set
+          await renderTokenSection();
+          await loadUserPlaces();
+        } catch (e) {
+          console.error("validate_invite failed:", e);
+          alert("Could not validate invite code.");
+        }
+      };
+
+      return false;
     }
 
-    renderTokenSection();
-
+    // ===== Existing edit logic (unchanged except for token usage) =====
     let userPlaces = [];
     let activePlaceId = null;
 
     const placeListEl = document.getElementById("place-list");
     const sidebarStatusEl = document.getElementById("sidebar-status");
 
-    // Desktop elements
     const emptyMessageEl = document.getElementById("empty-message");
     const editFormEl = document.getElementById("edit-form");
     const editTitleInput = document.getElementById("edit-title");
@@ -566,7 +613,6 @@
     const deleteBtn = document.getElementById("delete-btn");
     const cancelBtn = document.getElementById("cancel-btn");
 
-    // Mobile sheet elements
     const openEditBtn = document.getElementById("openEditBtn");
     const editSheet = document.getElementById("editSheet");
     const closeSheetBtn = document.getElementById("closeSheetBtn");
@@ -624,7 +670,6 @@
         return;
       }
 
-      // FAB enabled if something selected
       setMobileFabEnabled(!!activePlaceId);
 
       userPlaces.forEach((p) => {
@@ -647,7 +692,6 @@
     }
 
     function populateEditor(place) {
-      // Desktop
       if (emptyMessageEl && editFormEl) {
         emptyMessageEl.style.display = "none";
         editFormEl.style.display = "block";
@@ -664,7 +708,6 @@
         editStatusEl.textContent = "";
       }
 
-      // Mobile sheet
       if (mEmptyMessageEl && mEditFormEl) {
         mEmptyMessageEl.style.display = "none";
         mEditFormEl.style.display = "block";
@@ -686,14 +729,12 @@
       activePlaceId = null;
       renderPlaceList();
 
-      // Desktop
       if (editFormEl && emptyMessageEl) {
         editFormEl.style.display = "none";
         emptyMessageEl.style.display = "block";
       }
       if (editStatusEl) editStatusEl.textContent = "";
 
-      // Mobile
       if (mEditFormEl && mEmptyMessageEl) {
         mEditFormEl.style.display = "none";
         mEmptyMessageEl.style.display = "block";
@@ -709,16 +750,11 @@
       activePlaceId = placeId;
       renderPlaceList();
       populateEditor(place);
-
-      // On mobile, don’t auto-open sheet; user taps FAB
-      // But enable it now that something is selected
       setMobileFabEnabled(true);
     }
 
-    // Desktop cancel
     cancelBtn?.addEventListener("click", clearEditor);
 
-    // Mobile open sheet button
     openEditBtn?.addEventListener("click", () => {
       if (!activePlaceId) return;
       openSheet("open");
@@ -729,8 +765,8 @@
     mCancelBtn?.addEventListener("click", closeSheet);
 
     async function loadUserPlaces() {
-      const token = getUserToken();
-      if (!token) {
+      const apiKey = getStoredApiKey();
+      if (!apiKey) {
         sidebarStatusEl.textContent = "Set your invite code to load places.";
         return;
       }
@@ -741,7 +777,7 @@
         const res = await fetch(MANAGE_PLACES_URL, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "list", user_token: token }),
+          body: JSON.stringify({ action: "list", user_token: apiKey }),
         });
 
         const text = await res.text();
@@ -759,7 +795,7 @@
         activePlaceId = null;
         renderPlaceList();
         sidebarStatusEl.textContent = "";
-        clearEditor(); // ensure editors are reset
+        clearEditor();
       } catch (err) {
         console.error("Network error loading places:", err);
         sidebarStatusEl.textContent = "Error loading places.";
@@ -769,8 +805,8 @@
     async function saveChangesCommon({ title, notes, statusEl }) {
       if (!activePlaceId) return;
 
-      const token = getUserToken();
-      if (!token) {
+      const apiKey = getStoredApiKey();
+      if (!apiKey) {
         alert("Missing invite code.");
         return;
       }
@@ -783,7 +819,7 @@
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             action: "update",
-            user_token: token,
+            user_token: apiKey,
             place_id: activePlaceId,
             title,
             notes,
@@ -821,8 +857,8 @@
     async function deletePlaceCommon({ statusEl, afterDeleteCloseSheet = false }) {
       if (!activePlaceId) return;
 
-      const token = getUserToken();
-      if (!token) {
+      const apiKey = getStoredApiKey();
+      if (!apiKey) {
         alert("Missing invite code.");
         return;
       }
@@ -837,7 +873,7 @@
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             action: "delete",
-            user_token: token,
+            user_token: apiKey,
             place_id: activePlaceId,
           }),
         });
@@ -858,7 +894,6 @@
           activePlaceId = null;
           renderPlaceList();
 
-          // Reset editors
           if (editFormEl) editFormEl.style.display = "none";
           if (emptyMessageEl) emptyMessageEl.style.display = "block";
           if (editStatusEl) editStatusEl.textContent = "Place deleted.";
@@ -878,7 +913,6 @@
       }
     }
 
-    // Desktop handlers
     saveChangesBtn?.addEventListener("click", () => {
       saveChangesCommon({
         title: (editTitleInput.value || "").trim(),
@@ -897,7 +931,6 @@
       });
     });
 
-    // Mobile handlers
     mSaveBtn?.addEventListener("click", () => {
       saveChangesCommon({
         title: (mEditTitleInput.value || "").trim(),
@@ -916,21 +949,17 @@
       });
     });
 
-    function escapeHtml(str) {
-      return String(str)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
+    // ===== Init =====
+    const hasAccess = await renderTokenSection();
+    if (hasAccess) {
+      loadUserPlaces();
+    } else {
+      sidebarStatusEl.textContent = "Set invite code to load places.";
+      renderPlaceList();
+      clearEditor();
     }
 
-    // Initial load
-    loadUserPlaces();
-
-    // Improve UX when rotating/resizing
     window.addEventListener("resize", () => {
-      // If switching to desktop, ensure sheet closed
       if (!isMobile()) closeSheet();
     });
   </script>
