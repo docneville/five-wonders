@@ -366,17 +366,6 @@
         localStorage.setItem(LS_ID, data[0].id);
         unlock();
 
-
-        if (error || !data || !data.is_active) {
-          resetAccess();
-          setStatus("Enter invite code");
-          lock();
-          return;
-        }
-
-        // Ensure profile id is stored too
-        localStorage.setItem(LS_ID, data.id);
-        unlock();
       } catch (e) {
         // If anything goes wrong, do NOT silently unlock
         resetAccess();
@@ -415,21 +404,6 @@
           localStorage.setItem(LS_KEY, row.api_key);
           unlock();
 
-
-          if (error) throw error;
-
-          if (!data || !data.is_active) {
-            showError("Invalid invite code.");
-            setStatus("Invite-only beta");
-            return;
-          }
-
-          localStorage.setItem(LS_ID, data.id);
-          localStorage.setItem(LS_KEY, data.api_key);
-
-          // Best-effort: mark invite used (RLS might block; ignore failure)
-
-          unlock();
         } catch (ex) {
           console.error(ex);
           showError("Could not validate the code. (RLS or network?)");
