@@ -354,11 +354,18 @@
       // 2) Verify stored api_key still corresponds to an active profile
       try {
         setStatus("Verifying saved access…");
-        const { data, error } = await supabase
-          .from("profiles")
-          .select("id, is_active")
-          .eq("api_key", storedApiKey)
-          .maybeSingle();
+        const { data, error } = await supabase.rpc("validate_api_key", { p_key: storedApiKey });
+
+        if (error || !data || data.length === 0) {
+          resetAccess();
+          setStatus("Enter invite code");
+          lock();
+          return;
+        }
+
+        localStorage.setItem(LS_ID, data[0].id);
+        unlock();
+
 
         if (error || !data || !data.is_active) {
           resetAccess();
@@ -393,11 +400,21 @@
         setStatus("Validating…");
 
         try {
-          const { data, error } = await supabase
-            .from("profiles")
-            .select("id, api_key, is_active")
-            .eq("invite_code", code)
-            .maybeSingle();
+          const { data, error } = await supabase.rpc("validate_invite", { p_code: code });
+
+          if (error) throw error;
+
+          if (!data || data.length === 0) {
+            showError("Invalid invite code.");
+            setStatus("Invite-only beta");
+            return;
+          }
+
+          const row = data[0];
+          localStorage.setItem(LS_ID, row.id);
+          localStorage.setItem(LS_KEY, row.api_key);
+          unlock();
+
 
           if (error) throw error;
 
@@ -411,13 +428,6 @@
           localStorage.setItem(LS_KEY, data.api_key);
 
           // Best-effort: mark invite used (RLS might block; ignore failure)
-          try {
-            await supabase
-              .from("profiles")
-              .update({ invite_code_used_at: new Date().toISOString() })
-              .eq("id", data.id)
-              .is("invite_code_used_at", null);
-          } catch (_) {}
 
           unlock();
         } catch (ex) {
