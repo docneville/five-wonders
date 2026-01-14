@@ -293,24 +293,14 @@
     const statusEl = document.getElementById("gateStatus");
     const resetLink = document.getElementById("resetAccessLink");
 
-    function setStatus(msg) {
-      statusEl.textContent = msg;
-    }
-
-    function showError(msg) {
-      errorBox.textContent = msg;
-      errorBox.style.display = "block";
-    }
-
-    function clearError() {
-      errorBox.textContent = "";
-      errorBox.style.display = "none";
-    }
+    function setStatus(msg) { statusEl.textContent = msg; }
+    function showError(msg) { errorBox.textContent = msg; errorBox.style.display = "block"; }
+    function clearError() { errorBox.textContent = ""; errorBox.style.display = "none"; }
 
     function lock() {
       document.body.classList.add("fw-locked");
       gate.style.display = "flex";
-      setStatus("Invite-only beta");
+      setStatus("Enter invite code");
       setTimeout(() => input.focus(), 0);
     }
 
@@ -333,7 +323,6 @@
     });
 
     document.addEventListener("DOMContentLoaded", async () => {
-      // If Supabase failed to load, keep locked and show message
       if (!window.supabase) {
         setStatus("Error: Supabase library failed to load.");
         showError("Please refresh. If this persists, check your network/adblocker.");
@@ -341,44 +330,40 @@
         return;
       }
 
-      const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      window._sb = sb; // makes debugging easy in DevTools
+      console.log("[FW] Supabase client ready", sb);
 
-      // 1) If no api_key stored => stay locked
+      // Verify stored api_key (if present)
       const storedApiKey = localStorage.getItem(LS_KEY);
-      if (!storedApiKey) {
-        setStatus("Enter invite code");
-        lock();
-        return;
-      }
 
-      // 2) Verify stored api_key still corresponds to an active profile
-      try {
-        setStatus("Verifying saved access…");
-        const { data, error } = await supabase.rpc("validate_api_key", { p_key: storedApiKey });
+      if (storedApiKey) {
+        try {
+          setStatus("Verifying saved access…");
+          const { data, error } = await sb.rpc("validate_api_key", { p_key: storedApiKey });
 
-        if (error || !data || data.length === 0) {
+          if (!error && data && data.length > 0) {
+            localStorage.setItem(LS_ID, data[0].id);
+            unlock();
+          } else {
+            resetAccess();
+            lock();
+          }
+        } catch (e) {
+          console.error("[FW] validate_api_key failed", e);
           resetAccess();
-          setStatus("Enter invite code");
           lock();
-          return;
         }
-
-        localStorage.setItem(LS_ID, data[0].id);
-        unlock();
-
-      } catch (e) {
-        // If anything goes wrong, do NOT silently unlock
-        resetAccess();
-        setStatus("Enter invite code");
+      } else {
         lock();
       }
 
-      // Submit handler (invite code)
+      // Invite code submit
       form.addEventListener("submit", async (e) => {
         e.preventDefault();
         clearError();
 
-        let code = input.value.trim().toUpperCase().replace(/[\s-]/g, "");
+        const code = input.value.trim().toUpperCase().replace(/[\s-]/g, "");
         if (!code) {
           showError("Please enter your invite code.");
           return;
@@ -389,13 +374,14 @@
         setStatus("Validating…");
 
         try {
-          const { data, error } = await supabase.rpc("validate_invite", { p_code: code });
+          const { data, error } = await sb.rpc("validate_invite", { p_code: code });
+          console.log("[FW] validate_invite result", { data, error });
 
           if (error) throw error;
 
           if (!data || data.length === 0) {
             showError("Invalid invite code.");
-            setStatus("Invite-only beta");
+            setStatus("Enter invite code");
             return;
           }
 
@@ -403,11 +389,10 @@
           localStorage.setItem(LS_ID, row.id);
           localStorage.setItem(LS_KEY, row.api_key);
           unlock();
-
         } catch (ex) {
-          console.error(ex);
-          showError("Could not validate the code. (RLS or network?)");
-          setStatus("Invite-only beta");
+          console.error("[FW] validate_invite failed", ex);
+          showError("Could not validate the code.");
+          setStatus("Enter invite code");
         } finally {
           btn.disabled = false;
           btn.textContent = "Unlock";
@@ -415,5 +400,6 @@
       });
     });
   </script>
+
 </body>
 </html>
