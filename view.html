@@ -5,6 +5,9 @@
   <title>Five Wonders Map</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
+  <!-- Shared styles -->
+  <link rel="stylesheet" href="fw.css" />
+
   <!-- Leaflet CSS -->
   <link
     rel="stylesheet"
@@ -12,179 +15,6 @@
     integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
     crossorigin=""
   />
-
-  <style>
-    html, body {
-      height: 100%;
-      margin: 0;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: #fff;
-    }
-
-    /* EXACT match to add-place */
-    .fw-header {
-      height: 48px;
-      background: #111827;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 16px;
-      font-size: 14px;
-      box-sizing: border-box;
-    }
-
-    .fw-header-title {
-      font-weight: 600;
-      color: #e5e7eb;
-    }
-
-    .fw-header-nav a {
-      color: #9ca3af;
-      text-decoration: none;
-      font-size: 13px;
-      margin-left: 10px;
-    }
-
-    .fw-header-nav a:first-child { margin-left: 0; }
-
-    .fw-header-nav a:hover {
-      color: #e5e7eb;
-      text-decoration: underline;
-    }
-
-    /* Mobile ONLY: allow horizontal scroll, but don't change spacing */
-    @media (max-width: 768px) {
-      .fw-header-nav {
-        display: flex;
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-        scrollbar-width: none;
-      }
-      .fw-header-nav::-webkit-scrollbar { display: none; }
-      .fw-header-nav a { flex: 0 0 auto; }
-    }
-
-    /* Map fills the screen under the 48px header */
-    #map {
-      position: absolute;
-      top: 48px;
-      left: 0;
-      right: 0;
-      bottom: 0;
-    }
-
-    /* ===== Colored dot markers ===== */
-    .fw-dot {
-      width: 18px;
-      height: 18px;
-      border-radius: 50%;
-      border: 2px solid #ffffff;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.35);
-    }
-
-    @media (max-width: 768px) {
-      .fw-dot {
-        width: 22px;
-        height: 22px;
-      }
-    }
-
-    /* =============================
-       Improve default Leaflet popup (desktop/tablet)
-    ============================== */
-    .leaflet-popup-content {
-      font-size: 1rem;
-      line-height: 1.35;
-      margin: 10px 12px;
-    }
-    .leaflet-popup-content-wrapper {
-      border-radius: 14px;
-    }
-
-    .place-title {
-      font-weight: 800;
-      margin-bottom: 6px;
-      font-size: 1.05rem;
-    }
-
-    .place-notes {
-      margin-top: 6px;
-      color: #111827;
-      font-size: 1rem;
-      white-space: pre-wrap;
-    }
-
-    .place-meta {
-      font-size: 0.9rem;
-      color: #6b7280;
-      margin-top: 8px;
-    }
-
-    /* =============================
-       Mobile: use our own fuller screen sheet instead of tiny popup
-    ============================== */
-    .fw-place-sheet {
-      position: fixed;
-      left: 0; right: 0; bottom: 0;
-      height: 76vh;
-      background: #fff;
-      border-top-left-radius: 16px;
-      border-top-right-radius: 16px;
-      box-shadow: 0 14px 40px rgba(0,0,0,0.25);
-      transform: translateY(100%);
-      transition: transform 180ms ease;
-      z-index: 4000; /* above header + map */
-      border-top: 1px solid rgba(0,0,0,0.12);
-      box-sizing: border-box;
-    }
-
-    .fw-place-sheet--open { transform: translateY(0); }
-    .fw-place-sheet--peek { transform: translateY(55%); }
-    .fw-place-sheet--hidden { transform: translateY(100%); }
-
-    .fw-place-sheet-handle {
-      width: 44px;
-      height: 5px;
-      border-radius: 999px;
-      background: rgba(0,0,0,0.25);
-      margin: 10px auto 6px;
-    }
-
-    .fw-place-sheet-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 10px 14px;
-      border-bottom: 1px solid rgba(0,0,0,0.10);
-    }
-
-    .fw-place-sheet-title {
-      font-weight: 800;
-      font-size: 1.05rem;
-    }
-
-    .fw-place-sheet-close {
-      border: none;
-      background: transparent;
-      font-size: 1.3rem;
-      padding: 8px;
-      min-height: 44px;
-      min-width: 44px;
-      cursor: pointer;
-    }
-
-    .fw-place-sheet-content {
-      padding: 12px 14px calc(16px + env(safe-area-inset-bottom));
-      overflow: auto;
-      height: calc(76vh - 64px);
-      box-sizing: border-box;
-    }
-
-    /* Only show the sheet patterns on mobile */
-    @media (min-width: 769px) {
-      .fw-place-sheet { display: none !important; }
-    }
-  </style>
 </head>
 
 <body>
@@ -199,16 +29,32 @@
     </nav>
   </header>
 
-  <div id="map"></div>
+  <!-- Map fills the screen under the header (styled via .fw-map-fullscreen in fw.css) -->
+  <div id="map" class="fw-map-fullscreen"></div>
 
-  <!-- Mobile place sheet -->
-  <section id="placeSheet" class="fw-place-sheet fw-place-sheet--hidden" aria-hidden="true">
-    <div class="fw-place-sheet-handle" id="placeSheetHandle" title="Tap to collapse/expand"></div>
-    <div class="fw-place-sheet-header">
-      <div class="fw-place-sheet-title">Place</div>
-      <button id="closePlaceSheetBtn" class="fw-place-sheet-close" type="button" aria-label="Close">✕</button>
+  <!-- Mobile place sheet (uses generic fw-sheet styles from fw.css) -->
+  <section
+    id="placeSheet"
+    class="fw-sheet fw-sheet--view fw-sheet--hidden"
+    aria-hidden="true"
+  >
+    <div
+      class="fw-sheet-handle"
+      id="placeSheetHandle"
+      title="Tap to collapse/expand"
+    ></div>
+    <div class="fw-sheet-header">
+      <div class="fw-sheet-title">Place</div>
+      <button
+        id="closePlaceSheetBtn"
+        class="fw-sheet-close"
+        type="button"
+        aria-label="Close"
+      >
+        ✕
+      </button>
     </div>
-    <div class="fw-place-sheet-content" id="placeSheetContent"></div>
+    <div class="fw-sheet-content" id="placeSheetContent"></div>
   </section>
 
   <!-- Leaflet JS -->
@@ -223,7 +69,8 @@
     import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
     const SUPABASE_URL = "https://ekpssonwtztubqfihlqm.supabase.co";
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVrcHNzb253dHp0dWJxZmlobHFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM1Njg2MjAsImV4cCI6MjA3OTE0NDYyMH0.R1_-ctf-6NsVUJEApf4N591lA9TPRCJQFzhrDVRbr_4";
+    const SUPABASE_ANON_KEY =
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVrcHNzb253dHp0dWJxZmlobHFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM1Njg2MjAsImV4cCI6MjA3OTE0NDYyMH0.R1_-ctf-6NsVUJEApf4N591lA9TPRCJQFzhrDVRbr_4";
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -239,7 +86,7 @@
     // Default view until we have data
     map.setView([39.5, -98.35], 4);
 
-    // ===== Mobile sheet helpers =====
+    // ===== Mobile sheet helpers (using fw-sheet classes) =====
     const mqMobile = window.matchMedia("(max-width: 768px)");
     const placeSheet = document.getElementById("placeSheet");
     const placeSheetContent = document.getElementById("placeSheetContent");
@@ -248,21 +95,27 @@
 
     function openPlaceSheet(mode = "open") {
       if (!placeSheet) return;
-      placeSheet.classList.remove("fw-place-sheet--hidden", "fw-place-sheet--peek", "fw-place-sheet--open");
-      placeSheet.classList.add(mode === "peek" ? "fw-place-sheet--peek" : "fw-place-sheet--open");
+      placeSheet.classList.remove(
+        "fw-sheet--hidden",
+        "fw-sheet--peek",
+        "fw-sheet--open"
+      );
+      placeSheet.classList.add(
+        mode === "peek" ? "fw-sheet--peek" : "fw-sheet--open"
+      );
       placeSheet.setAttribute("aria-hidden", "false");
     }
 
     function closePlaceSheet() {
       if (!placeSheet) return;
-      placeSheet.classList.remove("fw-place-sheet--open", "fw-place-sheet--peek");
-      placeSheet.classList.add("fw-place-sheet--hidden");
+      placeSheet.classList.remove("fw-sheet--open", "fw-sheet--peek");
+      placeSheet.classList.add("fw-sheet--hidden");
       placeSheet.setAttribute("aria-hidden", "true");
     }
 
     function togglePeek() {
       if (!placeSheet) return;
-      if (placeSheet.classList.contains("fw-place-sheet--open")) openPlaceSheet("peek");
+      if (placeSheet.classList.contains("fw-sheet--open")) openPlaceSheet("peek");
       else openPlaceSheet("open");
     }
 
@@ -277,7 +130,7 @@
       return mqMobile.matches;
     }
 
-    // ===== Color per user_id =====
+    // ===== Color per user_id (uses .fw-dot from fw.css) =====
     const userColorCache = new Map();
 
     function colorForUser(key) {
@@ -301,16 +154,25 @@
       return `
         <div class="place-popup">
           <div class="place-title">${escapeHtml(title)}</div>
-          ${notes
-            ? `<div class="place-notes">${escapeHtml(notes)}</div>`
-            : `<div class="place-notes" style="color:#6b7280;">No note yet.</div>`
+          ${
+            notes
+              ? `<div class="place-notes">${escapeHtml(notes)}</div>`
+              : `<div class="place-notes" style="color:#6b7280;">No note yet.</div>`
           }
-          ${(createdAt || savedBy) ? `
+          ${
+            createdAt || savedBy
+              ? `
             <div class="place-meta">
               ${createdAt ? `Saved: ${escapeHtml(createdAt)}` : ""}
-              ${savedBy ? `${createdAt ? "<br/>" : ""}Saved by ${escapeHtml(savedBy)}` : ""}
+              ${
+                savedBy
+                  ? `${createdAt ? "<br/>" : ""}Saved by ${escapeHtml(savedBy)}`
+                  : ""
+              }
             </div>
-          ` : ""}
+          `
+              : ""
+          }
         </div>
       `;
     }
@@ -328,7 +190,8 @@
     async function loadPlaces() {
       const { data, error } = await supabase
         .from("places_with_profiles")
-        .select(`
+        .select(
+          `
           id,
           user_id,
           title,
@@ -340,7 +203,8 @@
           first_name,
           last_name,
           username
-        `)
+        `
+        )
         .not("latitude", "is", null)
         .not("longitude", "is", null)
         .order("created_at", { ascending: false });
@@ -365,7 +229,9 @@
 
         const title = place.title || "(Untitled place)";
         const notes = place.notes || "";
-        const createdAt = place.created_at ? new Date(place.created_at).toLocaleString() : "";
+        const createdAt = place.created_at
+          ? new Date(place.created_at).toLocaleString()
+          : "";
 
         const savedBy =
           place.first_name ||
