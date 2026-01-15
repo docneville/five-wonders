@@ -8,7 +8,208 @@
   <!-- Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-  <link rel="stylesheet" href="fw.css" />
+  <style>
+    :root { color-scheme: light dark; }
+    * { box-sizing: border-box; }
+
+    .fw-header {
+      height: 48px;
+      background: #111827;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      font-size: 14px;
+    }
+    .fw-header-title { font-weight: 500; color: #e5e7eb; }
+    .fw-header-nav a {
+      color: #9ca3af;
+      text-decoration: none;
+      font-size: 13px;
+      margin-left: 10px;
+    }
+    .fw-header-nav a:first-child { margin-left: 0; }
+    .fw-header-nav a:hover { color: #e5e7eb; text-decoration: underline; }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      min-height: 100vh;
+      background: radial-gradient(circle at top, #e0ecff 0, #f9fafb 55%);
+      color: #111827;
+    }
+
+    .fw-home-main {
+      min-height: calc(100vh - 48px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 12px 32px;
+    }
+
+    .card {
+      background: #ffffff;
+      border-radius: 18px;
+      box-shadow: 0 20px 45px rgba(15, 23, 42, 0.18);
+      padding: 24px 24px 20px;
+      width: 100%;
+      max-width: 460px;
+      border: 1px solid rgba(148, 163, 184, 0.25);
+    }
+
+    .logo-wrap { display: flex; justify-content: center; margin-bottom: 10px; }
+    .logo-img {
+      max-width: 260px;
+      width: 100%;
+      height: auto;
+      filter: drop-shadow(0 8px 18px rgba(15, 23, 42, 0.25));
+    }
+
+    .greeting {
+      font-size: 14px;
+      font-weight: 650;
+      text-align: center;
+      margin: 6px 0 2px;
+      color: #111827;
+      display: none;
+    }
+
+    .subtitle {
+      font-size: 13px;
+      text-align: center;
+      color: #4b5563;
+      margin-bottom: 20px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px 12px;
+      border-radius: 999px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      text-decoration: none;
+      transition: transform 0.08s ease-out, box-shadow 0.12s ease-out;
+      border: 1px solid transparent;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #22c55e, #16a34a);
+      color: #0b1120;
+      box-shadow: 0 10px 25px rgba(34, 197, 94, 0.45);
+    }
+
+    .btn-secondary {
+      background: #f3f4f6;
+      color: #111827;
+      border-color: rgba(148, 163, 184, 0.6);
+    }
+
+    .footer {
+      margin-top: 16px;
+      font-size: 11px;
+      text-align: center;
+      color: #6b7280;
+    }
+
+    .access-line {
+      margin-top: 10px;
+      font-size: 12px;
+      text-align: center;
+      color: #6b7280;
+      display: none;
+    }
+    .access-line a {
+      color: #374151;
+      text-decoration: none;
+      margin-left: 8px;
+    }
+    .access-line a:hover { text-decoration: underline; }
+
+    /* Invite Gate */
+    .fw-locked #app {
+      filter: blur(6px);
+      opacity: 0.35;
+      pointer-events: none;
+      user-select: none;
+    }
+
+    #inviteGate {
+      position: fixed;
+      inset: 0;
+      display: none; /* IMPORTANT: hidden by default; we only show if not authenticated */
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background: rgba(17, 24, 39, 0.72);
+      z-index: 9999;
+    }
+
+    #inviteGate .panel {
+      width: min(440px, 100%);
+      background: white;
+      border-radius: 14px;
+      padding: 20px;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.35);
+    }
+
+    #inviteGate h2 { margin: 0 0 8px; font-size: 18px; color: #111827; }
+    #inviteGate p { margin: 0 0 14px; font-size: 14px; color: #374151; line-height: 1.35; }
+
+    #inviteGate .row { display: flex; gap: 10px; }
+
+    #inviteGate input {
+      flex: 1;
+      padding: 10px 12px;
+      border: 1px solid #D1D5DB;
+      border-radius: 10px;
+      font-size: 14px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    #inviteGate button {
+      padding: 10px 14px;
+      border: 0;
+      border-radius: 10px;
+      background: #111827;
+      color: white;
+      cursor: pointer;
+    }
+
+    #inviteGate button:disabled { opacity: 0.7; cursor: not-allowed; }
+
+    #inviteGate .error {
+      margin-top: 10px;
+      font-size: 13px;
+      color: #b91c1c;
+      display: none;
+    }
+
+    #inviteGate .meta {
+      margin-top: 12px;
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      font-size: 12px;
+      color: #6b7280;
+    }
+
+    #inviteGate .meta a {
+      color: #374151;
+      text-decoration: none;
+    }
+
+    #inviteGate .meta a:hover { text-decoration: underline; }
+  </style>
 </head>
 
 <body>
