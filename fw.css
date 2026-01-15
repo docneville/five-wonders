@@ -681,4 +681,32 @@ li{ margin-bottom: 4px; }
       "header"
       "sidebar";
   }
+
+    /* =========================================================
+    Invite Gate – mobile-safe layout (prevents button overflow)
+    ========================================================= */
+
+    #inviteGate .row {
+    align-items: stretch;
+    }
+
+    #inviteGate input {
+    min-width: 0;
+    }
+
+    @media (max-width: 420px) {
+    #inviteGate .row {
+        flex-direction: column;
+    }
+
+    #inviteGate input,
+    #inviteGate button {
+        width: 100%;
+    }
+    }
+
+    #inviteGate button {
+    min-height: 44px;
+    font-weight: 700;
+    }
 }
