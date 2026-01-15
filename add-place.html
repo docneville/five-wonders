@@ -5,6 +5,9 @@
   <title>Five Wonders – Add a Place</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
+  <!-- Shared styles -->
+  <link rel="stylesheet" href="fw.css" />
+
   <!-- Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
@@ -15,377 +18,10 @@
     integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
     crossorigin=""
   />
-
-  <style>
-    /* =============================
-       Base + Header
-    ============================== */
-
-    html, body {
-      height: 100%;
-      margin: 0;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    }
-
-    /* Slightly scale up on mobile (affects rem usage below) */
-    :root { font-size: 16px; }
-    @media (max-width: 768px) {
-      :root { font-size: 18px; }
-    }
-
-    .fw-header {
-      grid-area: header;
-      height: 48px;
-      background: #111827;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 16px;
-      font-size: 14px;
-      box-sizing: border-box;
-    }
-
-    .fw-header-title {
-      font-weight: 600;
-      color: #e5e7eb;
-    }
-
-    .fw-header-nav a {
-      color: #9ca3af;
-      text-decoration: none;
-      font-size: 13px;
-      margin-left: 10px;
-    }
-
-    .fw-header-nav a:first-child { margin-left: 0; }
-
-    .fw-header-nav a:hover {
-      color: #e5e7eb;
-      text-decoration: underline;
-    }
-
-    /* =============================
-       Desktop Layout (unchanged)
-    ============================== */
-
-    #app {
-      display: grid;
-      grid-template-columns: 340px 1fr;
-      grid-template-rows: 48px 1fr;
-      grid-template-areas:
-        "header header"
-        "sidebar map";
-      height: 100%;
-      min-height: 0;
-    }
-
-    #sidebar {
-      grid-area: sidebar;
-      border-right: 1px solid #e5e7eb;
-      padding: 12px;
-      box-sizing: border-box;
-      overflow-y: auto;
-      min-height: 0;
-      background: white;
-    }
-
-    /* Wrap map so we can overlay the FAB */
-    #mapWrap {
-      grid-area: map;
-      position: relative;
-      min-height: 0;
-    }
-
-    #map {
-      width: 100%;
-      height: 100%;
-    }
-
-    /* =============================
-       Sidebar UI (existing styles)
-    ============================== */
-
-    .section-title {
-      font-size: 14px;
-      font-weight: 600;
-      margin-bottom: 4px;
-      margin-top: 8px;
-    }
-
-    label {
-      font-size: 12px;
-      font-weight: 500;
-      display: block;
-      margin-top: 8px;
-      margin-bottom: 2px;
-    }
-
-    input[type="text"],
-    textarea {
-      width: 100%;
-      box-sizing: border-box;
-      padding: 6px 8px;
-      border-radius: 4px;
-      border: 1px solid #d1d5db;
-      font-size: 13px;
-      font-family: inherit;
-    }
-
-    textarea {
-      resize: vertical;
-      min-height: 60px;
-    }
-
-    button {
-      border-radius: 4px;
-      border: none;
-      padding: 6px 10px;
-      font-size: 13px;
-      cursor: pointer;
-      font-weight: 500;
-    }
-
-    button.primary {
-      background: #111827;
-      color: white;
-    }
-
-    button.secondary {
-      background: #e5e7eb;
-      color: #111827;
-    }
-
-    #search-results {
-      margin-top: 6px;
-      max-height: 140px;
-      overflow-y: auto;
-      border: 1px solid #e5e7eb;
-      border-radius: 4px;
-    }
-
-    .search-item {
-      padding: 6px 8px;
-      font-size: 12px;
-      cursor: pointer;
-      border-bottom: 1px solid #f3f4f6;
-    }
-
-    .search-item:last-child { border-bottom: none; }
-
-    .search-item:hover { background: #f3f4f6; }
-
-    .token-warning {
-      font-size: 11px;
-      color: #92400e;
-      background: #fef3c7;
-      border: 1px solid #facc15;
-      border-radius: 4px;
-      padding: 6px 8px;
-      margin-bottom: 8px;
-    }
-
-    .small-help {
-      font-size: 11px;
-      color: #6b7280;
-    }
-
-    /* =============================
-       Leaflet popup readability
-    ============================== */
-
-    .leaflet-popup-content {
-      font-size: 1rem;
-      line-height: 1.35;
-    }
-
-    .leaflet-popup-content a,
-    .leaflet-popup-content button {
-      min-height: 44px;
-      display: inline-flex;
-      align-items: center;
-    }
-
-    /* =============================
-       Mobile mode: map full screen + bottom sheet
-    ============================== */
-
-    @media (max-width: 768px) {
-      #app {
-        grid-template-columns: 1fr;
-        grid-template-rows: 48px 1fr;
-        grid-template-areas:
-          "header"
-          "map";
-      }
-
-      #sidebar:not(.in-sheet) {
-        display: none;
-      }
-
-      #sidebar.in-sheet {
-        display: block;
-        border-right: none;
-        padding: 0;
-        overflow: visible;
-      }
-    }
-
-    /* Floating Action Button */
-    .fw-fab {
-      display: none;
-      position: absolute;
-      left: 50%;
-      transform: translateX(-50%);
-      bottom: 16px;
-      padding: 12px 16px;
-      border-radius: 999px;
-      border: 1px solid rgba(0,0,0,0.15);
-      background: white;
-      font-size: 1rem;
-      font-weight: 600;
-      box-shadow: 0 10px 24px rgba(0,0,0,0.18);
-      z-index: 900;
-      min-height: 44px;
-    }
-
-    @media (max-width: 768px) {
-      .fw-fab {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-      }
-    }
-
-    /* Bottom Sheet (mobile) */
-    .fw-sheet {
-      position: fixed;
-      left: 0; right: 0; bottom: 0;
-      height: 78vh;
-      background: #fff;
-      border-top-left-radius: 16px;
-      border-top-right-radius: 16px;
-      box-shadow: 0 14px 40px rgba(0,0,0,0.25);
-      transform: translateY(100%);
-      transition: transform 180ms ease;
-      z-index: 2000;
-      border-top: 1px solid rgba(0,0,0,0.12);
-      box-sizing: border-box;
-    }
-
-    .fw-sheet--open { transform: translateY(0); }
-    .fw-sheet--peek { transform: translateY(55%); }
-    .fw-sheet--hidden { transform: translateY(100%); }
-
-    .fw-sheet-handle {
-      width: 44px;
-      height: 5px;
-      border-radius: 999px;
-      background: rgba(0,0,0,0.25);
-      margin: 10px auto 6px;
-    }
-
-    .fw-sheet-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 10px 14px;
-      border-bottom: 1px solid rgba(0,0,0,0.10);
-    }
-
-    .fw-sheet-title {
-      font-weight: 700;
-      font-size: 1.05rem;
-    }
-
-    .fw-sheet-close {
-      border: none;
-      background: transparent;
-      font-size: 1.3rem;
-      padding: 8px;
-      min-height: 44px;
-      min-width: 44px;
-      cursor: pointer;
-    }
-
-    .fw-sheet-content {
-      padding: 12px 14px;
-      overflow: auto;
-      height: calc(78vh - 64px);
-      box-sizing: border-box;
-    }
-
-    /* Sticky save row inside bottom sheet */
-    .save-row {
-      position: sticky;
-      bottom: 0;
-      display: flex;
-      justify-content: flex-end;
-      align-items: center;
-      gap: 12px;
-
-      padding: 12px 14px calc(12px + env(safe-area-inset-bottom));
-      margin-top: 16px;
-
-      background: white;
-      border-top: 1px solid rgba(0,0,0,0.12);
-      z-index: 10;
-    }
-
-    .save-btn {
-      font-weight: 700;
-      padding: 12px 16px;
-      min-height: 44px;
-      border-radius: 12px;
-    }
-
-    .fw-sheet-content {
-      padding-bottom: calc(90px + env(safe-area-inset-bottom));
-    }
-
-    @media (max-width: 768px) {
-      .save-row {
-        flex-direction: column;
-        align-items: stretch;
-      }
-
-      .save-btn {
-        width: 100%;
-      }
-    }
-
-    @media (max-width: 768px) {
-      .section-title { font-size: 1rem; }
-      label { font-size: 0.9rem; }
-
-      input[type="text"], textarea {
-        font-size: 1rem;
-        padding: 10px 12px;
-        border-radius: 10px;
-      }
-
-      button {
-        font-size: 1rem;
-        padding: 10px 12px;
-        min-height: 44px;
-        border-radius: 10px;
-      }
-
-      .search-item {
-        font-size: 0.95rem;
-        padding: 10px 12px;
-      }
-
-      .small-help, .token-warning {
-        font-size: 0.9rem;
-      }
-
-      #search-results { max-height: 220px; }
-    }
-  </style>
 </head>
 
 <body>
-  <div id="app">
+  <div id="app" class="fw-app-split fw-add-mobile-map">
     <header class="fw-header">
       <div class="fw-header-title">Five Wonders</div>
       <nav class="fw-header-nav">
@@ -397,20 +33,27 @@
       </nav>
     </header>
 
-    <div id="sidebar">
-      <!-- Access gate section (replaces old token behavior) -->
+    <!-- Sidebar (desktop) / Sheet content (mobile) -->
+    <aside id="sidebar" class="fw-sidebar">
+      <!-- Access gate section -->
       <div id="token-section"></div>
 
       <div>
         <div class="section-title">1. Find a place</div>
+
         <label for="search-input">Search</label>
         <div style="display:flex;gap:6px;align-items:center;">
-          <input type="text" id="search-input" placeholder="Larsen's Bakery, Seattle" />
-          <button id="search-btn" class="secondary">Go</button>
+          <input
+            type="text"
+            id="search-input"
+            placeholder="Larsen's Bakery, Seattle"
+          />
+          <button id="search-btn" type="button" class="btn-ghost">Go</button>
         </div>
         <div class="small-help">
           Uses OpenStreetMap search. Or click directly on the map to pick a location.
         </div>
+
         <div id="search-results"></div>
       </div>
 
@@ -421,28 +64,59 @@
         <input type="text" id="place-name" placeholder="Name of the place" />
 
         <label for="place-address">Address</label>
-        <textarea id="place-address" placeholder="Street, City, State, Country"></textarea>
+        <textarea
+          id="place-address"
+          placeholder="Street, City, State, Country"
+        ></textarea>
 
         <label for="user-note">Your note</label>
-        <textarea id="user-note" placeholder="Why you love this place (what to order, when to go, etc.)"></textarea>
+        <textarea
+          id="user-note"
+          placeholder="Why you love this place (what to order, when to go, etc.)"
+        ></textarea>
       </div>
 
       <div class="save-row">
-        <button id="save-btn" class="primary save-btn">Save place</button>
+        <button id="save-btn" type="button" class="btn-primary save-btn">
+          Save place
+        </button>
       </div>
-    </div>
+    </aside>
 
-    <div id="mapWrap">
-      <div id="map"></div>
-      <button id="openSheetBtn" class="fw-fab" type="button">Search / Details</button>
+    <!-- Map column -->
+    <div id="mapWrap" class="fw-map-wrap">
+      <div id="map" class="fw-map"></div>
+      <!-- Mobile FAB to open sheet -->
+      <button
+        id="openSheetBtn"
+        class="fw-fab fw-fab--map"
+        type="button"
+      >
+        Search / Details
+      </button>
     </div>
 
     <!-- Mobile bottom sheet -->
-    <section id="mobileSheet" class="fw-sheet fw-sheet--hidden" aria-hidden="true">
-      <div class="fw-sheet-handle" id="sheetHandle" title="Tap to collapse/expand"></div>
+    <section
+      id="mobileSheet"
+      class="fw-sheet fw-sheet--add fw-sheet--hidden"
+      aria-hidden="true"
+    >
+      <div
+        class="fw-sheet-handle"
+        id="sheetHandle"
+        title="Tap to collapse/expand"
+      ></div>
       <div class="fw-sheet-header">
         <div class="fw-sheet-title">Add a place</div>
-        <button id="closeSheetBtn" class="fw-sheet-close" type="button" aria-label="Close">✕</button>
+        <button
+          id="closeSheetBtn"
+          class="fw-sheet-close"
+          type="button"
+          aria-label="Close"
+        >
+          ✕
+        </button>
       </div>
       <div class="fw-sheet-content" id="mobileSheetContent"></div>
     </section>
@@ -455,10 +129,12 @@
     crossorigin=""
   ></script>
 
+  <!-- App logic (unchanged except for class names) -->
   <script type="module">
     // ====== CONFIG ======
     const SUPABASE_URL = "https://ekpssonwtztubqfihlqm.supabase.co";
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVrcHNzb253dHp0dWJxZmlobHFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM1Njg2MjAsImV4cCI6MjA3OTE0NDYyMH0.R1_-ctf-6NsVUJEApf4N591lA9TPRCJQFzhrDVRbr_4";
+    const SUPABASE_ANON_KEY =
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVrcHNzb253dHp0dWJxZmlobHFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM1Njg2MjAsImV4cCI6MjA3OTE0NDYyMH0.R1_-ctf-6NsVUJEApf4N591lA9TPRCJQFzhrDVRbr_4";
 
     const SUPABASE_FUNCTION_URL =
       "https://ekpssonwtztubqfihlqm.supabase.co/functions/v1/ingest-shortcut";
@@ -497,7 +173,7 @@
       return String(str)
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
-        .replace(/>/g, "&lt;")
+        .replace(/>/g, "&gt;")
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#039;");
     }
@@ -510,7 +186,7 @@
     const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     window._sb = sb;
 
-    // ====== Access Gate UI ======
+    // ====== Access Gate UI (sidebar banner) ======
     async function renderTokenSection() {
       const container = document.getElementById("token-section");
       container.innerHTML = "";
@@ -522,13 +198,13 @@
         try {
           const { data, error } = await sb.rpc("validate_api_key", { p_key: apiKey });
           if (!error && data && data.length > 0) {
-            // normalize storage (ensure both legacy + new keys are present)
+            // normalize storage
             persistKeys(data[0].id, apiKey);
 
             const div = document.createElement("div");
             div.className = "small-help";
             div.innerHTML = `
-              Access is set on this device. 
+              Access is set on this device.
               <a href="#" id="resetAccessLink" style="margin-left:8px;">Reset</a>
             `;
             container.appendChild(div);
@@ -553,8 +229,20 @@
         <strong>Invite code required</strong><br/>
         Enter your 8-character invite code once. It will be remembered on this device.
         <div style="margin-top:6px;">
-          <input type="text" id="invite-input" placeholder="AJWRRHFN" style="width:100%;margin-top:4px;text-transform:uppercase;letter-spacing:0.12em;" />
-          <button id="invite-save-btn" class="primary" style="margin-top:6px;">Save invite code</button>
+          <input
+            type="text"
+            id="invite-input"
+            placeholder="AJWRRHFN"
+            style="width:100%;margin-top:4px;text-transform:uppercase;letter-spacing:0.12em;"
+          />
+          <button
+            id="invite-save-btn"
+            type="button"
+            class="btn-primary"
+            style="margin-top:6px;"
+          >
+            Save invite code
+          </button>
         </div>
       `;
       container.appendChild(div);
@@ -591,10 +279,15 @@
 
     // Bootstrap from URL (?code=, ?invite=, ?token=, ?t=)
     (async function bootstrapFromQuery() {
-      const q = (getQueryParam("code") || getQueryParam("invite") || getQueryParam("token") || getQueryParam("t") || "")
-        .trim()
-        .toUpperCase()
-        .replace(/[\s-]/g, "");
+      const q =
+        (getQueryParam("code") ||
+          getQueryParam("invite") ||
+          getQueryParam("token") ||
+          getQueryParam("t") ||
+          "")
+          .trim()
+          .toUpperCase()
+          .replace(/[\s-]/g, "");
 
       if (!q) return;
       if (getStoredApiKey()) return; // already have access
@@ -605,7 +298,9 @@
           persistKeys(data[0].id, data[0].api_key);
           // Optional: clean the URL
           const url = new URL(window.location.href);
-          ["code","invite","token","t"].forEach(k => url.searchParams.delete(k));
+          ["code", "invite", "token", "t"].forEach((k) =>
+            url.searchParams.delete(k)
+          );
           window.history.replaceState({}, "", url.toString());
         }
       } catch (_) {}
@@ -646,8 +341,12 @@
     }
 
     function extractAddressParts(address = {}) {
-      const streetLine1 = [address.house_number, address.road].filter(Boolean).join(" ") || null;
-      const streetLine2 = [address.neighbourhood, address.suburb, address.city_district].filter(Boolean).join(", ") || null;
+      const streetLine1 =
+        [address.house_number, address.road].filter(Boolean).join(" ") || null;
+      const streetLine2 =
+        [address.neighbourhood, address.suburb, address.city_district]
+          .filter(Boolean)
+          .join(", ") || null;
 
       const city =
         address.city ||
@@ -668,7 +367,15 @@
       const country = address.country || null;
       const countryCode = address.country_code || null;
 
-      return { streetLine1, streetLine2, city, stateRegion, postalCode, country, countryCode };
+      return {
+        streetLine1,
+        streetLine2,
+        city,
+        stateRegion,
+        postalCode,
+        country,
+        countryCode,
+      };
     }
 
     function extractContactInfo(extratags = {}) {
@@ -751,10 +458,14 @@
 
         div.innerHTML = `
           <div style="font-weight:600;">${escapeHtml(primary)}</div>
-          <div style="font-size:12px;color:#555;">${escapeHtml(r.display_name || "")}</div>
+          <div style="font-size:12px;color:#555;">${escapeHtml(
+            r.display_name || ""
+          )}</div>
         `;
 
-        div.addEventListener("click", () => { selectSearchResult(r); });
+        div.addEventListener("click", () => {
+          selectSearchResult(r);
+        });
         searchResultsEl.appendChild(div);
       });
     }
@@ -797,9 +508,7 @@
         const data = await res.json();
 
         const primary =
-          data.name ||
-          data.display_name?.split(",")[0]?.trim() ||
-          "";
+          data.name || data.display_name?.split(",")[0]?.trim() || "";
 
         selectedAddress = data.address || null;
         selectedExtratags = data.extratags || null;
@@ -813,13 +522,19 @@
 
         updateDetailsFromSelection({
           name: "",
-          addressParts: { streetLine1: null, city: null, stateRegion: null, country: null },
+          addressParts: {
+            streetLine1: null,
+            city: null,
+            stateRegion: null,
+            country: null,
+          },
           lat,
           lon,
         });
 
         if (placeAddressInput) {
-          placeAddressInput.value = "Address not available (you can type one).";
+          placeAddressInput.value =
+            "Address not available (you can type one).";
         }
       }
     }
@@ -854,7 +569,8 @@
 
       const addressParts = extractAddressParts(selectedAddress || {});
       const contact = extractContactInfo(selectedExtratags || {});
-      void addressParts; void contact;
+      void addressParts;
+      void contact;
 
       const payload = {
         place_name,
@@ -862,7 +578,7 @@
         latitude: selectedLatLng.lat,
         longitude: selectedLatLng.lon,
         user_note,
-        user_token: apiKey, // <-- unchanged field name, now holds api_key
+        user_token: apiKey, // holds api_key
 
         osm_address: selectedAddress,
         osm_extratags: selectedExtratags,
@@ -932,7 +648,11 @@
       if (!sidebar || !sheet || !sheetContent) return;
 
       function openSheet(mode = "open") {
-        sheet.classList.remove("fw-sheet--hidden", "fw-sheet--peek", "fw-sheet--open");
+        sheet.classList.remove(
+          "fw-sheet--hidden",
+          "fw-sheet--peek",
+          "fw-sheet--open"
+        );
         sheet.classList.add(mode === "peek" ? "fw-sheet--peek" : "fw-sheet--open");
         sheet.setAttribute("aria-hidden", "false");
       }
