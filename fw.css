@@ -1,0 +1,684 @@
+/* =========================================================
+   Five Wonders – Shared Stylesheet (fw.css)
+   Works for: index, add-place, edit-places, view, about
+   ========================================================= */
+
+/* ---------- Base / Theme ---------- */
+:root{
+  /* Your consistent header height */
+  --fw-header-h: 48px;
+
+  /* Colors */
+  --fw-bg: radial-gradient(circle at top, #e0ecff 0, #f9fafb 55%);
+  --fw-text: #111827;
+  --fw-muted: #6b7280;
+
+  --fw-header-bg: #111827;
+  --fw-header-title: #e5e7eb;
+  --fw-header-link: #9ca3af;
+  --fw-header-link-hover: #e5e7eb;
+
+  --fw-card-bg: #ffffff;
+  --fw-border: #e5e7eb;
+
+  --fw-primary: #111827;
+  --fw-primary-hover: #0b1220;
+
+  --fw-danger: #ef4444;
+  --fw-danger-hover: #dc2626;
+
+  --fw-soft: #f3f4f6;
+  --fw-soft-hover: #d1d5db;
+
+  --fw-accent: #22c55e;
+}
+
+* { box-sizing: border-box; }
+
+html, body{
+  height: 100%;
+  margin: 0;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: var(--fw-text);
+  background: #fff;
+}
+
+/* Many pages want a light background */
+body.fw-bg,
+body.fw-home,
+body.fw-about{
+  background: var(--fw-bg);
+}
+
+/* Slightly scale up on mobile (you were doing this per-page) */
+:root { font-size: 16px; }
+@media (max-width: 768px){
+  :root { font-size: 18px; }
+}
+
+/* ---------- Shared Header / Nav ---------- */
+.fw-header{
+  height: var(--fw-header-h);
+  background: var(--fw-header-bg);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  font-size: 14px;
+}
+
+.fw-header-title{
+  font-weight: 600; /* safe default across pages */
+  color: var(--fw-header-title);
+  letter-spacing: 0.02em;
+}
+
+.fw-header-nav a{
+  color: var(--fw-header-link);
+  text-decoration: none;
+  font-size: 13px;
+  margin-left: 10px;
+}
+
+.fw-header-nav a:first-child{ margin-left: 0; }
+
+.fw-header-nav a:hover{
+  color: var(--fw-header-link-hover);
+  text-decoration: underline;
+}
+
+/* Mobile: allow horizontal scroll for nav (used in view.html) */
+@media (max-width: 768px){
+  .fw-header-nav{
+    display: flex;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .fw-header-nav::-webkit-scrollbar{ display: none; }
+  .fw-header-nav a{ flex: 0 0 auto; }
+}
+
+/* ---------- Home (index) card + buttons ---------- */
+.fw-home-main{
+  min-height: calc(100vh - var(--fw-header-h));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 12px 32px;
+}
+
+.fw-card{
+  background: var(--fw-card-bg);
+  border-radius: 18px;
+  box-shadow: 0 20px 45px rgba(15, 23, 42, 0.18);
+  padding: 24px 24px 20px;
+  width: 100%;
+  max-width: 460px;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+}
+
+.fw-logo-wrap{ display: flex; justify-content: center; margin-bottom: 10px; }
+
+.fw-logo-img{
+  max-width: 260px;
+  width: 100%;
+  height: auto;
+  filter: drop-shadow(0 8px 18px rgba(15, 23, 42, 0.25));
+}
+
+.fw-greeting{
+  font-size: 14px;
+  font-weight: 650;
+  text-align: center;
+  margin: 6px 0 2px;
+  color: var(--fw-text);
+  display: none; /* show via JS when you have a name */
+}
+
+.fw-subtitle{
+  font-size: 13px;
+  text-align: center;
+  color: #4b5563;
+  margin-bottom: 20px;
+}
+
+.fw-grid{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+/* Buttons */
+.fw-btn{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 12px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  transition: transform 0.08s ease-out, box-shadow 0.12s ease-out;
+  border: 1px solid transparent;
+}
+
+.fw-btn:active{ transform: translateY(1px); }
+
+.fw-btn-primary{
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  color: #0b1120;
+  box-shadow: 0 10px 25px rgba(34, 197, 94, 0.45);
+}
+
+.fw-btn-secondary{
+  background: var(--fw-soft);
+  color: var(--fw-text);
+  border-color: rgba(148, 163, 184, 0.6);
+}
+
+.fw-footer{
+  margin-top: 16px;
+  font-size: 11px;
+  text-align: center;
+  color: var(--fw-muted);
+}
+
+.fw-access-line{
+  margin-top: 10px;
+  font-size: 12px;
+  text-align: center;
+  color: var(--fw-muted);
+  display: none; /* show via JS if you want */
+}
+.fw-access-line a{
+  color: #374151;
+  text-decoration: none;
+  margin-left: 8px;
+}
+.fw-access-line a:hover{ text-decoration: underline; }
+
+/* ---------- Common text helpers ---------- */
+.small-help{
+  font-size: 0.85rem;
+  color: var(--fw-muted);
+}
+
+.section-title{
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin: 10px 0 6px;
+  color: var(--fw-text);
+}
+
+/* Token warning box used on add/edit */
+.token-warning{
+  font-size: 0.9rem;
+  color: #92400e;
+  background: #fef3c7;
+  border: 1px solid #facc15;
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+}
+
+/* ---------- Forms ---------- */
+label{
+  font-size: 0.9rem;
+  font-weight: 600;
+  display: block;
+  margin-top: 10px;
+  margin-bottom: 6px;
+  color: #374151;
+}
+
+input[type="text"],
+textarea{
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #d1d5db;
+  font-size: 1rem;
+  font-family: inherit;
+  background: #ffffff;
+  color: var(--fw-text);
+}
+
+textarea{ resize: vertical; min-height: 90px; }
+
+button{
+  border-radius: 12px;
+  border: none;
+  padding: 10px 12px;
+  font-size: 1rem;
+  cursor: pointer;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 44px;
+}
+
+.btn-primary{ background: var(--fw-primary); color: #fff; }
+.btn-primary:hover{ background: var(--fw-primary-hover); }
+
+.btn-danger{ background: var(--fw-danger); color: #fff; }
+.btn-danger:hover{ background: var(--fw-danger-hover); }
+
+.btn-ghost{
+  background: var(--fw-soft);
+  color: var(--fw-text);
+}
+.btn-ghost:hover{ background: var(--fw-soft-hover); }
+
+/* ---------- Pills ---------- */
+.pill{
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid #d1d5db;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--fw-text);
+  background: var(--fw-soft);
+  margin-bottom: 10px;
+}
+
+/* ---------- Layout helpers for add/edit pages (desktop split) ---------- */
+.fw-app-split{
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  grid-template-rows: var(--fw-header-h) 1fr;
+  grid-template-areas:
+    "header header"
+    "sidebar main";
+  height: 100%;
+  min-height: 0;
+}
+
+.fw-app-split > header.fw-header{ grid-area: header; }
+
+.fw-sidebar{
+  grid-area: sidebar;
+  border-right: 1px solid var(--fw-border);
+  padding: 12px;
+  overflow-y: auto;
+  min-height: 0;
+  background: #fff;
+}
+
+.fw-main{
+  grid-area: main;
+  padding: 16px 18px;
+  overflow-y: auto;
+  min-height: 0;
+  background: #fff;
+}
+
+/* ---------- Add-place map layout ---------- */
+.fw-map-wrap{
+  grid-area: main;
+  position: relative;
+  min-height: 0;
+}
+
+.fw-map{
+  width: 100%;
+  height: 100%;
+}
+
+/* Search list used on add-place */
+#search-results{
+  margin-top: 6px;
+  max-height: 140px;
+  overflow-y: auto;
+  border: 1px solid var(--fw-border);
+  border-radius: 4px;
+}
+
+.search-item{
+  padding: 6px 8px;
+  font-size: 12px;
+  cursor: pointer;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.search-item:last-child{ border-bottom: none; }
+.search-item:hover{ background: #f3f4f6; }
+
+/* ---------- Place list used on edit-places ---------- */
+.place-list{
+  margin-top: 8px;
+  border-radius: 12px;
+  border: 1px solid var(--fw-border);
+  overflow: hidden;
+  background: #fff;
+}
+
+.place-row{
+  padding: 10px 12px;
+  font-size: 0.95rem;
+  border-bottom: 1px solid #f3f4f6;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: #fff;
+  color: var(--fw-text);
+}
+.place-row:last-child{ border-bottom: none; }
+.place-row:hover{ background: #f3f4f6; }
+.place-row.active{ background: #dbeafe; }
+
+.place-row-title{ font-weight: 600; }
+.place-row-note{
+  font-size: 0.85rem;
+  color: var(--fw-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ---------- “Sheet” pattern used on add/edit/view mobile ---------- */
+.fw-fab{
+  display: none;
+  border: 1px solid rgba(0,0,0,0.15);
+  background: #fff;
+  box-shadow: 0 10px 24px rgba(0,0,0,0.18);
+  border-radius: 999px;
+  min-height: 44px;
+}
+
+/* Add-place FAB (absolute over map) */
+.fw-fab--map{
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 16px;
+  padding: 12px 16px;
+  font-size: 1rem;
+  font-weight: 700;
+  z-index: 900;
+}
+
+/* Edit FAB (fixed) */
+.fw-fab--fixed{
+  position: fixed;
+  right: 16px;
+  bottom: calc(16px + env(safe-area-inset-bottom));
+  padding: 12px 14px;
+  font-size: 1rem;
+  font-weight: 800;
+  z-index: 2100;
+}
+
+@media (max-width: 768px){
+  .fw-fab{ display: inline-flex; align-items: center; justify-content: center; }
+}
+
+/* Generic bottom sheet */
+.fw-sheet{
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  background: #fff;
+  border-top-left-radius: 16px;
+  border-top-right-radius: 16px;
+  box-shadow: 0 14px 40px rgba(0,0,0,0.25);
+  transform: translateY(100%);
+  transition: transform 180ms ease;
+  border-top: 1px solid rgba(0,0,0,0.12);
+  box-sizing: border-box;
+}
+
+.fw-sheet--open{ transform: translateY(0); }
+.fw-sheet--peek{ transform: translateY(55%); }
+.fw-sheet--hidden{ transform: translateY(100%); }
+
+.fw-sheet-handle{
+  width: 44px;
+  height: 5px;
+  border-radius: 999px;
+  background: rgba(0,0,0,0.25);
+  margin: 10px auto 6px;
+}
+
+.fw-sheet-header{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-bottom: 1px solid rgba(0,0,0,0.10);
+}
+
+.fw-sheet-title{
+  font-weight: 800;
+  font-size: 1.05rem;
+}
+
+.fw-sheet-close{
+  border: none;
+  background: transparent;
+  font-size: 1.3rem;
+  padding: 8px;
+  min-height: 44px;
+  min-width: 44px;
+  cursor: pointer;
+}
+
+.fw-sheet-content{
+  padding: 12px 14px;
+  overflow: auto;
+  box-sizing: border-box;
+}
+
+/* Add-place sheet sizing */
+.fw-sheet--add{ height: 78vh; z-index: 2000; }
+.fw-sheet--add .fw-sheet-content{ height: calc(78vh - 64px); padding-bottom: calc(90px + env(safe-area-inset-bottom)); }
+
+/* Edit sheet sizing */
+.fw-sheet--edit{ height: 82vh; z-index: 2200; }
+.fw-sheet--edit .fw-sheet-content{ height: calc(82vh - 64px); padding-bottom: calc(110px + env(safe-area-inset-bottom)); }
+
+/* View “place sheet” sizing */
+.fw-sheet--view{ height: 76vh; z-index: 4000; }
+.fw-sheet--view .fw-sheet-content{ height: calc(76vh - 64px); padding-bottom: calc(16px + env(safe-area-inset-bottom)); }
+
+/* Sticky action row variants */
+.save-row,
+.action-row{
+  position: sticky;
+  bottom: 0;
+  background: #fff;
+  border-top: 1px solid rgba(0,0,0,0.12);
+  z-index: 10;
+  padding: 12px 14px calc(12px + env(safe-area-inset-bottom));
+  margin-top: 16px;
+}
+
+.save-row{
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
+}
+.save-btn{
+  font-weight: 800;
+  padding: 12px 16px;
+  min-height: 44px;
+  border-radius: 12px;
+}
+
+@media (max-width: 768px){
+  .save-row{ flex-direction: column; align-items: stretch; }
+  .save-btn{ width: 100%; }
+  .action-row{ display: flex; flex-direction: column; gap: 10px; }
+  .action-row .btn-primary,
+  .action-row .btn-danger,
+  .action-row .btn-ghost{ width: 100%; }
+}
+
+/* ---------- Leaflet popup polish (used on add/view) ---------- */
+.leaflet-popup-content{
+  font-size: 1rem;
+  line-height: 1.35;
+  margin: 10px 12px;
+}
+.leaflet-popup-content-wrapper{ border-radius: 14px; }
+
+/* View page “place” text styles */
+.place-title{
+  font-weight: 800;
+  margin-bottom: 6px;
+  font-size: 1.05rem;
+}
+.place-notes{
+  margin-top: 6px;
+  color: var(--fw-text);
+  font-size: 1rem;
+  white-space: pre-wrap;
+}
+.place-meta{
+  font-size: 0.9rem;
+  color: var(--fw-muted);
+  margin-top: 8px;
+}
+
+/* ---------- View map takes full space under header ---------- */
+.fw-map-fullscreen{
+  position: absolute;
+  top: var(--fw-header-h);
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+/* Colored dot marker (your newer approach) */
+.fw-dot{
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.35);
+}
+@media (max-width: 768px){
+  .fw-dot{ width: 22px; height: 22px; }
+}
+
+/* ---------- Invite Gate styles (index + optionally others) ---------- */
+.fw-locked #app{
+  filter: blur(6px);
+  opacity: 0.35;
+  pointer-events: none;
+  user-select: none;
+}
+
+#inviteGate{
+  position: fixed;
+  inset: 0;
+  display: none; /* show via JS only when needed */
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(17, 24, 39, 0.72);
+  z-index: 9999;
+}
+
+#inviteGate .panel{
+  width: min(440px, 100%);
+  background: #fff;
+  border-radius: 14px;
+  padding: 20px;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.35);
+}
+
+#inviteGate h2{ margin: 0 0 8px; font-size: 18px; color: var(--fw-text); }
+#inviteGate p{ margin: 0 0 14px; font-size: 14px; color: #374151; line-height: 1.35; }
+
+#inviteGate .row{ display: flex; gap: 10px; }
+
+#inviteGate input{
+  flex: 1;
+  padding: 10px 12px;
+  border: 1px solid #D1D5DB;
+  border-radius: 10px;
+  font-size: 14px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+#inviteGate button{
+  padding: 10px 14px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--fw-primary);
+  color: #fff;
+  cursor: pointer;
+}
+#inviteGate button:disabled{ opacity: 0.7; cursor: not-allowed; }
+
+#inviteGate .error{
+  margin-top: 10px;
+  font-size: 13px;
+  color: #b91c1c;
+  display: none;
+}
+
+#inviteGate .meta{
+  margin-top: 12px;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--fw-muted);
+}
+
+#inviteGate .meta a{
+  color: #374151;
+  text-decoration: none;
+}
+#inviteGate .meta a:hover{ text-decoration: underline; }
+
+/* ---------- About page shell ---------- */
+.shell{
+  width: 100%;
+  max-width: 720px;
+  margin: 24px auto;
+  padding: 0 16px;
+}
+
+a{ color: var(--fw-accent); text-decoration: none; }
+a:hover{ text-decoration: underline; }
+
+h1{ font-size: 28px; margin: 4px 0 10px; }
+h2{ font-size: 18px; margin-top: 20px; margin-bottom: 6px; }
+p{ font-size: 14px; line-height: 1.6; margin: 10px 0; }
+ul{ margin: 8px 0 0 20px; padding: 0; font-size: 14px; }
+li{ margin-bottom: 4px; }
+
+.back-link{ margin-top: 20px; font-size: 13px; }
+
+/* ---------- Page-specific responsiveness helpers ---------- */
+/* For add/edit pages, collapse split layout to map/list on mobile */
+@media (max-width: 768px){
+  /* add-place: map-only layout; sidebar gets moved into sheet */
+  .fw-add-mobile-map{
+    grid-template-columns: 1fr;
+    grid-template-rows: var(--fw-header-h) 1fr;
+    grid-template-areas:
+      "header"
+      "main";
+  }
+
+  /* edit-places: list-only on mobile (your code hides #main) */
+  .fw-edit-mobile-list{
+    grid-template-columns: 1fr;
+    grid-template-rows: var(--fw-header-h) 1fr;
+    grid-template-areas:
+      "header"
+      "sidebar";
+  }
+}
