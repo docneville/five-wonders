@@ -29,10 +29,10 @@
     </nav>
   </header>
 
-  <!-- Map fills the screen under the header (styled via .fw-map-fullscreen in fw.css) -->
+  <!-- Map fills the screen under the header -->
   <div id="map" class="fw-map-fullscreen"></div>
 
-  <!-- Mobile place sheet (uses generic fw-sheet styles from fw.css) -->
+  <!-- Mobile place sheet -->
   <section
     id="placeSheet"
     class="fw-sheet fw-sheet--view fw-sheet--hidden"
@@ -44,7 +44,8 @@
       title="Tap to collapse/expand"
     ></div>
     <div class="fw-sheet-header">
-      <div class="fw-sheet-title">Place</div>
+      <!-- CHANGED: give this an id so we can set it to the place title -->
+      <div class="fw-sheet-title" id="placeSheetTitle">Place</div>
       <button
         id="closePlaceSheetBtn"
         class="fw-sheet-close"
@@ -86,10 +87,11 @@
     // Default view until we have data
     map.setView([39.5, -98.35], 4);
 
-    // ===== Mobile sheet helpers (using fw-sheet classes) =====
+    // ===== Mobile sheet helpers =====
     const mqMobile = window.matchMedia("(max-width: 768px)");
     const placeSheet = document.getElementById("placeSheet");
     const placeSheetContent = document.getElementById("placeSheetContent");
+    const placeSheetTitleEl = document.getElementById("placeSheetTitle");
     const closePlaceSheetBtn = document.getElementById("closePlaceSheetBtn");
     const placeSheetHandle = document.getElementById("placeSheetHandle");
 
@@ -130,18 +132,17 @@
       return mqMobile.matches;
     }
 
-    // ===== Color per user_id (uses .fw-dot from fw.css) =====
+    // ===== Color per user_id =====
     const userColorCache = new Map();
 
     function colorForUser(key) {
       const k = String(key || "unknown");
       if (userColorCache.has(k)) return userColorCache.get(k);
 
-      // Simple stable hash -> hue
       let hash = 0;
       for (let i = 0; i < k.length; i++) {
         hash = k.charCodeAt(i) + ((hash << 5) - hash);
-        hash |= 0; // keep 32-bit
+        hash |= 0;
       }
 
       const hue = Math.abs(hash) % 360;
@@ -150,29 +151,37 @@
       return color;
     }
 
-    function buildPlaceHtml({ title, notes, createdAt, savedBy }) {
+    // Body content used in both popup + sheet (NO title here)
+    function buildPlaceBodyHtml({ notes, createdAt, savedBy }) {
+      return `
+        ${
+          notes
+            ? `<div class="place-notes">${escapeHtml(notes)}</div>`
+            : `<div class="place-notes" style="color:#6b7280;">No note yet.</div>`
+        }
+        ${
+          createdAt || savedBy
+            ? `
+          <div class="place-meta">
+            ${createdAt ? `Saved: ${escapeHtml(createdAt)}` : ""}
+            ${
+              savedBy
+                ? `${createdAt ? "<br/>" : ""}Saved by ${escapeHtml(savedBy)}`
+                : ""
+            }
+          </div>
+        `
+            : ""
+        }
+      `;
+    }
+
+    // Desktop popup includes the title in the popup itself
+    function buildPopupHtml({ title, notes, createdAt, savedBy }) {
       return `
         <div class="place-popup">
           <div class="place-title">${escapeHtml(title)}</div>
-          ${
-            notes
-              ? `<div class="place-notes">${escapeHtml(notes)}</div>`
-              : `<div class="place-notes" style="color:#6b7280;">No note yet.</div>`
-          }
-          ${
-            createdAt || savedBy
-              ? `
-            <div class="place-meta">
-              ${createdAt ? `Saved: ${escapeHtml(createdAt)}` : ""}
-              ${
-                savedBy
-                  ? `${createdAt ? "<br/>" : ""}Saved by ${escapeHtml(savedBy)}`
-                  : ""
-              }
-            </div>
-          `
-              : ""
-          }
+          ${buildPlaceBodyHtml({ notes, createdAt, savedBy })}
         </div>
       `;
     }
@@ -238,9 +247,15 @@
           place.username ||
           (place.last_name ? `Friend (${place.last_name})` : "Someone");
 
-        const html = buildPlaceHtml({ title, notes, createdAt, savedBy });
+        const popupHtml = buildPopupHtml({
+          title,
+          notes,
+          createdAt,
+          savedBy,
+        });
 
-        // Use user_id as the stable per-user key for coloring
+        const bodyHtml = buildPlaceBodyHtml({ notes, createdAt, savedBy });
+
         const userKey = place.user_id || "unknown";
         const color = colorForUser(userKey);
         const icon = makeDotIcon(color);
@@ -249,11 +264,15 @@
 
         if (isMobile()) {
           marker.on("click", () => {
-            placeSheetContent.innerHTML = html;
+            // Set sheet header to place title and body to details only
+            if (placeSheetTitleEl) {
+              placeSheetTitleEl.textContent = title;
+            }
+            placeSheetContent.innerHTML = `<div class="place-popup">${bodyHtml}</div>`;
             openPlaceSheet("open");
           });
         } else {
-          marker.bindPopup(html, { maxWidth: 320 });
+          marker.bindPopup(popupHtml, { maxWidth: 320 });
         }
 
         bounds.extend([lat, lon]);
