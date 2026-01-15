@@ -4,133 +4,11 @@
   <meta charset="UTF-8" />
   <title>About – Five Wonders</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <style>
-    :root { color-scheme: light dark; }
 
-    .fw-header {
-      height: 48px;
-      background: #111827;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 16px;
-      font-size: 14px;
-    }
-
-    .fw-header-title {
-      font-weight: 500;
-      color: #e5e7eb;
-    }
-
-    .fw-header-nav a {
-      color: #9ca3af;
-      text-decoration: none;
-      font-size: 13px;
-      margin-left: 10px;
-    }
-
-    .fw-header-nav a:first-child {
-      margin-left: 0;
-    }
-
-    .fw-header-nav a:hover {
-      color: #e5e7eb;
-      text-decoration: underline;
-    }
-
-    
-    body {
-      margin: 0;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      min-height: 100vh;
-      background: radial-gradient(circle at top, #e0ecff 0, #f9fafb 55%);
-      color: #111827;
-    }
-
-
-    header {
-      height: 48px;
-      background: #111827;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 16px;
-      font-size: 14px;
-    }
-
-    header a {
-      color: #9ca3af;
-      text-decoration: none;
-      font-size: 13px;
-    }
-
-    header a:hover {
-      color: #e5e7eb;
-      text-decoration: underline;
-    }
-
-    .shell {
-      width: 100%;
-      max-width: 720px;
-      margin: 24px auto;
-      padding: 0 16px;
-    }
-
-    a {
-      color: #22c55e;
-      text-decoration: none;
-    }
-
-    a:hover {
-      text-decoration: underline;
-    }
-
-    .pill {
-      display: inline-flex;
-      align-items: center;
-      padding: 4px 10px;
-      border-radius: 999px;
-      border: 1px solid rgba(148, 163, 184, 0.5);
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: #9ca3af;
-      margin-bottom: 8px;
-    }
-
-    h1 {
-      font-size: 28px;
-      margin: 4px 0 10px;
-    }
-
-    p {
-      font-size: 14px;
-      line-height: 1.6;
-      margin: 10px 0;
-    }
-
-    h2 {
-      font-size: 18px;
-      margin-top: 20px;
-      margin-bottom: 6px;
-    }
-
-    ul {
-      margin: 8px 0 0 20px;
-      padding: 0;
-      font-size: 14px;
-    }
-
-    li {
-      margin-bottom: 4px;
-    }
-
-    .back-link {
-      margin-top: 20px;
-      font-size: 13px;
-    }
-  </style>
+  <!-- Shared app styles -->
+  <link rel="stylesheet" href="fw.css" />
 </head>
+
 <body>
   <header class="fw-header">
     <div class="fw-header-title">Five Wonders</div>
@@ -143,9 +21,9 @@
     </nav>
   </header>
 
-
-  <div class="shell">
+  <main class="fw-shell">
     <div class="pill">About</div>
+
     <h1>What is Five Wonders?</h1>
     <p>
       Five Wonders is an invite-only app for sharing the places you <em>actually</em> love —
@@ -155,27 +33,37 @@
 
     <h2>How it works</h2>
     <ul>
-      <li><strong>Add</strong> – Use the <a href="add-place.html">Add</a> page to search a place on the map or just drop a pin, tweak the name, and add your own note about why it’s great.</li>
-      <li><strong>View</strong> – Open the <a href="view.html">View</a> map to see your friends' saved places, with markers you can click for notes and more info.</li>
-      <li><strong>Edit</strong> – Use the <a href="edit-places.html">Edit</a> page to update or remove places you’ve added.</li>
+      <li>
+        <strong>Add</strong> – Use the <a href="add-place.html">Add</a> page to search for a place
+        or drop a pin, tweak the name, and write why it matters to you.
+      </li>
+      <li>
+        <strong>View</strong> – Open the <a href="view.html">View</a> map to explore friends’
+        recommendations, with notes and context.
+      </li>
+      <li>
+        <strong>Edit</strong> – Use the <a href="edit-places.html">Edit</a> page to update or remove
+        places you’ve added.
+      </li>
     </ul>
 
     <h2>Who can use it?</h2>
     <p>
-      Right now Five Wonders is an invite-only beta. Each person gets a private invite code
-      that ties their saved places to their profile. That lets the <a href="view.html">View</a> map show who saved what,
-      and eventually makes it possible to filter by friends.
+      Five Wonders is currently an invite-only beta. Each person has a private invite code
+      that links their saved places to their profile. This lets the map show who saved what,
+      and eventually enables filtering by friends.
     </p>
 
     <h2>Why does it exist?</h2>
     <p>
-      Most review sites (TripAdvisor, Yelp, Google) optimize for volume. Five Wonders is the opposite: trusted recommendations layered
-      on top of a map, powered by people you actually know.
+      Most review platforms optimize for volume and engagement. Five Wonders is the opposite:
+      a small, trusted layer of recommendations on top of a map — powered by people you
+      actually know.
     </p>
 
-    <div class="back-link">
+    <p class="fw-back-link">
       ← <a href="index.html">Back to home</a>
-    </div>
-  </div>
+    </p>
+  </main>
 </body>
 </html>
