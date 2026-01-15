@@ -41,7 +41,10 @@ html, body{
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   color: var(--fw-text);
   background: #fff;
+  max-width: 100%;
+  overflow-x: hidden;  /* prevent horizontal scroll / run-off on mobile */
 }
+
 
 /* Many pages want a light background */
 body.fw-bg,
@@ -677,10 +680,21 @@ button{
 .shell,
 .fw-shell{
   width: 100%;
-  max-width: 960px;
+  max-width: 720px;
   margin: 24px auto;
-  padding: 0 16px;
+  padding: 0 16px 32px;
+  box-sizing: border-box;
 }
+
+/* Slightly tighter padding on small phones */
+@media (max-width: 480px){
+  .shell,
+  .fw-shell{
+    padding-inline: 12px;
+    margin-top: 16px;
+  }
+}
+
 
 .about-grid{
   display: grid;
