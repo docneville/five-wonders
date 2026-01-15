@@ -5,363 +5,15 @@
   <title>Edit Places – Five Wonders</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
+  <!-- Shared styles -->
+  <link rel="stylesheet" href="fw.css" />
+
   <!-- Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-  <style>
-    :root { color-scheme: light; font-size: 16px; }
-    @media (max-width: 768px) { :root { font-size: 18px; } }
-
-    * { box-sizing: border-box; }
-
-    html, body {
-      height: 100%;
-      margin: 0;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      color: #111827;
-      background: #ffffff;
-    }
-
-    .fw-header {
-      height: 48px;
-      background: #111827;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 16px;
-      font-size: 14px;
-      box-sizing: border-box;
-    }
-
-    .fw-header-title {
-      font-weight: 600;
-      color: #e5e7eb;
-      letter-spacing: 0.02em;
-      text-transform: none;
-      font-size: 14px;
-    }
-
-    .fw-header-nav a {
-      color: #9ca3af;
-      text-decoration: none;
-      font-size: 13px;
-      margin-left: 10px;
-    }
-
-    .fw-header-nav a:first-child { margin-left: 0; }
-
-    .fw-header-nav a:hover {
-      color: #e5e7eb;
-      text-decoration: underline;
-    }
-
-    #app {
-      display: grid;
-      grid-template-columns: 340px 1fr;
-      grid-template-rows: 48px 1fr;
-      grid-template-areas:
-        "header header"
-        "sidebar main";
-      height: 100%;
-      min-height: 0;
-    }
-
-    header.fw-header { grid-area: header; }
-
-    #sidebar {
-      grid-area: sidebar;
-      border-right: 1px solid #e5e7eb;
-      padding: 12px;
-      overflow-y: auto;
-      min-height: 0;
-      background: #ffffff;
-    }
-
-    #main {
-      grid-area: main;
-      padding: 16px 18px;
-      overflow-y: auto;
-      min-height: 0;
-      background: #ffffff;
-    }
-
-    .token-warning {
-      font-size: 0.9rem;
-      color: #92400e;
-      background: #fef3c7;
-      border: 1px solid #facc15;
-      border-radius: 10px;
-      padding: 10px 12px;
-      margin-bottom: 10px;
-    }
-
-    .small-help {
-      font-size: 0.85rem;
-      color: #6b7280;
-    }
-
-    .section-title {
-      font-size: 0.95rem;
-      font-weight: 700;
-      margin: 10px 0 6px;
-      color: #111827;
-    }
-
-    .place-list {
-      margin-top: 8px;
-      border-radius: 12px;
-      border: 1px solid #e5e7eb;
-      overflow: hidden;
-      background: #ffffff;
-    }
-
-    .place-row {
-      padding: 10px 12px;
-      font-size: 0.95rem;
-      border-bottom: 1px solid #f3f4f6;
-      cursor: pointer;
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      background: #ffffff;
-      color: #111827;
-    }
-
-    .place-row:last-child { border-bottom: none; }
-
-    .place-row:hover { background: #f3f4f6; }
-    .place-row.active { background: #dbeafe; }
-
-    .place-row-title { font-weight: 600; }
-
-    .place-row-note {
-      font-size: 0.85rem;
-      color: #6b7280;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .pill {
-      display: inline-flex;
-      align-items: center;
-      padding: 6px 10px;
-      border-radius: 999px;
-      border: 1px solid #d1d5db;
-      font-size: 0.75rem;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: #111827;
-      background: #f3f4f6;
-      margin-bottom: 10px;
-    }
-
-    h1 {
-      font-size: 1.25rem;
-      margin: 4px 0 8px;
-      color: #111827;
-    }
-
-    label {
-      font-size: 0.9rem;
-      font-weight: 600;
-      display: block;
-      margin-top: 10px;
-      margin-bottom: 6px;
-      color: #374151;
-    }
-
-    input[type="text"],
-    textarea {
-      width: 100%;
-      padding: 10px 12px;
-      border-radius: 10px;
-      border: 1px solid #d1d5db;
-      font-size: 1rem;
-      font-family: inherit;
-      background: #ffffff;
-      color: #111827;
-    }
-
-    textarea { resize: vertical; min-height: 90px; }
-
-    .row {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-      margin-top: 10px;
-      font-size: 0.85rem;
-      color: #6b7280;
-    }
-
-    button {
-      border-radius: 12px;
-      border: none;
-      padding: 10px 12px;
-      font-size: 1rem;
-      cursor: pointer;
-      font-weight: 700;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      min-height: 44px;
-    }
-
-    .btn-primary { background: #111827; color: #ffffff; }
-    .btn-primary:hover { background: #0b1220; }
-
-    .btn-danger { background: #ef4444; color: #fff; }
-    .btn-danger:hover { background: #dc2626; }
-
-    .btn-ghost {
-      background: #e5e7eb;
-      color: #111827;
-      font-weight: 700;
-    }
-
-    .btn-ghost:hover { background: #d1d5db; }
-
-    .actions {
-      margin-top: 14px;
-      display: flex;
-      gap: 10px;
-      align-items: center;
-      flex-wrap: wrap;
-    }
-
-    .status-msg {
-      font-size: 0.9rem;
-      color: #6b7280;
-      margin-top: 8px;
-    }
-
-    .empty-state {
-      font-size: 0.95rem;
-      color: #6b7280;
-      margin-top: 12px;
-    }
-
-    @media (max-width: 768px) {
-      #app {
-        grid-template-columns: 1fr;
-        grid-template-rows: 48px 1fr;
-        grid-template-areas:
-          "header"
-          "sidebar";
-      }
-      #main { display: none; }
-    }
-
-    .fw-fab {
-      display: none;
-      position: fixed;
-      right: 16px;
-      bottom: calc(16px + env(safe-area-inset-bottom));
-      padding: 12px 14px;
-      border-radius: 999px;
-      border: 1px solid rgba(0,0,0,0.15);
-      background: white;
-      font-size: 1rem;
-      font-weight: 800;
-      box-shadow: 0 10px 24px rgba(0,0,0,0.18);
-      z-index: 2100;
-      min-height: 44px;
-      align-items: center;
-      justify-content: center;
-    }
-
-    @media (max-width: 768px) {
-      .fw-fab { display: inline-flex; }
-    }
-
-    .fw-sheet {
-      position: fixed;
-      left: 0; right: 0; bottom: 0;
-      height: 82vh;
-      background: #fff;
-      border-top-left-radius: 16px;
-      border-top-right-radius: 16px;
-      box-shadow: 0 14px 40px rgba(0,0,0,0.25);
-      transform: translateY(100%);
-      transition: transform 180ms ease;
-      z-index: 2200;
-      border-top: 1px solid rgba(0,0,0,0.12);
-    }
-
-    .fw-sheet--open { transform: translateY(0); }
-    .fw-sheet--peek { transform: translateY(55%); }
-    .fw-sheet--hidden { transform: translateY(100%); }
-
-    .fw-sheet-handle {
-      width: 44px;
-      height: 5px;
-      border-radius: 999px;
-      background: rgba(0,0,0,0.25);
-      margin: 10px auto 6px;
-    }
-
-    .fw-sheet-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 10px 14px;
-      border-bottom: 1px solid rgba(0,0,0,0.10);
-    }
-
-    .fw-sheet-title {
-      font-weight: 800;
-      font-size: 1.05rem;
-    }
-
-    .fw-sheet-close {
-      border: none;
-      background: transparent;
-      font-size: 1.3rem;
-      padding: 8px;
-      min-height: 44px;
-      min-width: 44px;
-      cursor: pointer;
-    }
-
-    .fw-sheet-content {
-      padding: 12px 14px;
-      overflow: auto;
-      height: calc(82vh - 64px);
-      box-sizing: border-box;
-      padding-bottom: calc(110px + env(safe-area-inset-bottom));
-    }
-
-    .action-row {
-      position: sticky;
-      bottom: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: stretch;
-      gap: 10px;
-
-      padding: 12px 14px calc(12px + env(safe-area-inset-bottom));
-      margin-top: 16px;
-
-      background: white;
-      border-top: 1px solid rgba(0,0,0,0.12);
-      z-index: 10;
-    }
-
-    .action-row .btn-primary,
-    .action-row .btn-danger,
-    .action-row .btn-ghost {
-      width: 100%;
-    }
-
-    @media (min-width: 769px) {
-      .fw-sheet, .fw-fab { display: none !important; }
-    }
-  </style>
 </head>
 
 <body>
-  <div id="app">
+  <div id="app" class="fw-app-split fw-edit-mobile-list">
     <header class="fw-header">
       <div class="fw-header-title">Five Wonders</div>
       <nav class="fw-header-nav">
@@ -373,7 +25,8 @@
       </nav>
     </header>
 
-    <aside id="sidebar">
+    <!-- Left column: list + token banner -->
+    <aside id="sidebar" class="fw-sidebar">
       <div id="token-section"></div>
 
       <div class="section-title">Your places</div>
@@ -385,11 +38,13 @@
       <div id="sidebar-status" class="small-help" style="margin-top:8px;"></div>
     </aside>
 
-    <main id="main">
+    <!-- Right column: desktop edit form -->
+    <main id="main" class="fw-main">
       <div class="pill">Edit</div>
       <h1>Edit a saved place</h1>
       <p class="small-help">
-        Choose one of your places on the left, update the details, then click <strong>Save changes</strong>.
+        Choose one of your places on the left, update the details, then click
+        <strong>Save changes</strong>.
       </p>
 
       <div id="edit-panel">
@@ -422,18 +77,43 @@
       </div>
     </main>
 
-    <button id="openEditBtn" class="fw-fab" type="button" aria-label="Edit selected place">Edit</button>
+    <!-- Mobile FAB to open sheet -->
+    <button
+      id="openEditBtn"
+      class="fw-fab fw-fab--fixed"
+      type="button"
+      aria-label="Edit selected place"
+    >
+      Edit
+    </button>
 
-    <section id="editSheet" class="fw-sheet fw-sheet--hidden" aria-hidden="true">
-      <div class="fw-sheet-handle" id="sheetHandle" title="Tap to collapse/expand"></div>
+    <!-- Mobile bottom sheet for editing -->
+    <section
+      id="editSheet"
+      class="fw-sheet fw-sheet--edit fw-sheet--hidden"
+      aria-hidden="true"
+    >
+      <div
+        class="fw-sheet-handle"
+        id="sheetHandle"
+        title="Tap to collapse/expand"
+      ></div>
       <div class="fw-sheet-header">
         <div class="fw-sheet-title">Edit place</div>
-        <button id="closeSheetBtn" class="fw-sheet-close" type="button" aria-label="Close">✕</button>
+        <button
+          id="closeSheetBtn"
+          class="fw-sheet-close"
+          type="button"
+          aria-label="Close"
+        >
+          ✕
+        </button>
       </div>
       <div class="fw-sheet-content">
         <div id="mobile-edit-panel">
           <p class="empty-state" id="mobile-empty-message">
-            No place selected yet. Choose one from the list, then tap <strong>Edit</strong>.
+            No place selected yet. Choose one from the list, then tap
+            <strong>Edit</strong>.
           </p>
 
           <div id="mobile-edit-form" style="display:none;">
@@ -451,9 +131,15 @@
             </div>
 
             <div class="action-row">
-              <button id="m-save-changes-btn" class="btn-primary">Save changes</button>
-              <button id="m-delete-btn" class="btn-danger">Delete place</button>
-              <button id="m-cancel-btn" class="btn-ghost">Close</button>
+              <button id="m-save-changes-btn" class="btn-primary">
+                Save changes
+              </button>
+              <button id="m-delete-btn" class="btn-danger">
+                Delete place
+              </button>
+              <button id="m-cancel-btn" class="btn-ghost">
+                Close
+              </button>
               <div id="m-edit-status" class="status-msg"></div>
             </div>
           </div>
@@ -463,9 +149,10 @@
   </div>
 
   <script type="module">
-    // ===== Supabase + access model (same as index/add) =====
+    // ===== Supabase + access model =====
     const SUPABASE_URL = "https://ekpssonwtztubqfihlqm.supabase.co";
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVrcHNzb253dHp0dWJxZmlobHFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM1Njg2MjAsImV4cCI6MjA3OTE0NDYyMH0.R1_-ctf-6NsVUJEApf4N591lA9TPRCJQFzhrDVRbr_4";
+    const SUPABASE_ANON_KEY =
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVrcHNzb253dHp0dWJxZmlobHFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM1Njg2MjAsImV4cCI6MjA3OTE0NDYyMH0.R1_-ctf-6NsVUJEApf4N591lA9TPRCJQFzhrDVRbr_4";
 
     const LS_ID = "fw_profile_id";
     const LS_KEY = "fw_api_key";
@@ -538,7 +225,8 @@
               clearEditor();
               userPlaces = [];
               renderPlaceList();
-              document.getElementById("sidebar-status").textContent = "Set invite code to load places.";
+              document.getElementById("sidebar-status").textContent =
+                "Set invite code to load places.";
               renderTokenSection();
             };
 
@@ -555,8 +243,19 @@
         <strong>Invite code required</strong><br/>
         Enter your 8-character invite code once. It will be remembered on this device.
         <div style="margin-top:10px;">
-          <input type="text" id="invite-input" placeholder="AJWRRHFN" style="width:100%;margin-top:6px;text-transform:uppercase;letter-spacing:0.12em;" />
-          <button id="invite-save-btn" class="btn-primary" style="margin-top:10px;">Save invite code</button>
+          <input
+            type="text"
+            id="invite-input"
+            placeholder="AJWRRHFN"
+            style="width:100%;margin-top:6px;text-transform:uppercase;letter-spacing:0.12em;"
+          />
+          <button
+            id="invite-save-btn"
+            class="btn-primary"
+            style="margin-top:10px;"
+          >
+            Save invite code
+          </button>
         </div>
       `;
       container.appendChild(div);
@@ -595,7 +294,7 @@
       return false;
     }
 
-    // ===== Existing edit logic (unchanged except for token usage) =====
+    // ===== Edit logic =====
     let userPlaces = [];
     let activePlaceId = null;
 
@@ -635,7 +334,11 @@
 
     function openSheet(mode = "open") {
       if (!editSheet) return;
-      editSheet.classList.remove("fw-sheet--hidden", "fw-sheet--peek", "fw-sheet--open");
+      editSheet.classList.remove(
+        "fw-sheet--hidden",
+        "fw-sheet--peek",
+        "fw-sheet--open"
+      );
       editSheet.classList.add(mode === "peek" ? "fw-sheet--peek" : "fw-sheet--open");
       editSheet.setAttribute("aria-hidden", "false");
     }
@@ -682,7 +385,11 @@
 
         row.innerHTML = `
           <div class="place-row-title">${escapeHtml(title)}</div>
-          ${note ? `<div class="place-row-note">${escapeHtml(note)}</div>` : ""}
+          ${
+            note
+              ? `<div class="place-row-note">${escapeHtml(note)}</div>`
+              : ""
+          }
         `;
 
         row.onclick = () => selectPlace(p.id);
@@ -782,14 +489,25 @@
 
         const text = await res.text();
         if (!res.ok) {
-          console.error("Error response from manage-places (list):", res.status, text);
+          console.error(
+            "Error response from manage-places (list):",
+            res.status,
+            text
+          );
           sidebarStatusEl.textContent = "Error loading places.";
           return;
         }
 
         let data = {};
-        try { data = JSON.parse(text); }
-        catch (err) { console.error("JSON parse error from manage-places list:", err, text); }
+        try {
+          data = JSON.parse(text);
+        } catch (err) {
+          console.error(
+            "JSON parse error from manage-places list:",
+            err,
+            text
+          );
+        }
 
         userPlaces = Array.isArray(data.places) ? data.places : [];
         activePlaceId = null;
@@ -828,14 +546,25 @@
 
         const text = await res.text();
         if (!res.ok) {
-          console.error("Error response from manage-places (update):", res.status, text);
+          console.error(
+            "Error response from manage-places (update):",
+            res.status,
+            text
+          );
           statusEl.textContent = "Error saving changes.";
           return;
         }
 
         let data = {};
-        try { data = JSON.parse(text); }
-        catch (err) { console.error("JSON parse error from manage-places update:", err, text); }
+        try {
+          data = JSON.parse(text);
+        } catch (err) {
+          console.error(
+            "JSON parse error from manage-places update:",
+            err,
+            text
+          );
+        }
 
         if (data.status === "ok") {
           const idx = userPlaces.findIndex((p) => p.id === activePlaceId);
@@ -854,7 +583,10 @@
       }
     }
 
-    async function deletePlaceCommon({ statusEl, afterDeleteCloseSheet = false }) {
+    async function deletePlaceCommon({
+      statusEl,
+      afterDeleteCloseSheet = false,
+    }) {
       if (!activePlaceId) return;
 
       const apiKey = getStoredApiKey();
@@ -880,14 +612,25 @@
 
         const text = await res.text();
         if (!res.ok) {
-          console.error("Error response from manage-places (delete):", res.status, text);
+          console.error(
+            "Error response from manage-places (delete):",
+            res.status,
+            text
+          );
           statusEl.textContent = "Error deleting place.";
           return;
         }
 
         let data = {};
-        try { data = JSON.parse(text); }
-        catch (err) { console.error("JSON parse error from manage-places delete:", err, text); }
+        try {
+          data = JSON.parse(text);
+        } catch (err) {
+          console.error(
+            "JSON parse error from manage-places delete:",
+            err,
+            text
+          );
+        }
 
         if (data.status === "ok") {
           userPlaces = userPlaces.filter((p) => p.id !== activePlaceId);
@@ -943,7 +686,10 @@
     });
 
     mDeleteBtn?.addEventListener("click", () => {
-      deletePlaceCommon({ statusEl: mEditStatusEl, afterDeleteCloseSheet: true }).catch((err) => {
+      deletePlaceCommon({
+        statusEl: mEditStatusEl,
+        afterDeleteCloseSheet: true,
+      }).catch((err) => {
         console.error("Unexpected delete error:", err);
         mEditStatusEl.textContent = "Unexpected error – see console.";
       });
