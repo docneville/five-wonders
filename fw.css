@@ -477,15 +477,24 @@ button{
 
 /* Add-place sheet sizing */
 .fw-sheet--add{ height: 78vh; z-index: 2000; }
-.fw-sheet--add .fw-sheet-content{ height: calc(78vh - 64px); padding-bottom: calc(90px + env(safe-area-inset-bottom)); }
+.fw-sheet--add .fw-sheet-content{
+  height: calc(78vh - 64px);
+  padding-bottom: calc(90px + env(safe-area-inset-bottom));
+}
 
 /* Edit sheet sizing */
 .fw-sheet--edit{ height: 82vh; z-index: 2200; }
-.fw-sheet--edit .fw-sheet-content{ height: calc(82vh - 64px); padding-bottom: calc(110px + env(safe-area-inset-bottom)); }
+.fw-sheet--edit .fw-sheet-content{
+  height: calc(82vh - 64px);
+  padding-bottom: calc(110px + env(safe-area-inset-bottom));
+}
 
 /* View “place sheet” sizing */
 .fw-sheet--view{ height: 76vh; z-index: 4000; }
-.fw-sheet--view .fw-sheet-content{ height: calc(76vh - 64px); padding-bottom: calc(16px + env(safe-area-inset-bottom)); }
+.fw-sheet--view .fw-sheet-content{
+  height: calc(76vh - 64px);
+  padding-bottom: calc(16px + env(safe-area-inset-bottom));
+}
 
 /* Sticky action row variants */
 .save-row,
@@ -598,10 +607,15 @@ button{
 #inviteGate h2{ margin: 0 0 8px; font-size: 18px; color: var(--fw-text); }
 #inviteGate p{ margin: 0 0 14px; font-size: 14px; color: #374151; line-height: 1.35; }
 
-#inviteGate .row{ display: flex; gap: 10px; }
+#inviteGate .row{
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
 
 #inviteGate input{
   flex: 1;
+  min-width: 0;
   padding: 10px 12px;
   border: 1px solid #D1D5DB;
   border-radius: 10px;
@@ -617,7 +631,11 @@ button{
   background: var(--fw-primary);
   color: #fff;
   cursor: pointer;
+  min-height: 44px;
+  font-weight: 700;
+  white-space: nowrap;
 }
+
 #inviteGate button:disabled{ opacity: 0.7; cursor: not-allowed; }
 
 #inviteGate .error{
@@ -642,24 +660,89 @@ button{
 }
 #inviteGate .meta a:hover{ text-decoration: underline; }
 
-/* ---------- About page shell ---------- */
-.shell{
+/* Mobile-safe invite layout: prevents button overflow */
+@media (max-width: 420px){
+  #inviteGate .row{
+    flex-direction: column;
+    align-items: stretch;
+  }
+  #inviteGate input,
+  #inviteGate button{
+    width: 100%;
+  }
+}
+
+/* ---------- About page (UPDATED) ---------- */
+/* Keep legacy .shell for compatibility, but prefer .fw-shell + layout */
+.shell,
+.fw-shell{
   width: 100%;
-  max-width: 720px;
+  max-width: 960px;
   margin: 24px auto;
   padding: 0 16px;
 }
 
+.about-grid{
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+/* On desktop, add a right rail */
+@media (min-width: 900px){
+  .about-grid{
+    grid-template-columns: minmax(0, 1fr) 320px;
+    gap: 18px;
+  }
+}
+
+/* About main card can be wider than the home card */
+.about-card.fw-card{
+  max-width: 720px;
+}
+
+/* Right rail cards */
+.rail .mini.fw-card{
+  max-width: 100%;
+  padding: 16px;
+  border-radius: 16px;
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.12);
+}
+
+/* Typography for About (scoped so it doesn't affect map popups etc) */
+.about-card h1{
+  font-size: 1.6rem;
+  margin: 4px 0 10px;
+}
+.about-card h2{
+  font-size: 1.05rem;
+  margin-top: 18px;
+  margin-bottom: 8px;
+}
+.about-card p,
+.about-card li{
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+.about-card ul{
+  margin: 8px 0 0 18px;
+  padding: 0;
+}
+.about-card li{ margin-bottom: 6px; }
+
+.lede{
+  color: #374151;
+}
+
+.back-link{
+  margin-top: 18px;
+  font-size: 0.9rem;
+}
+
+/* Global link default (kept), but safe */
 a{ color: var(--fw-accent); text-decoration: none; }
 a:hover{ text-decoration: underline; }
-
-h1{ font-size: 28px; margin: 4px 0 10px; }
-h2{ font-size: 18px; margin-top: 20px; margin-bottom: 6px; }
-p{ font-size: 14px; line-height: 1.6; margin: 10px 0; }
-ul{ margin: 8px 0 0 20px; padding: 0; font-size: 14px; }
-li{ margin-bottom: 4px; }
-
-.back-link{ margin-top: 20px; font-size: 13px; }
 
 /* ---------- Page-specific responsiveness helpers ---------- */
 /* For add/edit pages, collapse split layout to map/list on mobile */
@@ -681,32 +764,4 @@ li{ margin-bottom: 4px; }
       "header"
       "sidebar";
   }
-
-    /* =========================================================
-    Invite Gate – mobile-safe layout (prevents button overflow)
-    ========================================================= */
-
-    #inviteGate .row {
-    align-items: stretch;
-    }
-
-    #inviteGate input {
-    min-width: 0;
-    }
-
-    @media (max-width: 420px) {
-    #inviteGate .row {
-        flex-direction: column;
-    }
-
-    #inviteGate input,
-    #inviteGate button {
-        width: 100%;
-    }
-    }
-
-    #inviteGate button {
-    min-height: 44px;
-    font-weight: 700;
-    }
 }

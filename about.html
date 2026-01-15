@@ -4,68 +4,7 @@
   <meta charset="UTF-8" />
   <title>About – Five Wonders</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-
-  <!-- Shared app styles -->
   <link rel="stylesheet" href="fw.css" />
-
-  <!-- Page fallback (safe even if fw.css already styles these) -->
-  <style>
-    /* If fw.css is missing shell/card/type, this keeps About looking good */
-    .fw-shell {
-      width: 100%;
-      max-width: 820px;
-      margin: 24px auto;
-      padding: 0 16px;
-    }
-    .fw-card {
-      background: #ffffff;
-      border-radius: 18px;
-      box-shadow: 0 20px 45px rgba(15, 23, 42, 0.12);
-      border: 1px solid rgba(148, 163, 184, 0.25);
-      padding: 18px 18px 16px;
-    }
-    .pill {
-      display: inline-flex;
-      align-items: center;
-      padding: 4px 10px;
-      border-radius: 999px;
-      border: 1px solid rgba(148, 163, 184, 0.5);
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: #6b7280;
-      margin-bottom: 10px;
-      background: rgba(255,255,255,0.7);
-    }
-    .fw-card h1 {
-      font-size: 26px;
-      margin: 6px 0 10px;
-      color: #111827;
-      letter-spacing: -0.01em;
-    }
-    .fw-card h2 {
-      font-size: 18px;
-      margin: 18px 0 8px;
-      color: #111827;
-    }
-    .fw-card p, .fw-card li {
-      font-size: 14px;
-      line-height: 1.65;
-      color: #111827;
-    }
-    .fw-card ul {
-      margin: 8px 0 0 18px;
-      padding: 0;
-    }
-    .fw-card a {
-      color: #16a34a;
-      text-decoration: none;
-      font-weight: 600;
-    }
-    .fw-card a:hover { text-decoration: underline; }
-    .fw-back-link { margin-top: 18px; font-size: 13px; color: #6b7280; }
-    .fw-back-link a { font-weight: 600; }
-  </style>
 </head>
 
 <body>
@@ -81,48 +20,64 @@
   </header>
 
   <main class="fw-shell">
-    <section class="fw-card">
-      <div class="pill">About</div>
+    <div class="about-grid">
+      <!-- Main content -->
+      <section class="fw-card about-card">
+        <div class="pill">About</div>
 
-      <h1>What is Five Wonders?</h1>
-      <p>
-        Five Wonders is an invite-only app for sharing the places you <em>actually</em> love —
-        the coffee shops, bakeries, parks, bookstores, and weird little spots
-        you’d recommend to a close friend, not an algorithm.
-      </p>
+        <h1 class="about-title">What is Five Wonders?</h1>
+        <p class="lede">
+          Five Wonders is an invite-only app for sharing the places you <em>actually</em> love —
+          the coffee shops, bakeries, parks, bookstores, and weird little spots you’d recommend
+          to a close friend, not an algorithm.
+        </p>
 
-      <h2>How it works</h2>
-      <ul>
-        <li>
-          <strong>Add</strong> – Use the <a href="add-place.html">Add</a> page to search for a place
-          or drop a pin, tweak the name, and write why it matters to you.
-        </li>
-        <li>
-          <strong>View</strong> – Open the <a href="view.html">View</a> map to explore friends’
-          recommendations, with notes and context.
-        </li>
-        <li>
-          <strong>Edit</strong> – Use the <a href="edit-places.html">Edit</a> page to update or remove
-          places you’ve added.
-        </li>
-      </ul>
+        <h2>Why it exists</h2>
+        <p>
+          Most review sites optimize for volume. Five Wonders is the opposite:
+          a small, trusted layer of recommendations on top of a map — powered by people you
+          actually know.
+        </p>
 
-      <h2>Who can use it?</h2>
-      <p>
-        Five Wonders is currently an invite-only beta. Each person has a private invite code
-        that links their saved places to their profile. This lets the map show who saved what,
-        and eventually enables filtering by friends.
-      </p>
+        <h2>How it works</h2>
+        <ul>
+          <li><strong>Add</strong> – Use <a href="add-place.html">Add</a> to search or drop a pin, tweak the name, and write why it’s great.</li>
+          <li><strong>View</strong> – Open <a href="view.html">View</a> to explore friends’ recommendations with notes and context.</li>
+          <li><strong>Edit</strong> – Use <a href="edit-places.html">Edit</a> to update or remove places you’ve added.</li>
+        </ul>
 
-      <h2>Why does it exist?</h2>
-      <p>
-        Most review platforms optimize for volume and engagement. Five Wonders is the opposite:
-        a small, trusted layer of recommendations on top of a map — powered by people you
-        actually know.
-      </p>
+        <h2>Who can use it?</h2>
+        <p>
+          Right now Five Wonders is an invite-only beta. Each person gets a private invite code
+          that links their saved places to their profile. This lets the map show who saved what,
+          and eventually enables filtering by friends.
+        </p>
 
-      <p class="fw-back-link">← <a href="index.html">Back to home</a></p>
-    </section>
+        <div class="back-link">← <a href="index.html">Back to home</a></div>
+      </section>
+
+      <!-- Right rail -->
+      <aside class="rail" aria-label="About summary">
+        <section class="fw-card mini">
+          <h3>Quick summary</h3>
+          <p>Trusted recommendations from friends — not rankings, not ads, not SEO.</p>
+        </section>
+
+        <section class="fw-card mini" style="margin-top: 12px;">
+          <h3>What you can do</h3>
+          <ul>
+            <li>Add places with your note</li>
+            <li>See everyone’s places on a map</li>
+            <li>Edit your own submissions</li>
+          </ul>
+        </section>
+
+        <section class="fw-card mini" style="margin-top: 12px;">
+          <h3>Invite-only beta</h3>
+          <p>Access is limited to people with an invite code (for now).</p>
+        </section>
+      </aside>
+    </div>
   </main>
 </body>
 </html>
