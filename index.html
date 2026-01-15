@@ -8,214 +8,14 @@
   <!-- Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-  <style>
-    :root { color-scheme: light dark; }
-    * { box-sizing: border-box; }
-
-    .fw-header {
-      height: 48px;
-      background: #111827;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 16px;
-      font-size: 14px;
-    }
-    .fw-header-title { font-weight: 500; color: #e5e7eb; }
-    .fw-header-nav a {
-      color: #9ca3af;
-      text-decoration: none;
-      font-size: 13px;
-      margin-left: 10px;
-    }
-    .fw-header-nav a:first-child { margin-left: 0; }
-    .fw-header-nav a:hover { color: #e5e7eb; text-decoration: underline; }
-
-    body {
-      margin: 0;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      min-height: 100vh;
-      background: radial-gradient(circle at top, #e0ecff 0, #f9fafb 55%);
-      color: #111827;
-    }
-
-    .fw-home-main {
-      min-height: calc(100vh - 48px);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 24px 12px 32px;
-    }
-
-    .card {
-      background: #ffffff;
-      border-radius: 18px;
-      box-shadow: 0 20px 45px rgba(15, 23, 42, 0.18);
-      padding: 24px 24px 20px;
-      width: 100%;
-      max-width: 460px;
-      border: 1px solid rgba(148, 163, 184, 0.25);
-    }
-
-    .logo-wrap { display: flex; justify-content: center; margin-bottom: 10px; }
-    .logo-img {
-      max-width: 260px;
-      width: 100%;
-      height: auto;
-      filter: drop-shadow(0 8px 18px rgba(15, 23, 42, 0.25));
-    }
-
-    .greeting {
-      font-size: 14px;
-      font-weight: 650;
-      text-align: center;
-      margin: 6px 0 2px;
-      color: #111827;
-      display: none;
-    }
-
-    .subtitle {
-      font-size: 13px;
-      text-align: center;
-      color: #4b5563;
-      margin-bottom: 20px;
-    }
-
-    .grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-    }
-
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      padding: 10px 12px;
-      border-radius: 999px;
-      font-size: 14px;
-      font-weight: 500;
-      cursor: pointer;
-      text-decoration: none;
-      transition: transform 0.08s ease-out, box-shadow 0.12s ease-out;
-      border: 1px solid transparent;
-    }
-
-    .btn-primary {
-      background: linear-gradient(135deg, #22c55e, #16a34a);
-      color: #0b1120;
-      box-shadow: 0 10px 25px rgba(34, 197, 94, 0.45);
-    }
-
-    .btn-secondary {
-      background: #f3f4f6;
-      color: #111827;
-      border-color: rgba(148, 163, 184, 0.6);
-    }
-
-    .footer {
-      margin-top: 16px;
-      font-size: 11px;
-      text-align: center;
-      color: #6b7280;
-    }
-
-    .access-line {
-      margin-top: 10px;
-      font-size: 12px;
-      text-align: center;
-      color: #6b7280;
-      display: none;
-    }
-    .access-line a {
-      color: #374151;
-      text-decoration: none;
-      margin-left: 8px;
-    }
-    .access-line a:hover { text-decoration: underline; }
-
-    /* Invite Gate */
-    .fw-locked #app {
-      filter: blur(6px);
-      opacity: 0.35;
-      pointer-events: none;
-      user-select: none;
-    }
-
-    #inviteGate {
-      position: fixed;
-      inset: 0;
-      display: none; /* IMPORTANT: hidden by default; we only show if not authenticated */
-      align-items: center;
-      justify-content: center;
-      padding: 24px;
-      background: rgba(17, 24, 39, 0.72);
-      z-index: 9999;
-    }
-
-    #inviteGate .panel {
-      width: min(440px, 100%);
-      background: white;
-      border-radius: 14px;
-      padding: 20px;
-      box-shadow: 0 12px 40px rgba(0,0,0,0.35);
-    }
-
-    #inviteGate h2 { margin: 0 0 8px; font-size: 18px; color: #111827; }
-    #inviteGate p { margin: 0 0 14px; font-size: 14px; color: #374151; line-height: 1.35; }
-
-    #inviteGate .row { display: flex; gap: 10px; }
-
-    #inviteGate input {
-      flex: 1;
-      padding: 10px 12px;
-      border: 1px solid #D1D5DB;
-      border-radius: 10px;
-      font-size: 14px;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-    }
-
-    #inviteGate button {
-      padding: 10px 14px;
-      border: 0;
-      border-radius: 10px;
-      background: #111827;
-      color: white;
-      cursor: pointer;
-    }
-
-    #inviteGate button:disabled { opacity: 0.7; cursor: not-allowed; }
-
-    #inviteGate .error {
-      margin-top: 10px;
-      font-size: 13px;
-      color: #b91c1c;
-      display: none;
-    }
-
-    #inviteGate .meta {
-      margin-top: 12px;
-      display: flex;
-      justify-content: space-between;
-      gap: 12px;
-      font-size: 12px;
-      color: #6b7280;
-    }
-
-    #inviteGate .meta a {
-      color: #374151;
-      text-decoration: none;
-    }
-
-    #inviteGate .meta a:hover { text-decoration: underline; }
-  </style>
+  <!-- Shared stylesheet -->
+  <link rel="stylesheet" href="fw.css" />
 </head>
 
-<body>
+<body class="fw-home fw-bg">
   <header class="fw-header">
     <div class="fw-header-title">Five Wonders</div>
-    <nav class="fw-header-nav">
+    <nav class="fw-header-nav" aria-label="Primary navigation">
       <a href="index.html">Home</a>
       <a href="add-place.html">Add</a>
       <a href="edit-places.html">Edit</a>
@@ -226,29 +26,30 @@
 
   <div id="app">
     <main class="fw-home-main">
-      <div class="card">
-        <div class="logo-wrap">
-          <img src="five-wonders-logo.png" alt="Five Wonders logo" class="logo-img" />
+      <div class="fw-card">
+        <div class="fw-logo-wrap">
+          <img src="five-wonders-logo.png" alt="Five Wonders logo" class="fw-logo-img" />
         </div>
 
-        <div id="greeting" class="greeting"></div>
+        <div id="greeting" class="fw-greeting"></div>
 
-        <div class="subtitle">
+        <div class="fw-subtitle">
           Share the places your friends will love.
         </div>
 
-        <div class="grid">
-          <a href="add-place.html" class="btn btn-primary">Add</a>
-          <a href="edit-places.html" class="btn btn-secondary">Edit</a>
-          <a href="view.html" class="btn btn-secondary">View</a>
-          <a href="about.html" class="btn btn-secondary">About</a>
+        <div class="fw-grid">
+          <a href="add-place.html" class="fw-btn fw-btn-primary">Add</a>
+          <a href="edit-places.html" class="fw-btn fw-btn-secondary">Edit</a>
+          <a href="view.html" class="fw-btn fw-btn-secondary">View</a>
+          <a href="about.html" class="fw-btn fw-btn-secondary">About</a>
         </div>
 
-        <div class="footer">
+        <div class="fw-footer">
           Invite-only beta · Curated by friends
         </div>
 
-        <div id="accessLine" class="access-line">
+        <!-- Visible only when authenticated -->
+        <div id="accessLine" class="fw-access-line">
           Access is set on this device.
           <a href="#" id="resetHomeAccessLink">Reset</a>
         </div>
@@ -305,14 +106,19 @@
     function clearError() { errorBox.textContent = ""; errorBox.style.display = "none"; }
 
     function getStoredApiKey() {
+      // We intentionally store as UUID string; RPC param type is uuid
       return localStorage.getItem(LS_KEY) || localStorage.getItem(LS_KEY_LEGACY);
     }
 
     function persistKeys(id, apiKey) {
-      localStorage.setItem(LS_ID, id);
-      localStorage.setItem(LS_KEY, apiKey);
-      localStorage.setItem(LS_ID_LEGACY, id);
-      localStorage.setItem(LS_KEY_LEGACY, apiKey);
+      if (id) {
+        localStorage.setItem(LS_ID, id);
+        localStorage.setItem(LS_ID_LEGACY, id);
+      }
+      if (apiKey) {
+        localStorage.setItem(LS_KEY, apiKey);
+        localStorage.setItem(LS_KEY_LEGACY, apiKey);
+      }
     }
 
     function resetAccess() {
@@ -324,16 +130,21 @@
 
     function lock() {
       document.body.classList.add("fw-locked");
+      // show gate ONLY when locked
       gate.style.display = "flex";
       setStatus("Enter invite code");
       setTimeout(() => input.focus(), 0);
+
+      // hide authenticated-only UI
       accessLine.style.display = "none";
       greetingEl.style.display = "none";
     }
 
     function unlock() {
       document.body.classList.remove("fw-locked");
+      // hide gate when unlocked
       gate.style.display = "none";
+      // show footer reset line
       accessLine.style.display = "block";
     }
 
@@ -341,6 +152,7 @@
       const name = (firstName || "").trim();
       if (!name) {
         greetingEl.style.display = "none";
+        greetingEl.textContent = "";
         return;
       }
       greetingEl.textContent = `Hello, ${name}!`;
@@ -360,11 +172,29 @@
       resetHomeAccessLink.addEventListener("click", doReset);
     }
 
+    // ---- Profile fetch (for greeting) ----
+    // Uses anon key + RLS. If RLS blocks, greeting just won't show.
+    async function tryLoadFirstName(sb, profileId) {
+      if (!profileId) return "";
+
+      try {
+        const { data, error } = await sb
+          .from("profiles")
+          .select("first_name")
+          .eq("id", profileId)
+          .maybeSingle();
+
+        if (error) return "";
+        return (data && data.first_name) ? data.first_name : "";
+      } catch {
+        return "";
+      }
+    }
+
     document.addEventListener("DOMContentLoaded", async () => {
       wireResetHandlers();
 
       if (!window.supabase) {
-        // If Supabase fails, show the gate with an error message
         setStatus("Error: Supabase library failed to load.");
         showError("Please refresh. If this persists, check your network/adblocker.");
         lock();
@@ -374,22 +204,22 @@
       const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
       window._sb = sb;
 
-      // IMPORTANT: Don't show the gate by default.
-      // We'll only show it if we determine you're not authenticated.
+      // IMPORTANT: do NOT show the gate on load.
+      // We only call lock() if we determine you're not authenticated.
       const storedApiKey = getStoredApiKey();
 
       if (storedApiKey) {
         try {
-          // Validate silently without flashing the modal
+          // Silent validate first; no modal flash.
           const { data, error } = await sb.rpc("validate_api_key", { p_key: storedApiKey });
 
-          if (!error && data && data.length > 0) {
-            // normalize storage
-            persistKeys(data[0].id, data[0].api_key);
+          if (!error && data && data.length > 0 && data[0].id) {
+            // Normalize storage (keep existing api_key; validate_api_key doesn't return api_key)
+            persistKeys(data[0].id, storedApiKey);
 
-            // Try to read first_name if validate_api_key returns it
-            // (If it doesn't, this will just do nothing.)
-            setGreeting(data[0].first_name || "");
+            // Greeting: fetch first_name from profiles
+            const firstName = await tryLoadFirstName(sb, data[0].id);
+            setGreeting(firstName);
 
             unlock();
           } else {
@@ -431,11 +261,12 @@
             return;
           }
 
-          const row = data[0];
+          const row = data[0]; // {id, api_key}
           persistKeys(row.id, row.api_key);
 
-          // If validate_invite returns first_name, greet
-          setGreeting(row.first_name || row.firstname || "");
+          // Greeting: fetch first_name from profiles
+          const firstName = await tryLoadFirstName(sb, row.id);
+          setGreeting(firstName);
 
           unlock();
         } catch (ex) {
