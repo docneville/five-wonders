@@ -98,16 +98,6 @@
       </div>
     </main>
 
-    <!-- Mobile FAB to open sheet (still available, but tap on row opens directly) -->
-    <button
-      id="openEditBtn"
-      class="fw-fab fw-fab--fixed"
-      type="button"
-      aria-label="Edit selected place"
-    >
-      Edit
-    </button>
-
     <!-- Mobile bottom sheet for editing -->
     <section
       id="editSheet"
@@ -133,8 +123,7 @@
       <div class="fw-sheet-content">
         <div id="mobile-edit-panel">
           <p class="empty-state" id="mobile-empty-message">
-            No place selected yet. Choose one from the list, then tap
-            <strong>Edit</strong>.
+            No place selected yet. Choose one from the list to edit it.
           </p>
 
           <div id="mobile-edit-form" style="display:none;">
@@ -239,16 +228,10 @@
         .replace(/'/g, "&#039;");
     }
 
-    // Format structured address for the list entry
+    // Format subtitle for list: city, state, country
     function formatAddressFromPlace(p = {}) {
-      const street = [p.street_line1, p.street_line2].filter(Boolean).join(", ");
-      const cityStatePostal = [p.city, p.state, p.postal_code]
-        .filter(Boolean)
-        .join(", ");
-      const parts = [street, cityStatePostal, p.country].filter(Boolean);
-
-      if (parts.length > 0) return parts.join(", ");
-      return p.raw_text || "";
+      const parts = [p.city, p.state, p.country].filter(Boolean);
+      return parts.join(", ");
     }
 
     // ===== Token section UI =====
@@ -380,7 +363,6 @@
     const deleteBtn = document.getElementById("delete-btn");
     const cancelBtn = document.getElementById("cancel-btn");
 
-    const openEditBtn = document.getElementById("openEditBtn");
     const editSheet = document.getElementById("editSheet");
     const closeSheetBtn = document.getElementById("closeSheetBtn");
     const sheetHandle = document.getElementById("sheetHandle");
@@ -434,11 +416,9 @@
       else openSheet("open");
     }
 
-    function setMobileFabEnabled(enabled) {
-      if (!openEditBtn) return;
-      openEditBtn.disabled = !enabled;
-      openEditBtn.style.opacity = enabled ? "1" : "0.55";
-      openEditBtn.style.pointerEvents = enabled ? "auto" : "none";
+    function setMobileFabEnabled(_enabled) {
+      // FAB was removed; keep this as a no-op to avoid changing other calls.
+      return;
     }
 
     function renderPlaceList() {
@@ -486,16 +466,16 @@
         emptyMessageEl.style.display = "none";
         editFormEl.style.display = "block";
 
-        editTitleInput.value = place.title || "";
-        editStreet1Input.value = place.street_line1 || "";
-        editStreet2Input.value = place.street_line2 || "";
-        editCityInput.value = place.city || "";
-        editStateInput.value = place.state || "";
-        editPostalInput.value = place.postal_code || "";
-        editCountryInput.value = place.country || "";
-        editPhoneInput.value = place.phone || "";
-        editWebsiteInput.value = place.website || "";
-        editNoteInput.value = place.notes || "";
+        editTitleInput.value = place.title ?? "";
+        editStreet1Input.value = place.street_line1 ?? "";
+        editStreet2Input.value = place.street_line2 ?? "";
+        editCityInput.value = place.city ?? "";
+        editStateInput.value = place.state ?? "";
+        editPostalInput.value = place.postal_code ?? "";
+        editCountryInput.value = place.country ?? "";
+        editPhoneInput.value = place.phone ?? "";
+        editWebsiteInput.value = place.website ?? "";
+        editNoteInput.value = place.notes ?? "";
 
         if (place.created_at) {
           const d = new Date(place.created_at);
@@ -511,16 +491,16 @@
         mEmptyMessageEl.style.display = "none";
         mEditFormEl.style.display = "block";
 
-        mEditTitleInput.value = place.title || "";
-        mEditStreet1Input.value = place.street_line1 || "";
-        mEditStreet2Input.value = place.street_line2 || "";
-        mEditCityInput.value = place.city || "";
-        mEditStateInput.value = place.state || "";
-        mEditPostalInput.value = place.postal_code || "";
-        mEditCountryInput.value = place.country || "";
-        mEditPhoneInput.value = place.phone || "";
-        mEditWebsiteInput.value = place.website || "";
-        mEditNoteInput.value = place.notes || "";
+        mEditTitleInput.value = place.title ?? "";
+        mEditStreet1Input.value = place.street_line1 ?? "";
+        mEditStreet2Input.value = place.street_line2 ?? "";
+        mEditCityInput.value = place.city ?? "";
+        mEditStateInput.value = place.state ?? "";
+        mEditPostalInput.value = place.postal_code ?? "";
+        mEditCountryInput.value = place.country ?? "";
+        mEditPhoneInput.value = place.phone ?? "";
+        mEditWebsiteInput.value = place.website ?? "";
+        mEditNoteInput.value = place.notes ?? "";
 
         if (place.created_at) {
           const d = new Date(place.created_at);
@@ -589,11 +569,6 @@
 
     cancelBtn?.addEventListener("click", clearEditor);
 
-    openEditBtn?.addEventListener("click", () => {
-      if (!activePlaceId) return;
-      openSheet("open");
-    });
-
     closeSheetBtn?.addEventListener("click", closeSheet);
     sheetHandle?.addEventListener("click", togglePeek);
     mCancelBtn?.addEventListener("click", closeSheet);
@@ -636,6 +611,9 @@
           );
         }
 
+        // Ensure the edge function returns all fields you want to edit:
+        // title, notes, street_line1, street_line2, city, state,
+        // postal_code, country, phone, website, created_at, id.
         userPlaces = Array.isArray(data.places) ? data.places : [];
         activePlaceId = null;
         renderPlaceList();
