@@ -773,7 +773,7 @@ a:hover{ text-decoration: underline; }
       "main";
   }
 
-  /* edit-places: list-only on mobile (your code hides #main) */
+  /* edit-places: list-only on mobile (hide right-hand editor) */
   .fw-edit-mobile-list{
     grid-template-columns: 1fr;
     grid-template-rows: var(--fw-header-h) 1fr;
@@ -781,4 +781,13 @@ a:hover{ text-decoration: underline; }
       "header"
       "sidebar";
   }
+
+  .fw-edit-mobile-list .fw-main{
+    display: none;
+  }
+
+  /* Invite Gate – mobile-safe layout ... */
+  #inviteGate .row { ... }
+  ...
 }
+
