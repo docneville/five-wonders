@@ -38,8 +38,11 @@
       <!-- Invite / token UI goes here -->
       <div id="token-section"></div>
 
-      <div>
-        <div class="section-title">Step 1. Find</div>
+      <div style="margin-top:12px;">
+        <div class="section-title">Step 1. Find a Place</div>
+        <div class="small-help" style="margin-top:4px;">
+          Either use the search box or tap on the map to pick a location.
+        </div>        
         <label for="search-input">Search</label>
         <div style="display:flex;gap:6px;align-items:center;">
           <input
@@ -48,9 +51,6 @@
             placeholder="Larsen's Bakery, Seattle"
           />
           <button id="search-btn" class="btn-ghost">Go</button>
-        </div>
-        <div class="small-help" style="margin-top:4px;">
-          Either use the search box or tap on the map to pick a location.
         </div>
         <div id="search-results"></div>
       </div>
