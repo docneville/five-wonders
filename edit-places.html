@@ -31,7 +31,7 @@
 
       <div class="section-title">Your places</div>
       <div class="small-help">
-        Tap a place to edit the title or note, or delete it.
+        Tap a place to edit its details or delete it.
       </div>
 
       <div id="place-list" class="place-list"></div>
@@ -56,8 +56,29 @@
           <label for="edit-title">Place name</label>
           <input type="text" id="edit-title" />
 
-          <label for="edit-address">Address / description</label>
-          <textarea id="edit-address" readonly></textarea>
+          <label for="edit-street1">Street line 1</label>
+          <input type="text" id="edit-street1" />
+
+          <label for="edit-street2">Street line 2 (optional)</label>
+          <input type="text" id="edit-street2" />
+
+          <label for="edit-city">City</label>
+          <input type="text" id="edit-city" />
+
+          <label for="edit-state">State / region</label>
+          <input type="text" id="edit-state" />
+
+          <label for="edit-postal">Postal code</label>
+          <input type="text" id="edit-postal" />
+
+          <label for="edit-country">Country</label>
+          <input type="text" id="edit-country" />
+
+          <label for="edit-phone">Phone</label>
+          <input type="text" id="edit-phone" />
+
+          <label for="edit-website">Website</label>
+          <input type="text" id="edit-website" />
 
           <label for="edit-note">Your note</label>
           <textarea id="edit-note"></textarea>
@@ -77,7 +98,7 @@
       </div>
     </main>
 
-    <!-- Mobile FAB to open sheet -->
+    <!-- Mobile FAB to open sheet (still available, but tap on row opens directly) -->
     <button
       id="openEditBtn"
       class="fw-fab fw-fab--fixed"
@@ -120,8 +141,29 @@
             <label for="m-edit-title">Place name</label>
             <input type="text" id="m-edit-title" />
 
-            <label for="m-edit-address">Address / description</label>
-            <textarea id="m-edit-address" readonly></textarea>
+            <label for="m-edit-street1">Street line 1</label>
+            <input type="text" id="m-edit-street1" />
+
+            <label for="m-edit-street2">Street line 2 (optional)</label>
+            <input type="text" id="m-edit-street2" />
+
+            <label for="m-edit-city">City</label>
+            <input type="text" id="m-edit-city" />
+
+            <label for="m-edit-state">State / region</label>
+            <input type="text" id="m-edit-state" />
+
+            <label for="m-edit-postal">Postal code</label>
+            <input type="text" id="m-edit-postal" />
+
+            <label for="m-edit-country">Country</label>
+            <input type="text" id="m-edit-country" />
+
+            <label for="m-edit-phone">Phone</label>
+            <input type="text" id="m-edit-phone" />
+
+            <label for="m-edit-website">Website</label>
+            <input type="text" id="m-edit-website" />
 
             <label for="m-edit-note">Your note</label>
             <textarea id="m-edit-note"></textarea>
@@ -197,6 +239,18 @@
         .replace(/'/g, "&#039;");
     }
 
+    // Format structured address for the list entry
+    function formatAddressFromPlace(p = {}) {
+      const street = [p.street_line1, p.street_line2].filter(Boolean).join(", ");
+      const cityStatePostal = [p.city, p.state, p.postal_code]
+        .filter(Boolean)
+        .join(", ");
+      const parts = [street, cityStatePostal, p.country].filter(Boolean);
+
+      if (parts.length > 0) return parts.join(", ");
+      return p.raw_text || "";
+    }
+
     // ===== Token section UI =====
     async function renderTokenSection() {
       const container = document.getElementById("token-section");
@@ -207,7 +261,9 @@
       // If we have a key, validate it
       if (apiKey) {
         try {
-          const { data, error } = await sb.rpc("validate_api_key", { p_key: apiKey });
+          const { data, error } = await sb.rpc("validate_api_key", {
+            p_key: apiKey,
+          });
           if (!error && data && data.length > 0) {
             persistKeys(data[0].id, apiKey);
 
@@ -272,7 +328,9 @@
         }
 
         try {
-          const { data, error } = await sb.rpc("validate_invite", { p_code: value });
+          const { data, error } = await sb.rpc("validate_invite", {
+            p_code: value,
+          });
           if (error) throw error;
           if (!data || data.length === 0) {
             alert("Invalid invite code.");
@@ -304,10 +362,20 @@
     const emptyMessageEl = document.getElementById("empty-message");
     const editFormEl = document.getElementById("edit-form");
     const editTitleInput = document.getElementById("edit-title");
-    const editAddressInput = document.getElementById("edit-address");
     const editNoteInput = document.getElementById("edit-note");
     const editMetaEl = document.getElementById("edit-meta");
     const editStatusEl = document.getElementById("edit-status");
+
+    // Desktop address / contact fields
+    const editStreet1Input = document.getElementById("edit-street1");
+    const editStreet2Input = document.getElementById("edit-street2");
+    const editCityInput = document.getElementById("edit-city");
+    const editStateInput = document.getElementById("edit-state");
+    const editPostalInput = document.getElementById("edit-postal");
+    const editCountryInput = document.getElementById("edit-country");
+    const editPhoneInput = document.getElementById("edit-phone");
+    const editWebsiteInput = document.getElementById("edit-website");
+
     const saveChangesBtn = document.getElementById("save-changes-btn");
     const deleteBtn = document.getElementById("delete-btn");
     const cancelBtn = document.getElementById("cancel-btn");
@@ -317,13 +385,23 @@
     const closeSheetBtn = document.getElementById("closeSheetBtn");
     const sheetHandle = document.getElementById("sheetHandle");
 
+    // Mobile editor fields
     const mEmptyMessageEl = document.getElementById("mobile-empty-message");
     const mEditFormEl = document.getElementById("mobile-edit-form");
     const mEditTitleInput = document.getElementById("m-edit-title");
-    const mEditAddressInput = document.getElementById("m-edit-address");
     const mEditNoteInput = document.getElementById("m-edit-note");
     const mEditMetaEl = document.getElementById("m-edit-meta");
     const mEditStatusEl = document.getElementById("m-edit-status");
+
+    const mEditStreet1Input = document.getElementById("m-edit-street1");
+    const mEditStreet2Input = document.getElementById("m-edit-street2");
+    const mEditCityInput = document.getElementById("m-edit-city");
+    const mEditStateInput = document.getElementById("m-edit-state");
+    const mEditPostalInput = document.getElementById("m-edit-postal");
+    const mEditCountryInput = document.getElementById("m-edit-country");
+    const mEditPhoneInput = document.getElementById("m-edit-phone");
+    const mEditWebsiteInput = document.getElementById("m-edit-website");
+
     const mSaveBtn = document.getElementById("m-save-changes-btn");
     const mDeleteBtn = document.getElementById("m-delete-btn");
     const mCancelBtn = document.getElementById("m-cancel-btn");
@@ -381,29 +459,42 @@
         row.dataset.id = p.id;
 
         const title = p.title || "(Untitled place)";
-        const note = p.notes || "";
+        const address = formatAddressFromPlace(p);
 
         row.innerHTML = `
           <div class="place-row-title">${escapeHtml(title)}</div>
           ${
-            note
-              ? `<div class="place-row-note">${escapeHtml(note)}</div>`
+            address
+              ? `<div class="place-row-note">${escapeHtml(address)}</div>`
               : ""
           }
         `;
 
-        row.onclick = () => selectPlace(p.id);
+        row.onclick = () => {
+          selectPlace(p.id);
+          // On mobile: go straight into edit sheet
+          if (isMobile()) openSheet("open");
+        };
 
         placeListEl.appendChild(row);
       });
     }
 
     function populateEditor(place) {
+      // Desktop
       if (emptyMessageEl && editFormEl) {
         emptyMessageEl.style.display = "none";
         editFormEl.style.display = "block";
+
         editTitleInput.value = place.title || "";
-        editAddressInput.value = place.raw_text || "";
+        editStreet1Input.value = place.street_line1 || "";
+        editStreet2Input.value = place.street_line2 || "";
+        editCityInput.value = place.city || "";
+        editStateInput.value = place.state || "";
+        editPostalInput.value = place.postal_code || "";
+        editCountryInput.value = place.country || "";
+        editPhoneInput.value = place.phone || "";
+        editWebsiteInput.value = place.website || "";
         editNoteInput.value = place.notes || "";
 
         if (place.created_at) {
@@ -415,11 +506,20 @@
         editStatusEl.textContent = "";
       }
 
+      // Mobile
       if (mEmptyMessageEl && mEditFormEl) {
         mEmptyMessageEl.style.display = "none";
         mEditFormEl.style.display = "block";
+
         mEditTitleInput.value = place.title || "";
-        mEditAddressInput.value = place.raw_text || "";
+        mEditStreet1Input.value = place.street_line1 || "";
+        mEditStreet2Input.value = place.street_line2 || "";
+        mEditCityInput.value = place.city || "";
+        mEditStateInput.value = place.state || "";
+        mEditPostalInput.value = place.postal_code || "";
+        mEditCountryInput.value = place.country || "";
+        mEditPhoneInput.value = place.phone || "";
+        mEditWebsiteInput.value = place.website || "";
         mEditNoteInput.value = place.notes || "";
 
         if (place.created_at) {
@@ -442,11 +542,38 @@
       }
       if (editStatusEl) editStatusEl.textContent = "";
 
+      // Clear desktop fields
+      editTitleInput.value = "";
+      editStreet1Input.value = "";
+      editStreet2Input.value = "";
+      editCityInput.value = "";
+      editStateInput.value = "";
+      editPostalInput.value = "";
+      editCountryInput.value = "";
+      editPhoneInput.value = "";
+      editWebsiteInput.value = "";
+      editNoteInput.value = "";
+      editMetaEl.textContent = "";
+
       if (mEditFormEl && mEmptyMessageEl) {
         mEditFormEl.style.display = "none";
         mEmptyMessageEl.style.display = "block";
       }
       if (mEditStatusEl) mEditStatusEl.textContent = "";
+
+      // Clear mobile fields
+      mEditTitleInput.value = "";
+      mEditStreet1Input.value = "";
+      mEditStreet2Input.value = "";
+      mEditCityInput.value = "";
+      mEditStateInput.value = "";
+      mEditPostalInput.value = "";
+      mEditCountryInput.value = "";
+      mEditPhoneInput.value = "";
+      mEditWebsiteInput.value = "";
+      mEditNoteInput.value = "";
+      mEditMetaEl.textContent = "";
+
       setMobileFabEnabled(false);
     }
 
@@ -520,7 +647,19 @@
       }
     }
 
-    async function saveChangesCommon({ title, notes, statusEl }) {
+    async function saveChangesCommon({
+      title,
+      notes,
+      phone,
+      website,
+      street_line1,
+      street_line2,
+      city,
+      state,
+      postal_code,
+      country,
+      statusEl,
+    }) {
       if (!activePlaceId) return;
 
       const apiKey = getStoredApiKey();
@@ -541,6 +680,14 @@
             place_id: activePlaceId,
             title,
             notes,
+            phone,
+            website,
+            street_line1,
+            street_line2,
+            city,
+            state,
+            postal_code,
+            country,
           }),
         });
 
@@ -569,8 +716,19 @@
         if (data.status === "ok") {
           const idx = userPlaces.findIndex((p) => p.id === activePlaceId);
           if (idx !== -1) {
-            userPlaces[idx].title = title;
-            userPlaces[idx].notes = notes;
+            userPlaces[idx] = {
+              ...userPlaces[idx],
+              title,
+              notes,
+              phone,
+              website,
+              street_line1,
+              street_line2,
+              city,
+              state,
+              postal_code,
+              country,
+            };
           }
           renderPlaceList();
           statusEl.textContent = "Changes saved.";
@@ -656,10 +814,19 @@
       }
     }
 
+    // Desktop save
     saveChangesBtn?.addEventListener("click", () => {
       saveChangesCommon({
         title: (editTitleInput.value || "").trim(),
         notes: (editNoteInput.value || "").trim(),
+        phone: (editPhoneInput.value || "").trim(),
+        website: (editWebsiteInput.value || "").trim(),
+        street_line1: (editStreet1Input.value || "").trim(),
+        street_line2: (editStreet2Input.value || "").trim(),
+        city: (editCityInput.value || "").trim(),
+        state: (editStateInput.value || "").trim(),
+        postal_code: (editPostalInput.value || "").trim(),
+        country: (editCountryInput.value || "").trim(),
         statusEl: editStatusEl,
       }).catch((err) => {
         console.error("Unexpected save error:", err);
@@ -667,6 +834,7 @@
       });
     });
 
+    // Desktop delete
     deleteBtn?.addEventListener("click", () => {
       deletePlaceCommon({ statusEl: editStatusEl }).catch((err) => {
         console.error("Unexpected delete error:", err);
@@ -674,10 +842,19 @@
       });
     });
 
+    // Mobile save
     mSaveBtn?.addEventListener("click", () => {
       saveChangesCommon({
         title: (mEditTitleInput.value || "").trim(),
         notes: (mEditNoteInput.value || "").trim(),
+        phone: (mEditPhoneInput.value || "").trim(),
+        website: (mEditWebsiteInput.value || "").trim(),
+        street_line1: (mEditStreet1Input.value || "").trim(),
+        street_line2: (mEditStreet2Input.value || "").trim(),
+        city: (mEditCityInput.value || "").trim(),
+        state: (mEditStateInput.value || "").trim(),
+        postal_code: (mEditPostalInput.value || "").trim(),
+        country: (mEditCountryInput.value || "").trim(),
         statusEl: mEditStatusEl,
       }).catch((err) => {
         console.error("Unexpected save error:", err);
@@ -685,6 +862,7 @@
       });
     });
 
+    // Mobile delete
     mDeleteBtn?.addEventListener("click", () => {
       deletePlaceCommon({
         statusEl: mEditStatusEl,
