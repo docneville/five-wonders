@@ -25,10 +25,8 @@
       </nav>
     </header>
 
-    <!-- Left column: list + token banner -->
+    <!-- Left column: list + token banner (token banner is LAST) -->
     <aside id="sidebar" class="fw-sidebar">
-      <div id="token-section"></div>
-
       <div class="section-title">Your places</div>
       <div class="small-help">
         Tap a place to edit its details or delete it.
@@ -36,6 +34,9 @@
 
       <div id="place-list" class="place-list"></div>
       <div id="sidebar-status" class="small-help" style="margin-top:8px;"></div>
+
+      <!-- Access / invite-code UI is at the bottom now -->
+      <div id="token-section" style="margin-top:16px;"></div>
     </aside>
 
     <!-- Right column: desktop edit form -->
@@ -161,7 +162,7 @@
               <span id="m-edit-meta"></span>
             </div>
 
-            <!-- NOT sticky: just a normal block that scrolls with the form -->
+            <!-- Simple vertical button stack; not sticky -->
             <div class="actions" style="margin-top:16px; display:flex; flex-direction:column; gap:10px;">
               <button id="m-save-changes-btn" class="btn-primary">
                 Save changes
@@ -229,13 +230,15 @@
         .replace(/'/g, "&#039;");
     }
 
-    // Create "city, state, country" line for list
+    // "City, State, Country" for list, falling back to raw_text so it's never empty
     function formatAddressFromPlace(p = {}) {
       const parts = [p.city, p.state, p.country].filter(Boolean);
-      return parts.join(", ");
+      if (parts.length > 0) return parts.join(", ");
+      // FALLBACK: show raw_text (what you had before)
+      return p.raw_text || "";
     }
 
-    // ===== Token section UI =====
+    // ===== Token section UI (now at bottom) =====
     async function renderTokenSection() {
       const container = document.getElementById("token-section");
       container.innerHTML = "";
@@ -250,8 +253,10 @@
           if (!error && data && data.length > 0) {
             persistKeys(data[0].id, apiKey);
 
+            // Access line at the BOTTOM
             const div = document.createElement("div");
             div.className = "small-help";
+            div.style.marginTop = "12px";
             div.innerHTML = `
               Access is set on this device.
               <a href="#" id="resetAccessLink" style="margin-left:8px;">Reset</a>
@@ -414,7 +419,7 @@
       else openSheet("open");
     }
 
-    // FAB removed; keep this as a no-op so callers don't break
+    // FAB removed – keep as no-op so callers are safe
     function setMobileFabEnabled(_enabled) { return; }
 
     function renderPlaceList() {
@@ -602,9 +607,9 @@
           );
         }
 
-        // IMPORTANT: ensure the edge function returns these fields:
-        // id, title, notes, street_line1, street_line2, city, state,
-        // postal_code, country, phone, website, created_at.
+        // NOTE: data.places MUST include:
+        // id, title, notes, raw_text, city, state, country,
+        // street_line1, street_line2, postal_code, phone, website, created_at
         userPlaces = Array.isArray(data.places) ? data.places : [];
         activePlaceId = null;
         renderPlaceList();
