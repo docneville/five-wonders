@@ -33,14 +33,13 @@
       </nav>
     </header>
 
-    <!-- Sidebar (desktop) / Sheet content (mobile) -->
+    <!-- Sidebar: invite + search + details + save -->
     <aside id="sidebar" class="fw-sidebar">
-      <!-- Access gate section -->
+      <!-- Invite / token UI goes here -->
       <div id="token-section"></div>
 
       <div>
-        <div class="section-title">1. Find a place</div>
-
+        <div class="section-title">Step 1. Find</div>
         <label for="search-input">Search</label>
         <div style="display:flex;gap:6px;align-items:center;">
           <input
@@ -48,20 +47,23 @@
             id="search-input"
             placeholder="Larsen's Bakery, Seattle"
           />
-          <button id="search-btn" type="button" class="btn-ghost">Go</button>
+          <button id="search-btn" class="btn-ghost">Go</button>
         </div>
-        <div class="small-help">
-          Uses OpenStreetMap search. Or click directly on the map to pick a location.
+        <div class="small-help" style="margin-top:4px;">
+          Either use the search box or tap on the map to pick a location.
         </div>
-
         <div id="search-results"></div>
       </div>
 
       <div style="margin-top:12px;">
-        <div class="section-title">2. Details</div>
+        <div class="section-title">Step 2. Add Details About Your Place</div>
 
         <label for="place-name">Place name</label>
-        <input type="text" id="place-name" placeholder="Name of the place" />
+        <input
+          type="text"
+          id="place-name"
+          placeholder="Name of the place"
+        />
 
         <label for="place-address">Address</label>
         <textarea
@@ -77,22 +79,22 @@
       </div>
 
       <div class="save-row">
-        <button id="save-btn" type="button" class="btn-primary save-btn">
-          Save place
-        </button>
+        <button id="save-btn" class="btn-primary save-btn">Save place</button>
       </div>
+
+      <!-- “Access is set…” now lives here, under the Save button -->
+      <div id="access-status" class="small-help" style="margin-top:6px;"></div>
     </aside>
 
     <!-- Map column -->
     <div id="mapWrap" class="fw-map-wrap">
       <div id="map" class="fw-map"></div>
-      <!-- Mobile FAB to open sheet -->
       <button
         id="openSheetBtn"
         class="fw-fab fw-fab--map"
         type="button"
       >
-        Search / Details
+        Find / Details
       </button>
     </div>
 
@@ -105,10 +107,10 @@
       <div
         class="fw-sheet-handle"
         id="sheetHandle"
-        title="Tap to collapse/expand"
+        title="Tap or swipe to expand/collapse"
       ></div>
       <div class="fw-sheet-header">
-        <div class="fw-sheet-title">Add a place</div>
+        <div class="fw-sheet-title">Add a Place</div>
         <button
           id="closeSheetBtn"
           class="fw-sheet-close"
@@ -129,7 +131,6 @@
     crossorigin=""
   ></script>
 
-  <!-- App logic (unchanged except for class names) -->
   <script type="module">
     // ====== CONFIG ======
     const SUPABASE_URL = "https://ekpssonwtztubqfihlqm.supabase.co";
@@ -152,7 +153,9 @@
     }
 
     function getStoredApiKey() {
-      return localStorage.getItem(LS_KEY) || localStorage.getItem(LS_KEY_LEGACY);
+      return (
+        localStorage.getItem(LS_KEY) || localStorage.getItem(LS_KEY_LEGACY)
+      );
     }
 
     function persistKeys(id, apiKey) {
@@ -186,34 +189,39 @@
     const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     window._sb = sb;
 
-    // ====== Access Gate UI (sidebar banner) ======
+    // ====== Access Gate UI ======
     async function renderTokenSection() {
       const container = document.getElementById("token-section");
+      const accessStatusEl = document.getElementById("access-status");
       container.innerHTML = "";
+      if (accessStatusEl) accessStatusEl.innerHTML = "";
 
       const apiKey = getStoredApiKey();
 
       // If we have a key, verify it
       if (apiKey) {
         try {
-          const { data, error } = await sb.rpc("validate_api_key", { p_key: apiKey });
+          const { data, error } = await sb.rpc("validate_api_key", {
+            p_key: apiKey,
+          });
           if (!error && data && data.length > 0) {
-            // normalize storage
+            // normalize storage (ensure both legacy + new keys are present)
             persistKeys(data[0].id, apiKey);
 
-            const div = document.createElement("div");
-            div.className = "small-help";
-            div.innerHTML = `
-              Access is set on this device.
-              <a href="#" id="resetAccessLink" style="margin-left:8px;">Reset</a>
-            `;
-            container.appendChild(div);
-
-            document.getElementById("resetAccessLink").onclick = (e) => {
-              e.preventDefault();
-              resetAccess();
-              renderTokenSection();
-            };
+            if (accessStatusEl) {
+              accessStatusEl.innerHTML = `
+                Access is set on this device.
+                <a href="#" id="resetAccessLink" style="margin-left:8px;">Reset</a>
+              `;
+              const resetLink = document.getElementById("resetAccessLink");
+              if (resetLink) {
+                resetLink.onclick = (e) => {
+                  e.preventDefault();
+                  resetAccess();
+                  renderTokenSection();
+                };
+              }
+            }
             return;
           }
         } catch (_) {}
@@ -237,7 +245,6 @@
           />
           <button
             id="invite-save-btn"
-            type="button"
             class="btn-primary"
             style="margin-top:6px;"
           >
@@ -259,7 +266,9 @@
         }
 
         try {
-          const { data, error } = await sb.rpc("validate_invite", { p_code: value });
+          const { data, error } = await sb.rpc("validate_invite", {
+            p_code: value,
+          });
           if (error) throw error;
 
           if (!data || data.length === 0) {
@@ -272,28 +281,33 @@
           await renderTokenSection();
         } catch (e) {
           console.error("validate_invite failed:", e);
-          alert("Could not validate invite code. Check network / RLS / function grants.");
+          alert(
+            "Could not validate invite code. Check network / RLS / function grants."
+          );
         }
       };
     }
 
     // Bootstrap from URL (?code=, ?invite=, ?token=, ?t=)
     (async function bootstrapFromQuery() {
-      const q =
-        (getQueryParam("code") ||
-          getQueryParam("invite") ||
-          getQueryParam("token") ||
-          getQueryParam("t") ||
-          "")
-          .trim()
-          .toUpperCase()
-          .replace(/[\s-]/g, "");
+      const q = (
+        getQueryParam("code") ||
+        getQueryParam("invite") ||
+        getQueryParam("token") ||
+        getQueryParam("t") ||
+        ""
+      )
+        .trim()
+        .toUpperCase()
+        .replace(/[\s-]/g, "");
 
       if (!q) return;
       if (getStoredApiKey()) return; // already have access
 
       try {
-        const { data, error } = await sb.rpc("validate_invite", { p_code: q });
+        const { data, error } = await sb.rpc("validate_invite", {
+          p_code: q,
+        });
         if (!error && data && data.length > 0) {
           persistKeys(data[0].id, data[0].api_key);
           // Optional: clean the URL
@@ -342,9 +356,14 @@
 
     function extractAddressParts(address = {}) {
       const streetLine1 =
-        [address.house_number, address.road].filter(Boolean).join(" ") || null;
+        [address.house_number, address.road].filter(Boolean).join(" ") ||
+        null;
       const streetLine2 =
-        [address.neighbourhood, address.suburb, address.city_district]
+        [
+          address.neighbourhood,
+          address.suburb,
+          address.city_district,
+        ]
           .filter(Boolean)
           .join(", ") || null;
 
@@ -533,8 +552,7 @@
         });
 
         if (placeAddressInput) {
-          placeAddressInput.value =
-            "Address not available (you can type one).";
+          placeAddressInput.value = "Address not available (you can type one).";
         }
       }
     }
@@ -578,8 +596,7 @@
         latitude: selectedLatLng.lat,
         longitude: selectedLatLng.lon,
         user_note,
-        user_token: apiKey, // holds api_key
-
+        user_token: apiKey, // unchanged field name, now holds api_key
         osm_address: selectedAddress,
         osm_extratags: selectedExtratags,
       };
@@ -653,7 +670,9 @@
           "fw-sheet--peek",
           "fw-sheet--open"
         );
-        sheet.classList.add(mode === "peek" ? "fw-sheet--peek" : "fw-sheet--open");
+        sheet.classList.add(
+          mode === "peek" ? "fw-sheet--peek" : "fw-sheet--open"
+        );
         sheet.setAttribute("aria-hidden", "false");
       }
 
@@ -693,6 +712,62 @@
       openBtn?.addEventListener("click", () => openSheet("open"));
       closeBtn?.addEventListener("click", closeSheet);
       handle?.addEventListener("click", togglePeek);
+
+      // Make sure gestures on the sheet don't pan the map underneath
+      if (typeof L !== "undefined" && sheet) {
+        try {
+          L.DomEvent.disableClickPropagation(sheet);
+          L.DomEvent.disableScrollPropagation(sheet);
+        } catch (err) {
+          console.warn("Could not disable Leaflet events for sheet", err);
+        }
+      }
+
+      // Basic swipe up/down gesture on the header + handle
+      const sheetHeader = sheet.querySelector(".fw-sheet-header");
+      const dragTargets = [sheetHeader, handle];
+
+      let dragStartY = null;
+      const DRAG_THRESHOLD = 30;
+
+      function onTouchStart(e) {
+        if (!e.touches || e.touches.length !== 1) return;
+        dragStartY = e.touches[0].clientY;
+      }
+
+      function onTouchMove(e) {
+        if (dragStartY == null) return;
+        const dy = e.touches[0].clientY - dragStartY;
+        if (Math.abs(dy) > 8) {
+          // prevent map from moving underneath
+          e.preventDefault();
+        }
+      }
+
+      function onTouchEnd(e) {
+        if (dragStartY == null) return;
+        const touch = e.changedTouches && e.changedTouches[0];
+        const dy = touch ? touch.clientY - dragStartY : 0;
+
+        if (Math.abs(dy) > DRAG_THRESHOLD) {
+          if (dy < 0) {
+            // swipe up -> fully open
+            openSheet("open");
+          } else {
+            // swipe down -> go to peek
+            openSheet("peek");
+          }
+        }
+
+        dragStartY = null;
+      }
+
+      dragTargets.forEach((el) => {
+        if (!el) return;
+        el.addEventListener("touchstart", onTouchStart, { passive: false });
+        el.addEventListener("touchmove", onTouchMove, { passive: false });
+        el.addEventListener("touchend", onTouchEnd);
+      });
 
       applyMode(mq.matches);
       mq.addEventListener("change", (e) => applyMode(e.matches));
