@@ -161,7 +161,8 @@
               <span id="m-edit-meta"></span>
             </div>
 
-            <div class="action-row">
+            <!-- NOT sticky: just a normal block that scrolls with the form -->
+            <div class="actions" style="margin-top:16px; display:flex; flex-direction:column; gap:10px;">
               <button id="m-save-changes-btn" class="btn-primary">
                 Save changes
               </button>
@@ -228,7 +229,7 @@
         .replace(/'/g, "&#039;");
     }
 
-    // Format subtitle for list: city, state, country
+    // Create "city, state, country" line for list
     function formatAddressFromPlace(p = {}) {
       const parts = [p.city, p.state, p.country].filter(Boolean);
       return parts.join(", ");
@@ -241,7 +242,6 @@
 
       const apiKey = getStoredApiKey();
 
-      // If we have a key, validate it
       if (apiKey) {
         try {
           const { data, error } = await sb.rpc("validate_api_key", {
@@ -323,7 +323,6 @@
           const row = data[0];
           persistKeys(row.id, row.api_key);
 
-          // load places now that access is set
           await renderTokenSection();
           await loadUserPlaces();
         } catch (e) {
@@ -349,7 +348,6 @@
     const editMetaEl = document.getElementById("edit-meta");
     const editStatusEl = document.getElementById("edit-status");
 
-    // Desktop address / contact fields
     const editStreet1Input = document.getElementById("edit-street1");
     const editStreet2Input = document.getElementById("edit-street2");
     const editCityInput = document.getElementById("edit-city");
@@ -416,10 +414,8 @@
       else openSheet("open");
     }
 
-    function setMobileFabEnabled(_enabled) {
-      // FAB was removed; keep this as a no-op to avoid changing other calls.
-      return;
-    }
+    // FAB removed; keep this as a no-op so callers don't break
+    function setMobileFabEnabled(_enabled) { return; }
 
     function renderPlaceList() {
       placeListEl.innerHTML = "";
@@ -439,20 +435,19 @@
         row.dataset.id = p.id;
 
         const title = p.title || "(Untitled place)";
-        const address = formatAddressFromPlace(p);
+        const addressLine = formatAddressFromPlace(p);
 
         row.innerHTML = `
           <div class="place-row-title">${escapeHtml(title)}</div>
           ${
-            address
-              ? `<div class="place-row-note">${escapeHtml(address)}</div>`
+            addressLine
+              ? `<div class="place-row-note">${escapeHtml(addressLine)}</div>`
               : ""
           }
         `;
 
         row.onclick = () => {
           selectPlace(p.id);
-          // On mobile: go straight into edit sheet
           if (isMobile()) openSheet("open");
         };
 
@@ -521,8 +516,6 @@
         emptyMessageEl.style.display = "block";
       }
       if (editStatusEl) editStatusEl.textContent = "";
-
-      // Clear desktop fields
       editTitleInput.value = "";
       editStreet1Input.value = "";
       editStreet2Input.value = "";
@@ -540,8 +533,6 @@
         mEmptyMessageEl.style.display = "block";
       }
       if (mEditStatusEl) mEditStatusEl.textContent = "";
-
-      // Clear mobile fields
       mEditTitleInput.value = "";
       mEditStreet1Input.value = "";
       mEditStreet2Input.value = "";
@@ -611,9 +602,9 @@
           );
         }
 
-        // Ensure the edge function returns all fields you want to edit:
-        // title, notes, street_line1, street_line2, city, state,
-        // postal_code, country, phone, website, created_at, id.
+        // IMPORTANT: ensure the edge function returns these fields:
+        // id, title, notes, street_line1, street_line2, city, state,
+        // postal_code, country, phone, website, created_at.
         userPlaces = Array.isArray(data.places) ? data.places : [];
         activePlaceId = null;
         renderPlaceList();
