@@ -821,6 +821,29 @@ button{
   font-size: 0.9rem;
 }
 
+/* Mobile adjustments for about page */
+@media (max-width: 768px){
+  .about-card.fw-card{
+    padding: 20px 18px;
+  }
+  .about-card h1{
+    font-size: 1.35rem;
+  }
+  .about-card h2{
+    font-size: 0.95rem;
+  }
+  .about-card p,
+  .about-card li{
+    font-size: 0.85rem;
+  }
+  .about-card .lede{
+    font-size: 0.9rem;
+  }
+  .back-link{
+    font-size: 0.8rem;
+  }
+}
+
 /* Global link default (kept), but safe */
 a{ color: var(--fw-accent); text-decoration: none; }
 a:hover{ text-decoration: underline; }
