@@ -550,6 +550,18 @@ button{
   .action-row .btn-primary,
   .action-row .btn-danger,
   .action-row .btn-ghost{ width: 100%; }
+
+  /* Force select styling on mobile (iOS/Android can override) */
+  select{
+    font-size: 18px !important;
+    font-size: 1rem !important;
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
+    appearance: none !important;
+    border-radius: 10px !important;
+    min-height: 44px;
+    padding: 10px 36px 10px 12px !important;
+  }
 }
 
 /* ---------- Leaflet popup polish (used on add/view) ---------- */
