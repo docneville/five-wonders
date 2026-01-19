@@ -152,9 +152,9 @@
     }
 
     // Build readable address from parts
-    function buildAddress({ street_line_1, city, state, country }) {
+    function buildAddress({ street_line1, city, state, country }) {
       const parts = [];
-      if (street_line_1) parts.push(street_line_1);
+      if (street_line1) parts.push(street_line1);
 
       // Combine city and state with comma
       const cityState = [city, state].filter(Boolean).join(", ");
@@ -166,8 +166,8 @@
     }
 
     // Body content used in both popup + sheet (NO title here)
-    function buildPlaceBodyHtml({ title, notes, createdAt, savedBy, category, street_line_1, city, state, country, phone, website }) {
-      const address = buildAddress({ street_line_1, city, state, country });
+    function buildPlaceBodyHtml({ title, notes, createdAt, savedBy, category, street_line1, city, state, country, phone, website }) {
+      const address = buildAddress({ street_line1, city, state, country });
 
       return `
         ${category ? `<div class="place-category">${escapeHtml(category)}</div>` : ""}
@@ -197,11 +197,11 @@
     }
 
     // Desktop popup includes the title in the popup itself
-    function buildPopupHtml({ title, notes, createdAt, savedBy, category, street_line_1, city, state, country, phone, website }) {
+    function buildPopupHtml({ title, notes, createdAt, savedBy, category, street_line1, city, state, country, phone, website }) {
       return `
         <div class="place-popup">
           <div class="place-title">${escapeHtml(title)}</div>
-          ${buildPlaceBodyHtml({ title, notes, createdAt, savedBy, category, street_line_1, city, state, country, phone, website })}
+          ${buildPlaceBodyHtml({ title, notes, createdAt, savedBy, category, street_line1, city, state, country, phone, website })}
         </div>
       `;
     }
@@ -233,7 +233,7 @@
           last_name,
           username,
           category,
-          street_line_1,
+          street_line1,
           city,
           state,
           country,
@@ -276,7 +276,7 @@
 
         // Additional fields
         const category = place.category || "";
-        const street_line_1 = place.street_line_1 || "";
+        const street_line1 = place.street_line1 || "";
         const city = place.city || "";
         const state = place.state || "";
         const country = place.country || "";
@@ -289,7 +289,7 @@
           createdAt,
           savedBy,
           category,
-          street_line_1,
+          street_line1,
           city,
           state,
           country,
