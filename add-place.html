@@ -76,6 +76,16 @@
           id="user-note"
           placeholder="Why you love this place (what to order, when to go, etc.)"
         ></textarea>
+
+        <label for="place-category">Category</label>
+        <select id="place-category">
+          <option value="Other">Other</option>
+          <option value="Dining">Dining</option>
+          <option value="Lodging">Lodging</option>
+          <option value="Attraction">Attraction</option>
+          <option value="Recreation">Recreation</option>
+          <option value="Shopping">Shopping</option>
+        </select>
       </div>
 
       <div class="save-row">
@@ -330,6 +340,7 @@
     const placeNameInput = document.getElementById("place-name");
     const placeAddressInput = document.getElementById("place-address");
     const userNoteInput = document.getElementById("user-note");
+    const placeCategorySelect = document.getElementById("place-category");
 
     const saveBtn = document.getElementById("save-btn");
 
@@ -579,6 +590,7 @@
       const place_name = (placeNameInput.value || "").trim();
       const place_address = (placeAddressInput.value || "").trim();
       const user_note = (userNoteInput.value || "").trim();
+      const category = placeCategorySelect.value || "Other";
 
       if (!place_name) {
         alert("Please enter a place name.");
@@ -596,6 +608,7 @@
         latitude: selectedLatLng.lat,
         longitude: selectedLatLng.lon,
         user_note,
+        category,
         user_token: apiKey, // unchanged field name, now holds api_key
         osm_address: selectedAddress,
         osm_extratags: selectedExtratags,

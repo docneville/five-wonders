@@ -84,6 +84,16 @@
           <label for="edit-note">Your note</label>
           <textarea id="edit-note"></textarea>
 
+          <label for="edit-category">Category</label>
+          <select id="edit-category">
+            <option value="Other">Other</option>
+            <option value="Dining">Dining</option>
+            <option value="Lodging">Lodging</option>
+            <option value="Attraction">Attraction</option>
+            <option value="Recreation">Recreation</option>
+            <option value="Shopping">Shopping</option>
+          </select>
+
           <div class="row">
             <span id="edit-meta"></span>
           </div>
@@ -157,6 +167,16 @@
 
             <label for="m-edit-note">Your note</label>
             <textarea id="m-edit-note"></textarea>
+
+            <label for="m-edit-category">Category</label>
+            <select id="m-edit-category">
+              <option value="Other">Other</option>
+              <option value="Dining">Dining</option>
+              <option value="Lodging">Lodging</option>
+              <option value="Attraction">Attraction</option>
+              <option value="Recreation">Recreation</option>
+              <option value="Shopping">Shopping</option>
+            </select>
 
             <div class="row">
               <span id="m-edit-meta"></span>
@@ -361,6 +381,7 @@
     const editCountryInput = document.getElementById("edit-country");
     const editPhoneInput = document.getElementById("edit-phone");
     const editWebsiteInput = document.getElementById("edit-website");
+    const editCategorySelect = document.getElementById("edit-category");
 
     const saveChangesBtn = document.getElementById("save-changes-btn");
     const deleteBtn = document.getElementById("delete-btn");
@@ -386,6 +407,7 @@
     const mEditCountryInput = document.getElementById("m-edit-country");
     const mEditPhoneInput = document.getElementById("m-edit-phone");
     const mEditWebsiteInput = document.getElementById("m-edit-website");
+    const mEditCategorySelect = document.getElementById("m-edit-category");
 
     const mSaveBtn = document.getElementById("m-save-changes-btn");
     const mDeleteBtn = document.getElementById("m-delete-btn");
@@ -476,6 +498,7 @@
         editPhoneInput.value = place.phone ?? "";
         editWebsiteInput.value = place.website ?? "";
         editNoteInput.value = place.notes ?? "";
+        editCategorySelect.value = place.category ?? "Other";
 
         if (place.created_at) {
           const d = new Date(place.created_at);
@@ -501,6 +524,7 @@
         mEditPhoneInput.value = place.phone ?? "";
         mEditWebsiteInput.value = place.website ?? "";
         mEditNoteInput.value = place.notes ?? "";
+        mEditCategorySelect.value = place.category ?? "Other";
 
         if (place.created_at) {
           const d = new Date(place.created_at);
@@ -531,6 +555,7 @@
       editPhoneInput.value = "";
       editWebsiteInput.value = "";
       editNoteInput.value = "";
+      editCategorySelect.value = "Other";
       editMetaEl.textContent = "";
 
       if (mEditFormEl && mEmptyMessageEl) {
@@ -548,6 +573,7 @@
       mEditPhoneInput.value = "";
       mEditWebsiteInput.value = "";
       mEditNoteInput.value = "";
+      mEditCategorySelect.value = "Other";
       mEditMetaEl.textContent = "";
 
       setMobileFabEnabled(false);
@@ -632,6 +658,7 @@
       state,
       postal_code,
       country,
+      category,
       statusEl,
     }) {
       if (!activePlaceId) return;
@@ -662,6 +689,7 @@
             state,
             postal_code,
             country,
+            category,
           }),
         });
 
@@ -702,6 +730,7 @@
               state,
               postal_code,
               country,
+              category,
             };
           }
           renderPlaceList();
@@ -801,6 +830,7 @@
         state: (editStateInput.value || "").trim(),
         postal_code: (editPostalInput.value || "").trim(),
         country: (editCountryInput.value || "").trim(),
+        category: editCategorySelect.value || "Other",
         statusEl: editStatusEl,
       }).catch((err) => {
         console.error("Unexpected save error:", err);
@@ -829,6 +859,7 @@
         state: (mEditStateInput.value || "").trim(),
         postal_code: (mEditPostalInput.value || "").trim(),
         country: (mEditCountryInput.value || "").trim(),
+        category: mEditCategorySelect.value || "Other",
         statusEl: mEditStatusEl,
       }).catch((err) => {
         console.error("Unexpected save error:", err);
