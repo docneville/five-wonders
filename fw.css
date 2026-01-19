@@ -572,14 +572,50 @@ button{
 }
 .leaflet-popup-content-wrapper{ border-radius: 14px; }
 
-/* View page “place” text styles */
+/* View page "place" text styles */
 .place-title{
   font-weight: 800;
   margin-bottom: 6px;
   font-size: 1.05rem;
 }
+.place-category{
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #4b5563;
+  background: #f3f4f6;
+  padding: 4px 8px;
+  border-radius: 6px;
+  margin-bottom: 8px;
+}
+.place-address{
+  font-size: 0.95rem;
+  color: #374151;
+  margin-bottom: 6px;
+}
+.place-phone{
+  font-size: 0.9rem;
+  color: #374151;
+  margin-bottom: 4px;
+}
+.place-website{
+  font-size: 0.9rem;
+  margin-bottom: 8px;
+  word-break: break-all;
+}
+.place-website a{
+  color: var(--fw-accent);
+}
+.place-notes-header{
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--fw-text);
+  margin-top: 12px;
+  margin-bottom: 4px;
+}
 .place-notes{
-  margin-top: 6px;
   color: var(--fw-text);
   font-size: 1rem;
   white-space: pre-wrap;

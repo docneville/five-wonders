@@ -151,13 +151,33 @@
       return color;
     }
 
+    // Build readable address from parts
+    function buildAddress({ street_line_1, city, state, country }) {
+      const parts = [];
+      if (street_line_1) parts.push(street_line_1);
+
+      // Combine city and state with comma
+      const cityState = [city, state].filter(Boolean).join(", ");
+      if (cityState) parts.push(cityState);
+
+      if (country) parts.push(country);
+
+      return parts.join(", ");
+    }
+
     // Body content used in both popup + sheet (NO title here)
-    function buildPlaceBodyHtml({ notes, createdAt, savedBy }) {
+    function buildPlaceBodyHtml({ title, notes, createdAt, savedBy, category, street_line_1, city, state, country, phone, website }) {
+      const address = buildAddress({ street_line_1, city, state, country });
+
       return `
+        ${category ? `<div class="place-category">${escapeHtml(category)}</div>` : ""}
+        ${address ? `<div class="place-address">${escapeHtml(address)}</div>` : ""}
+        ${phone ? `<div class="place-phone">📞 ${escapeHtml(phone)}</div>` : ""}
+        ${website ? `<div class="place-website"><a href="${escapeHtml(website)}" target="_blank" rel="noopener">${escapeHtml(website)}</a></div>` : ""}
         ${
           notes
-            ? `<div class="place-notes">${escapeHtml(notes)}</div>`
-            : `<div class="place-notes" style="color:#6b7280;">No note yet.</div>`
+            ? `<div class="place-notes-header">Why ${escapeHtml(title)} is a Wonder</div><div class="place-notes">${escapeHtml(notes)}</div>`
+            : ""
         }
         ${
           createdAt || savedBy
@@ -177,11 +197,11 @@
     }
 
     // Desktop popup includes the title in the popup itself
-    function buildPopupHtml({ title, notes, createdAt, savedBy }) {
+    function buildPopupHtml({ title, notes, createdAt, savedBy, category, street_line_1, city, state, country, phone, website }) {
       return `
         <div class="place-popup">
           <div class="place-title">${escapeHtml(title)}</div>
-          ${buildPlaceBodyHtml({ notes, createdAt, savedBy })}
+          ${buildPlaceBodyHtml({ title, notes, createdAt, savedBy, category, street_line_1, city, state, country, phone, website })}
         </div>
       `;
     }
@@ -211,7 +231,14 @@
           created_at,
           first_name,
           last_name,
-          username
+          username,
+          category,
+          street_line_1,
+          city,
+          state,
+          country,
+          phone,
+          website
         `
         )
         .not("latitude", "is", null)
@@ -247,14 +274,31 @@
           place.username ||
           (place.last_name ? `Friend (${place.last_name})` : "Someone");
 
-        const popupHtml = buildPopupHtml({
+        // Additional fields
+        const category = place.category || "";
+        const street_line_1 = place.street_line_1 || "";
+        const city = place.city || "";
+        const state = place.state || "";
+        const country = place.country || "";
+        const phone = place.phone || "";
+        const website = place.website || "";
+
+        const placeData = {
           title,
           notes,
           createdAt,
           savedBy,
-        });
+          category,
+          street_line_1,
+          city,
+          state,
+          country,
+          phone,
+          website,
+        };
 
-        const bodyHtml = buildPlaceBodyHtml({ notes, createdAt, savedBy });
+        const popupHtml = buildPopupHtml(placeData);
+        const bodyHtml = buildPlaceBodyHtml(placeData);
 
         const userKey = place.user_id || "unknown";
         const color = colorForUser(userKey);
