@@ -823,24 +823,21 @@ button{
 
 /* Mobile adjustments for about page */
 @media (max-width: 768px){
-  .about-card.fw-card{
-    padding: 18px 16px;
+  .fw-about .shell{
+    padding: 0 16px;
   }
-  .about-card h1{
+  .fw-about h1{
     font-size: 1.1rem;
   }
-  .about-card h2{
+  .fw-about h2{
     font-size: 0.9rem;
   }
-  .about-card p,
-  .about-card li{
+  .fw-about p,
+  .fw-about li{
     font-size: 0.8rem;
     line-height: 1.5;
   }
-  .about-card .lede{
-    font-size: 0.8rem;
-  }
-  .back-link{
+  .fw-about .back-link{
     font-size: 0.75rem;
   }
 }
