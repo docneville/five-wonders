@@ -2,11 +2,94 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Five Wonders – Add a Place</title>
+  <title>Five Wonders – Add a Wonder</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <!-- Shared styles -->
   <link rel="stylesheet" href="fw.css" />
+
+  <style>
+    /* Saving indicator styles */
+    .saving-indicator {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 16px;
+      background: #f0f7ff;
+      border-radius: 8px;
+      margin-top: 12px;
+    }
+    .saving-indicator.success {
+      background: #e6f9e6;
+    }
+    .spinner {
+      width: 18px;
+      height: 18px;
+      border: 2px solid #ccc;
+      border-top-color: #3b82f6;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    .saving-indicator .checkmark {
+      color: #22c55e;
+      font-size: 18px;
+    }
+
+    /* Search input wrapper with clear button */
+    .search-input-wrapper {
+      position: relative;
+      flex: 1;
+    }
+    .search-input-wrapper input {
+      width: 100%;
+      padding-right: 28px;
+    }
+    .search-clear-btn {
+      position: absolute;
+      right: 6px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: #888;
+      font-size: 16px;
+      padding: 2px 6px;
+      line-height: 1;
+      display: none;
+    }
+    .search-clear-btn:hover {
+      color: #333;
+    }
+    .search-input-wrapper input:not(:placeholder-shown) + .search-clear-btn {
+      display: block;
+    }
+
+    /* Search results header */
+    .search-results-header {
+      font-weight: 600;
+      font-size: 13px;
+      color: #555;
+      margin-top: 10px;
+      margin-bottom: 6px;
+      display: none;
+    }
+    .search-results-header.visible {
+      display: block;
+    }
+
+    /* Dot icon for existing saved places */
+    .fw-dot {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      border: 2px solid #fff;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+    }
+  </style>
 
   <!-- Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -39,24 +122,28 @@
       <div id="token-section"></div>
 
       <div style="margin-top:12px;">
-        <div class="section-title">Step 1. Find a Place</div>
+        <div class="section-title">Step 1. Find a Wonder</div>
         <div class="small-help" style="margin-top:4px;">
           Either use the search box or tap on the map to pick a location.
-        </div>        
+        </div>
         <label for="search-input">Search</label>
         <div style="display:flex;gap:6px;align-items:center;">
-          <input
-            type="text"
-            id="search-input"
-            placeholder="Larsen's Bakery, Seattle"
-          />
+          <div class="search-input-wrapper">
+            <input
+              type="text"
+              id="search-input"
+              placeholder="Larsen's Bakery, Seattle"
+            />
+            <button type="button" id="search-clear-btn" class="search-clear-btn" title="Clear">✕</button>
+          </div>
           <button id="search-btn" class="btn-ghost">Go</button>
         </div>
+        <div id="search-results-header" class="search-results-header">Search Results</div>
         <div id="search-results"></div>
       </div>
 
       <div style="margin-top:12px;">
-        <div class="section-title">Step 2. Add/Edit Details About Your Place</div>
+        <div class="section-title">Step 2. Add/Edit Details About Your Wonder</div>
 
         <label for="place-name">Place name</label>
         <input
@@ -65,10 +152,11 @@
           placeholder="Name of the place"
         />
 
-        <label for="place-address">Address</label>
+        <!-- Address field hidden but still used for saving -->
         <textarea
           id="place-address"
           placeholder="Street, City, State, Country"
+          style="display:none;"
         ></textarea>
 
         <label for="user-note">Why is this a Wonder?</label>
@@ -89,10 +177,16 @@
       </div>
 
       <div class="save-row">
-        <button id="save-btn" class="btn-primary save-btn">Save place</button>
+        <button id="save-btn" class="btn-primary save-btn">Save Wonder</button>
       </div>
 
-      <!-- “Access is set…” now lives here, under the Save button -->
+      <!-- Saving indicator -->
+      <div id="saving-indicator" class="saving-indicator" style="display:none;">
+        <div class="spinner"></div>
+        <span id="saving-text">Saving...</span>
+      </div>
+
+      <!-- "Access is set…" now lives here, under the Save button -->
       <div id="access-status" class="small-help" style="margin-top:6px;"></div>
     </aside>
 
@@ -120,7 +214,7 @@
         title="Tap or swipe to expand/collapse"
       ></div>
       <div class="fw-sheet-header">
-        <div class="fw-sheet-title">Add a Place</div>
+        <div class="fw-sheet-title">Add a Wonder</div>
         <button
           id="closeSheetBtn"
           class="fw-sheet-close"
@@ -149,6 +243,9 @@
 
     const SUPABASE_FUNCTION_URL =
       "https://ekpssonwtztubqfihlqm.supabase.co/functions/v1/ingest-shortcut";
+
+    const MANAGE_PLACES_URL =
+      "https://ekpssonwtztubqfihlqm.supabase.co/functions/v1/manage-places";
 
     // Storage keys (new + legacy)
     const LS_ID = "fw_profile_id";
@@ -228,10 +325,16 @@
                 resetLink.onclick = (e) => {
                   e.preventDefault();
                   resetAccess();
+                  // Clear existing place markers
+                  existingPlacesMarkers.forEach((m) => map.removeLayer(m));
+                  existingPlacesMarkers = [];
+                  userPlaces = [];
                   renderTokenSection();
                 };
               }
             }
+            // Load existing places on map
+            loadExistingPlaces();
             return;
           }
         } catch (_) {}
@@ -289,6 +392,8 @@
           const row = data[0];
           persistKeys(row.id, row.api_key);
           await renderTokenSection();
+          // Load existing places after entering invite code
+          loadExistingPlaces();
         } catch (e) {
           console.error("validate_invite failed:", e);
           alert(
@@ -336,6 +441,11 @@
     const searchInput = document.getElementById("search-input");
     const searchBtn = document.getElementById("search-btn");
     const searchResultsEl = document.getElementById("search-results");
+    const searchResultsHeader = document.getElementById("search-results-header");
+    const searchClearBtn = document.getElementById("search-clear-btn");
+
+    const savingIndicator = document.getElementById("saving-indicator");
+    const savingText = document.getElementById("saving-text");
 
     const placeNameInput = document.getElementById("place-name");
     const placeAddressInput = document.getElementById("place-address");
@@ -363,6 +473,157 @@
       } else {
         selectedMarker.setLatLng([lat, lon]);
       }
+    }
+
+    // ====== EXISTING PLACES ON MAP ======
+    let existingPlacesMarkers = [];
+    let userPlaces = [];
+
+    // Color per user_id (same as view.html)
+    const userColorCache = new Map();
+
+    function colorForUser(key) {
+      const k = String(key || "unknown");
+      if (userColorCache.has(k)) return userColorCache.get(k);
+
+      let hash = 0;
+      for (let i = 0; i < k.length; i++) {
+        hash = k.charCodeAt(i) + ((hash << 5) - hash);
+        hash |= 0;
+      }
+
+      const hue = Math.abs(hash) % 360;
+      const color = `hsl(${hue}, 70%, 45%)`;
+      userColorCache.set(k, color);
+      return color;
+    }
+
+    function makeDotIcon(color) {
+      return L.divIcon({
+        className: "",
+        html: `<div class="fw-dot" style="background:${color};"></div>`,
+        iconSize: [18, 18],
+        iconAnchor: [9, 9],
+        popupAnchor: [0, -10],
+      });
+    }
+
+    function buildAddress({ street_line1, city, state, country }) {
+      const parts = [];
+      if (street_line1) parts.push(street_line1);
+      const cityState = [city, state].filter(Boolean).join(", ");
+      if (cityState) parts.push(cityState);
+      if (country) parts.push(country);
+      return parts.join(", ");
+    }
+
+    function buildPopupHtml({ title, notes, createdAt, category, street_line1, city, state, country, phone, website }) {
+      const address = buildAddress({ street_line1, city, state, country });
+      return `
+        <div class="place-popup">
+          <div class="place-title">${escapeHtml(title)}</div>
+          ${category ? `<div class="place-category">${escapeHtml(category)}</div>` : ""}
+          ${address ? `<div class="place-address">${escapeHtml(address)}</div>` : ""}
+          ${phone ? `<div class="place-phone">📞 ${escapeHtml(phone)}</div>` : ""}
+          ${website ? `<div class="place-website"><a href="${escapeHtml(website)}" target="_blank" rel="noopener">${escapeHtml(website)}</a></div>` : ""}
+          ${notes ? `<div class="place-notes-header">Why ${escapeHtml(title)} is a Wonder:</div><div class="place-notes">${escapeHtml(notes)}</div>` : ""}
+          ${createdAt ? `<div class="place-meta">Saved: ${escapeHtml(createdAt)}</div>` : ""}
+        </div>
+      `;
+    }
+
+    function addExistingPlaceMarker(place, userId) {
+      const lat = place.latitude;
+      const lon = place.longitude;
+      if (typeof lat !== "number" || typeof lon !== "number") return null;
+
+      const color = colorForUser(userId);
+      const icon = makeDotIcon(color);
+      const marker = L.marker([lat, lon], { icon }).addTo(map);
+
+      const popupHtml = buildPopupHtml({
+        title: place.title || "(Untitled place)",
+        notes: place.notes || "",
+        createdAt: place.created_at ? new Date(place.created_at).toLocaleString() : "",
+        category: place.category || "",
+        street_line1: place.street_line1 || "",
+        city: place.city || "",
+        state: place.state || "",
+        country: place.country || "",
+        phone: place.phone || "",
+        website: place.website || "",
+      });
+
+      marker.bindPopup(popupHtml, { maxWidth: 320 });
+      return marker;
+    }
+
+    async function loadExistingPlaces() {
+      const apiKey = getStoredApiKey();
+      if (!apiKey) return;
+
+      try {
+        const res = await fetch(MANAGE_PLACES_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "list", user_token: apiKey }),
+        });
+
+        if (!res.ok) {
+          console.error("Error loading existing places:", res.status);
+          return;
+        }
+
+        const data = await res.json();
+        userPlaces = Array.isArray(data.places) ? data.places : [];
+
+        // Clear old markers
+        existingPlacesMarkers.forEach((m) => map.removeLayer(m));
+        existingPlacesMarkers = [];
+
+        // Get user_id for coloring
+        const storedId = localStorage.getItem(LS_ID) || localStorage.getItem(LS_ID_LEGACY);
+
+        userPlaces.forEach((place) => {
+          const marker = addExistingPlaceMarker(place, storedId);
+          if (marker) existingPlacesMarkers.push(marker);
+        });
+      } catch (err) {
+        console.error("Error loading existing places:", err);
+      }
+    }
+
+    // ====== SAVING INDICATOR ======
+    function showSavingIndicator() {
+      savingIndicator.classList.remove("success");
+      savingIndicator.innerHTML = '<div class="spinner"></div><span>Saving...</span>';
+      savingIndicator.style.display = "flex";
+    }
+
+    function showSavedIndicator() {
+      savingIndicator.classList.add("success");
+      savingIndicator.innerHTML = '<span class="checkmark">✓</span><span>Saved!</span>';
+    }
+
+    function hideSavingIndicator() {
+      savingIndicator.style.display = "none";
+    }
+
+    function clearAddForm() {
+      placeNameInput.value = "";
+      placeAddressInput.value = "";
+      userNoteInput.value = "";
+      placeCategorySelect.value = "Other";
+      selectedLatLng = null;
+      selectedAddress = null;
+      selectedExtratags = null;
+      if (selectedMarker) {
+        map.removeLayer(selectedMarker);
+        selectedMarker = null;
+      }
+      searchInput.value = "";
+      searchResultsEl.innerHTML = "";
+      searchResultsHeader.classList.remove("visible");
     }
 
     function extractAddressParts(address = {}) {
@@ -473,9 +734,12 @@
     function renderSearchResults(results) {
       searchResultsEl.innerHTML = "";
       if (!Array.isArray(results) || results.length === 0) {
+        searchResultsHeader.classList.remove("visible");
         searchResultsEl.textContent = "No results.";
         return;
       }
+
+      searchResultsHeader.classList.add("visible");
 
       results.forEach((r) => {
         const div = document.createElement("div");
@@ -616,6 +880,9 @@
 
       console.log("Saving place with payload:", payload);
 
+      // Show saving indicator
+      showSavingIndicator();
+
       let res;
       try {
         res = await fetch(SUPABASE_FUNCTION_URL, {
@@ -624,6 +891,7 @@
         });
       } catch (err) {
         console.error("Network error calling ingest-shortcut:", err);
+        hideSavingIndicator();
         alert("Unexpected error – see console.");
         return;
       }
@@ -632,14 +900,42 @@
 
       if (!res.ok) {
         console.error("Error from ingest-shortcut:", res.status, text);
+        hideSavingIndicator();
         alert("Error saving place – see console for details.");
         return;
       }
 
       console.log("Saved place. Response:", text);
-      alert("Place saved to Five Wonders ✅");
 
-      userNoteInput.value = "";
+      // Show saved indicator
+      showSavedIndicator();
+
+      // Add newly saved place to map as existing place marker
+      const storedId = localStorage.getItem(LS_ID) || localStorage.getItem(LS_ID_LEGACY);
+      const newPlace = {
+        title: place_name,
+        notes: user_note,
+        category,
+        latitude: selectedLatLng.lat,
+        longitude: selectedLatLng.lon,
+        street_line1: addressParts.streetLine1 || "",
+        city: addressParts.city || "",
+        state: addressParts.stateRegion || "",
+        country: addressParts.country || "",
+        phone: contact.phone || "",
+        website: contact.website || "",
+        created_at: new Date().toISOString(),
+      };
+      const newMarker = addExistingPlaceMarker(newPlace, storedId);
+      if (newMarker) existingPlacesMarkers.push(newMarker);
+
+      // Clear the form so user doesn't accidentally save again
+      clearAddForm();
+
+      // Hide indicator after a delay
+      setTimeout(() => {
+        hideSavingIndicator();
+      }, 2000);
     }
 
     // ====== WIRE UP EVENTS ======
@@ -655,6 +951,22 @@
         if (q) searchPlaces(q);
       }
     });
+
+    // Search clear button
+    searchClearBtn.onclick = () => {
+      searchInput.value = "";
+      searchResultsEl.innerHTML = "";
+      searchResultsHeader.classList.remove("visible");
+      searchInput.focus();
+    };
+
+    // Update clear button visibility on input
+    searchInput.addEventListener("input", () => {
+      searchClearBtn.style.display = searchInput.value ? "block" : "none";
+    });
+
+    // Initialize clear button visibility
+    searchClearBtn.style.display = searchInput.value ? "block" : "none";
 
     saveBtn.onclick = () => {
       savePlace().catch((err) => {
