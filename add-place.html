@@ -581,27 +581,45 @@
       const apiKey = getStoredApiKey();
       if (!apiKey) return;
 
-      try {
-        const res = await fetch(MANAGE_PLACES_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "list", user_token: apiKey }),
-        });
+      // Get user_id for filtering and coloring
+      const storedId = localStorage.getItem(LS_ID) || localStorage.getItem(LS_ID_LEGACY);
+      if (!storedId) return;
 
-        if (!res.ok) {
-          console.error("Error loading existing places:", res.status);
+      try {
+        // Query Supabase directly to get places with coordinates (like view.html)
+        const { data, error } = await sb
+          .from("places_with_profiles")
+          .select(`
+            id,
+            user_id,
+            title,
+            notes,
+            latitude,
+            longitude,
+            created_at,
+            category,
+            street_line1,
+            city,
+            state,
+            country,
+            phone,
+            website
+          `)
+          .eq("user_id", storedId)
+          .not("latitude", "is", null)
+          .not("longitude", "is", null)
+          .order("created_at", { ascending: false });
+
+        if (error) {
+          console.error("Error loading existing places:", error);
           return;
         }
 
-        const data = await res.json();
-        userPlaces = Array.isArray(data.places) ? data.places : [];
+        userPlaces = Array.isArray(data) ? data : [];
 
         // Clear old markers
         existingPlacesMarkers.forEach((m) => map.removeLayer(m));
         existingPlacesMarkers = [];
-
-        // Get user_id for coloring
-        const storedId = localStorage.getItem(LS_ID) || localStorage.getItem(LS_ID_LEGACY);
 
         userPlaces.forEach((place) => {
           const marker = addExistingPlaceMarker(place, storedId);
