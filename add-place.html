@@ -9,23 +9,44 @@
   <link rel="stylesheet" href="fw.css" />
 
   <style>
-    /* Saving indicator styles */
-    .saving-indicator {
+    /* Saving overlay styles */
+    .saving-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.4);
       display: flex;
       align-items: center;
-      gap: 8px;
-      padding: 12px 16px;
-      background: #f0f7ff;
-      border-radius: 8px;
-      margin-top: 12px;
+      justify-content: center;
+      z-index: 9999;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.2s, visibility 0.2s;
     }
-    .saving-indicator.success {
+    .saving-overlay.visible {
+      opacity: 1;
+      visibility: visible;
+    }
+    .saving-overlay-content {
+      background: #fff;
+      padding: 24px 32px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 16px;
+      font-weight: 500;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    }
+    .saving-overlay.success .saving-overlay-content {
       background: #e6f9e6;
     }
     .spinner {
-      width: 18px;
-      height: 18px;
-      border: 2px solid #ccc;
+      width: 22px;
+      height: 22px;
+      border: 3px solid #ccc;
       border-top-color: #3b82f6;
       border-radius: 50%;
       animation: spin 0.8s linear infinite;
@@ -33,9 +54,9 @@
     @keyframes spin {
       to { transform: rotate(360deg); }
     }
-    .saving-indicator .checkmark {
+    .saving-overlay .checkmark {
       color: #22c55e;
-      font-size: 18px;
+      font-size: 24px;
     }
 
     /* Search input wrapper with clear button */
@@ -145,11 +166,10 @@
       <div style="margin-top:12px;">
         <div class="section-title">Step 2. Add/Edit Details About Your Wonder</div>
 
-        <label for="place-name">Place name</label>
+        <label for="place-name">Name</label>
         <input
           type="text"
           id="place-name"
-          placeholder="Name of the place"
         />
 
         <!-- Address field hidden but still used for saving -->
@@ -180,15 +200,17 @@
         <button id="save-btn" class="btn-primary save-btn">Save Wonder</button>
       </div>
 
-      <!-- Saving indicator -->
-      <div id="saving-indicator" class="saving-indicator" style="display:none;">
-        <div class="spinner"></div>
-        <span id="saving-text">Saving...</span>
-      </div>
-
       <!-- "Access is set…" now lives here, under the Save button -->
       <div id="access-status" class="small-help" style="margin-top:6px;"></div>
     </aside>
+
+    <!-- Saving overlay (full-screen) -->
+    <div id="saving-overlay" class="saving-overlay">
+      <div class="saving-overlay-content">
+        <div class="spinner"></div>
+        <span>Saving...</span>
+      </div>
+    </div>
 
     <!-- Map column -->
     <div id="mapWrap" class="fw-map-wrap">
@@ -198,7 +220,7 @@
         class="fw-fab fw-fab--map"
         type="button"
       >
-        Find / Details
+        Add a Wonder
       </button>
     </div>
 
@@ -333,8 +355,6 @@
                 };
               }
             }
-            // Load existing places on map
-            loadExistingPlaces();
             return;
           }
         } catch (_) {}
@@ -392,8 +412,8 @@
           const row = data[0];
           persistKeys(row.id, row.api_key);
           await renderTokenSection();
-          // Load existing places after entering invite code
-          loadExistingPlaces();
+          // Load existing places after entering invite code (map is now ready)
+          if (typeof map !== "undefined") loadExistingPlaces();
         } catch (e) {
           console.error("validate_invite failed:", e);
           alert(
@@ -444,8 +464,7 @@
     const searchResultsHeader = document.getElementById("search-results-header");
     const searchClearBtn = document.getElementById("search-clear-btn");
 
-    const savingIndicator = document.getElementById("saving-indicator");
-    const savingText = document.getElementById("saving-text");
+    const savingOverlay = document.getElementById("saving-overlay");
 
     const placeNameInput = document.getElementById("place-name");
     const placeAddressInput = document.getElementById("place-address");
@@ -593,21 +612,26 @@
       }
     }
 
-    // ====== SAVING INDICATOR ======
-    function showSavingIndicator() {
-      savingIndicator.classList.remove("success");
-      savingIndicator.innerHTML = '<div class="spinner"></div><span>Saving...</span>';
-      savingIndicator.style.display = "flex";
+    // ====== SAVING OVERLAY ======
+    function showSavingOverlay() {
+      savingOverlay.classList.remove("success");
+      savingOverlay.querySelector(".saving-overlay-content").innerHTML =
+        '<div class="spinner"></div><span>Saving...</span>';
+      savingOverlay.classList.add("visible");
     }
 
-    function showSavedIndicator() {
-      savingIndicator.classList.add("success");
-      savingIndicator.innerHTML = '<span class="checkmark">✓</span><span>Saved!</span>';
+    function showSavedOverlay() {
+      savingOverlay.classList.add("success");
+      savingOverlay.querySelector(".saving-overlay-content").innerHTML =
+        '<span class="checkmark">✓</span><span>Saved!</span>';
     }
 
-    function hideSavingIndicator() {
-      savingIndicator.style.display = "none";
+    function hideSavingOverlay() {
+      savingOverlay.classList.remove("visible", "success");
     }
+
+    // Mobile sheet close function (will be set by setupMobileSheet)
+    let closeMobileSheet = () => {};
 
     function clearAddForm() {
       placeNameInput.value = "";
@@ -880,8 +904,8 @@
 
       console.log("Saving place with payload:", payload);
 
-      // Show saving indicator
-      showSavingIndicator();
+      // Show saving overlay
+      showSavingOverlay();
 
       let res;
       try {
@@ -891,7 +915,7 @@
         });
       } catch (err) {
         console.error("Network error calling ingest-shortcut:", err);
-        hideSavingIndicator();
+        hideSavingOverlay();
         alert("Unexpected error – see console.");
         return;
       }
@@ -900,7 +924,7 @@
 
       if (!res.ok) {
         console.error("Error from ingest-shortcut:", res.status, text);
-        hideSavingIndicator();
+        hideSavingOverlay();
         alert("Error saving place – see console for details.");
         return;
       }
@@ -908,7 +932,7 @@
       console.log("Saved place. Response:", text);
 
       // Show saved indicator
-      showSavedIndicator();
+      showSavedOverlay();
 
       // Add newly saved place to map as existing place marker
       const storedId = localStorage.getItem(LS_ID) || localStorage.getItem(LS_ID_LEGACY);
@@ -932,10 +956,11 @@
       // Clear the form so user doesn't accidentally save again
       clearAddForm();
 
-      // Hide indicator after a delay
+      // Hide overlay after a delay, then close mobile sheet
       setTimeout(() => {
-        hideSavingIndicator();
-      }, 2000);
+        hideSavingOverlay();
+        closeMobileSheet();
+      }, 1500);
     }
 
     // ====== WIRE UP EVENTS ======
@@ -1007,6 +1032,9 @@
         sheet.setAttribute("aria-hidden", "true");
       }
 
+      // Export closeSheet for use after saving
+      closeMobileSheet = closeSheet;
+
       function togglePeek() {
         if (sheet.classList.contains("fw-sheet--open")) openSheet("peek");
         else openSheet("open");
@@ -1021,7 +1049,8 @@
           moved = true;
 
           setTimeout(() => map.invalidateSize(), 50);
-          openSheet("open");
+          // Start with sheet closed on mobile
+          closeSheet();
         } else if (!isMobile && moved) {
           sidebar.classList.remove("in-sheet");
           const app = document.getElementById("app");
@@ -1097,6 +1126,11 @@
       applyMode(mq.matches);
       mq.addEventListener("change", (e) => applyMode(e.matches));
     })();
+
+    // Load existing places on map (now that map is initialized)
+    if (getStoredApiKey()) {
+      loadExistingPlaces();
+    }
   </script>
 </body>
 </html>

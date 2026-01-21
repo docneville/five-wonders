@@ -9,23 +9,44 @@
   <link rel="stylesheet" href="fw.css" />
 
   <style>
-    /* Saving indicator styles */
-    .saving-indicator {
+    /* Saving overlay styles */
+    .saving-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.4);
       display: flex;
       align-items: center;
-      gap: 8px;
-      padding: 12px 16px;
-      background: #f0f7ff;
-      border-radius: 8px;
-      margin-top: 12px;
+      justify-content: center;
+      z-index: 9999;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.2s, visibility 0.2s;
     }
-    .saving-indicator.success {
+    .saving-overlay.visible {
+      opacity: 1;
+      visibility: visible;
+    }
+    .saving-overlay-content {
+      background: #fff;
+      padding: 24px 32px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 16px;
+      font-weight: 500;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    }
+    .saving-overlay.success .saving-overlay-content {
       background: #e6f9e6;
     }
     .spinner {
-      width: 18px;
-      height: 18px;
-      border: 2px solid #ccc;
+      width: 22px;
+      height: 22px;
+      border: 3px solid #ccc;
       border-top-color: #3b82f6;
       border-radius: 50%;
       animation: spin 0.8s linear infinite;
@@ -33,9 +54,9 @@
     @keyframes spin {
       to { transform: rotate(360deg); }
     }
-    .saving-indicator .checkmark {
+    .saving-overlay .checkmark {
       color: #22c55e;
-      font-size: 18px;
+      font-size: 24px;
     }
   </style>
 
@@ -135,12 +156,6 @@
             <button id="cancel-btn" class="btn-ghost">Cancel</button>
           </div>
 
-          <!-- Saving indicator for desktop -->
-          <div id="saving-indicator" class="saving-indicator" style="display:none;">
-            <div class="spinner"></div>
-            <span>Saving...</span>
-          </div>
-
           <div id="edit-status" class="status-msg"></div>
         </div>
       </div>
@@ -231,18 +246,20 @@
                 Close
               </button>
 
-              <!-- Saving indicator for mobile -->
-              <div id="m-saving-indicator" class="saving-indicator" style="display:none;">
-                <div class="spinner"></div>
-                <span>Saving...</span>
-              </div>
-
               <div id="m-edit-status" class="status-msg"></div>
             </div>
           </div>
         </div>
       </div>
     </section>
+
+    <!-- Saving overlay (full-screen) -->
+    <div id="saving-overlay" class="saving-overlay">
+      <div class="saving-overlay-content">
+        <div class="spinner"></div>
+        <span>Saving...</span>
+      </div>
+    </div>
   </div>
 
   <script type="module">
@@ -457,24 +474,25 @@
     const mDeleteBtn = document.getElementById("m-delete-btn");
     const mCancelBtn = document.getElementById("m-cancel-btn");
 
-    // Saving indicator elements
-    const savingIndicator = document.getElementById("saving-indicator");
-    const mSavingIndicator = document.getElementById("m-saving-indicator");
+    // Saving overlay element
+    const savingOverlay = document.getElementById("saving-overlay");
 
-    // Saving indicator helpers
-    function showSavingIndicator(indicatorEl) {
-      indicatorEl.classList.remove("success");
-      indicatorEl.innerHTML = '<div class="spinner"></div><span>Saving...</span>';
-      indicatorEl.style.display = "flex";
+    // Saving overlay helpers
+    function showSavingOverlay() {
+      savingOverlay.classList.remove("success");
+      savingOverlay.querySelector(".saving-overlay-content").innerHTML =
+        '<div class="spinner"></div><span>Saving...</span>';
+      savingOverlay.classList.add("visible");
     }
 
-    function showSavedIndicator(indicatorEl) {
-      indicatorEl.classList.add("success");
-      indicatorEl.innerHTML = '<span class="checkmark">✓</span><span>Saved!</span>';
+    function showSavedOverlay() {
+      savingOverlay.classList.add("success");
+      savingOverlay.querySelector(".saving-overlay-content").innerHTML =
+        '<span class="checkmark">✓</span><span>Saved!</span>';
     }
 
-    function hideSavingIndicator(indicatorEl) {
-      indicatorEl.style.display = "none";
+    function hideSavingOverlay() {
+      savingOverlay.classList.remove("visible", "success");
     }
 
     function isMobile() {
@@ -724,7 +742,6 @@
       country,
       category,
       statusEl,
-      indicatorEl,
     }) {
       if (!activePlaceId) return;
 
@@ -735,7 +752,7 @@
       }
 
       statusEl.textContent = "";
-      showSavingIndicator(indicatorEl);
+      showSavingOverlay();
 
       try {
         const res = await fetch(MANAGE_PLACES_URL, {
@@ -766,7 +783,7 @@
             res.status,
             text
           );
-          hideSavingIndicator(indicatorEl);
+          hideSavingOverlay();
           statusEl.textContent = "Error saving changes.";
           return;
         }
@@ -801,17 +818,17 @@
             };
           }
           renderPlaceList();
-          showSavedIndicator(indicatorEl);
+          showSavedOverlay();
           setTimeout(() => {
-            hideSavingIndicator(indicatorEl);
-          }, 2000);
+            hideSavingOverlay();
+          }, 1500);
         } else {
-          hideSavingIndicator(indicatorEl);
+          hideSavingOverlay();
           statusEl.textContent = "Error saving changes.";
         }
       } catch (err) {
         console.error("Network error saving changes:", err);
-        hideSavingIndicator(indicatorEl);
+        hideSavingOverlay();
         statusEl.textContent = "Error saving changes.";
       }
     }
@@ -904,10 +921,9 @@
         country: (editCountryInput.value || "").trim(),
         category: editCategorySelect.value || "Other",
         statusEl: editStatusEl,
-        indicatorEl: savingIndicator,
       }).catch((err) => {
         console.error("Unexpected save error:", err);
-        hideSavingIndicator(savingIndicator);
+        hideSavingOverlay();
         editStatusEl.textContent = "Unexpected error – see console.";
       });
     });
@@ -935,10 +951,9 @@
         country: (mEditCountryInput.value || "").trim(),
         category: mEditCategorySelect.value || "Other",
         statusEl: mEditStatusEl,
-        indicatorEl: mSavingIndicator,
       }).catch((err) => {
         console.error("Unexpected save error:", err);
-        hideSavingIndicator(mSavingIndicator);
+        hideSavingOverlay();
         mEditStatusEl.textContent = "Unexpected error – see console.";
       });
     });
