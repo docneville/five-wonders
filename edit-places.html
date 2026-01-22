@@ -146,6 +146,27 @@
             <option value="Shopping">Shopping</option>
           </select>
 
+          <!-- Links Section -->
+          <div class="links-section">
+            <label>Links (up to 3)</label>
+            <div id="links-container" class="links-container"></div>
+            <button type="button" id="add-link-btn" class="btn-ghost add-link-btn">+ Add link</button>
+          </div>
+
+          <!-- Photos Section -->
+          <div class="photos-section">
+            <label>Photos (up to 5)</label>
+            <div id="photos-grid" class="photos-grid"></div>
+            <div class="photo-upload-area">
+              <input type="file" id="photo-input" accept="image/*" multiple style="display:none;" />
+              <button type="button" id="add-photo-btn" class="btn-ghost add-photo-btn">+ Add photos</button>
+            </div>
+            <div id="upload-progress" class="upload-progress" style="display:none;">
+              <div class="upload-progress-bar"></div>
+              <span class="upload-progress-text">Uploading...</span>
+            </div>
+          </div>
+
           <div class="row">
             <span id="edit-meta"></span>
           </div>
@@ -229,6 +250,27 @@
               <option value="Recreation">Recreation</option>
               <option value="Shopping">Shopping</option>
             </select>
+
+            <!-- Links Section (Mobile) -->
+            <div class="links-section">
+              <label>Links (up to 3)</label>
+              <div id="m-links-container" class="links-container"></div>
+              <button type="button" id="m-add-link-btn" class="btn-ghost add-link-btn">+ Add link</button>
+            </div>
+
+            <!-- Photos Section (Mobile) -->
+            <div class="photos-section">
+              <label>Photos (up to 5)</label>
+              <div id="m-photos-grid" class="photos-grid"></div>
+              <div class="photo-upload-area">
+                <input type="file" id="m-photo-input" accept="image/*" multiple style="display:none;" />
+                <button type="button" id="m-add-photo-btn" class="btn-ghost add-photo-btn">+ Add photos</button>
+              </div>
+              <div id="m-upload-progress" class="upload-progress" style="display:none;">
+                <div class="upload-progress-bar"></div>
+                <span class="upload-progress-text">Uploading...</span>
+              </div>
+            </div>
 
             <div class="row">
               <span id="m-edit-meta"></span>
@@ -477,6 +519,388 @@
     // Saving overlay element
     const savingOverlay = document.getElementById("saving-overlay");
 
+    // Links elements
+    const linksContainer = document.getElementById("links-container");
+    const addLinkBtn = document.getElementById("add-link-btn");
+    const mLinksContainer = document.getElementById("m-links-container");
+    const mAddLinkBtn = document.getElementById("m-add-link-btn");
+
+    // Photos elements
+    const photosGrid = document.getElementById("photos-grid");
+    const photoInput = document.getElementById("photo-input");
+    const addPhotoBtn = document.getElementById("add-photo-btn");
+    const uploadProgress = document.getElementById("upload-progress");
+
+    const mPhotosGrid = document.getElementById("m-photos-grid");
+    const mPhotoInput = document.getElementById("m-photo-input");
+    const mAddPhotoBtn = document.getElementById("m-add-photo-btn");
+    const mUploadProgress = document.getElementById("m-upload-progress");
+
+    // Supabase storage URL for photos
+    const STORAGE_URL = `${SUPABASE_URL}/storage/v1/object/public/place-photos`;
+
+    // ===== Links Functions =====
+    function createLinkEntryHtml(link = {}, index = 0) {
+      const url = escapeHtml(link.url || "");
+      const text = escapeHtml(link.text || "");
+      const description = escapeHtml(link.description || "");
+      return `
+        <div class="link-entry" data-index="${index}">
+          <input type="url" class="link-url" placeholder="https://example.com" value="${url}" />
+          <input type="text" class="link-text" placeholder="Link text" value="${text}" />
+          <input type="text" class="link-description" placeholder="Description (optional)" value="${description}" />
+          <button type="button" class="link-remove-btn btn-ghost" title="Remove link">✕</button>
+        </div>
+      `;
+    }
+
+    function renderLinks(links, container, addBtn) {
+      if (!container) return;
+      container.innerHTML = "";
+      const linksArray = Array.isArray(links) ? links : [];
+      linksArray.forEach((link, i) => {
+        container.insertAdjacentHTML("beforeend", createLinkEntryHtml(link, i));
+      });
+
+      // Update add button state
+      if (addBtn) {
+        addBtn.disabled = linksArray.length >= 3;
+        addBtn.style.opacity = linksArray.length >= 3 ? "0.5" : "1";
+      }
+
+      // Attach remove handlers
+      container.querySelectorAll(".link-remove-btn").forEach((btn) => {
+        btn.onclick = () => {
+          btn.closest(".link-entry").remove();
+          updateAddLinkButtonState(container, addBtn);
+        };
+      });
+    }
+
+    function updateAddLinkButtonState(container, addBtn) {
+      if (!addBtn || !container) return;
+      const count = container.querySelectorAll(".link-entry").length;
+      addBtn.disabled = count >= 3;
+      addBtn.style.opacity = count >= 3 ? "0.5" : "1";
+    }
+
+    function addLinkEntry(container, addBtn) {
+      if (!container) return;
+      const count = container.querySelectorAll(".link-entry").length;
+      if (count >= 3) return;
+
+      container.insertAdjacentHTML("beforeend", createLinkEntryHtml({}, count));
+      updateAddLinkButtonState(container, addBtn);
+
+      // Attach remove handler to new entry
+      const entries = container.querySelectorAll(".link-entry");
+      const lastEntry = entries[entries.length - 1];
+      lastEntry.querySelector(".link-remove-btn").onclick = () => {
+        lastEntry.remove();
+        updateAddLinkButtonState(container, addBtn);
+      };
+    }
+
+    function collectLinksFromUI(container) {
+      if (!container) return [];
+      const links = [];
+      container.querySelectorAll(".link-entry").forEach((entry) => {
+        const url = (entry.querySelector(".link-url").value || "").trim();
+        const text = (entry.querySelector(".link-text").value || "").trim();
+        const description = (entry.querySelector(".link-description").value || "").trim();
+        if (url) {
+          links.push({ url, text: text || url, description });
+        }
+      });
+      return links;
+    }
+
+    // Attach add link button handlers
+    addLinkBtn?.addEventListener("click", () => addLinkEntry(linksContainer, addLinkBtn));
+    mAddLinkBtn?.addEventListener("click", () => addLinkEntry(mLinksContainer, mAddLinkBtn));
+
+    // ===== Photos Functions =====
+    function getPhotoUrl(storagePath) {
+      if (!storagePath) return "";
+      return `${STORAGE_URL}/${storagePath}`;
+    }
+
+    function renderPhotos(photos, container, isMobileView = false) {
+      if (!container) return;
+      container.innerHTML = "";
+      const photosArray = Array.isArray(photos) ? photos : [];
+
+      if (photosArray.length === 0) {
+        container.innerHTML = '<div class="photos-empty small-help">No photos yet</div>';
+        return;
+      }
+
+      photosArray.forEach((photo) => {
+        const thumbUrl = photo.thumbnail_path
+          ? getPhotoUrl(photo.thumbnail_path)
+          : getPhotoUrl(photo.storage_path);
+        const desc = escapeHtml(photo.description || "");
+
+        const photoHtml = `
+          <div class="photo-item" data-photo-id="${photo.id}">
+            <img src="${thumbUrl}" alt="${desc}" class="photo-thumb" loading="lazy" />
+            <div class="photo-actions">
+              <button type="button" class="photo-edit-btn" title="Edit description">✎</button>
+              <button type="button" class="photo-delete-btn" title="Delete photo">✕</button>
+            </div>
+            ${desc ? `<div class="photo-description">${desc}</div>` : ""}
+          </div>
+        `;
+        container.insertAdjacentHTML("beforeend", photoHtml);
+      });
+
+      // Update add photo button state
+      const addBtn = isMobileView ? mAddPhotoBtn : addPhotoBtn;
+      if (addBtn) {
+        addBtn.disabled = photosArray.length >= 5;
+        addBtn.style.opacity = photosArray.length >= 5 ? "0.5" : "1";
+      }
+
+      // Attach handlers
+      container.querySelectorAll(".photo-delete-btn").forEach((btn) => {
+        btn.onclick = async () => {
+          const photoItem = btn.closest(".photo-item");
+          const photoId = photoItem.dataset.photoId;
+          if (confirm("Delete this photo?")) {
+            await deletePhoto(photoId, activePlaceId, isMobileView);
+          }
+        };
+      });
+
+      container.querySelectorAll(".photo-edit-btn").forEach((btn) => {
+        btn.onclick = async () => {
+          const photoItem = btn.closest(".photo-item");
+          const photoId = photoItem.dataset.photoId;
+          const currentDesc = photoItem.querySelector(".photo-description")?.textContent || "";
+          const newDesc = prompt("Photo description:", currentDesc);
+          if (newDesc !== null && newDesc !== currentDesc) {
+            await updatePhotoDescription(photoId, activePlaceId, newDesc, isMobileView);
+          }
+        };
+      });
+    }
+
+    async function generateThumbnail(file, maxWidth = 400) {
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const img = new Image();
+          img.onload = () => {
+            const canvas = document.createElement("canvas");
+            const ratio = maxWidth / img.width;
+            canvas.width = maxWidth;
+            canvas.height = img.height * ratio;
+
+            const ctx = canvas.getContext("2d");
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+            canvas.toBlob(
+              (blob) => {
+                const thumbReader = new FileReader();
+                thumbReader.onloadend = () => {
+                  const base64 = thumbReader.result.split(",")[1];
+                  resolve(base64);
+                };
+                thumbReader.readAsDataURL(blob);
+              },
+              file.type || "image/jpeg",
+              0.8
+            );
+          };
+          img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    async function uploadPhoto(file, placeId, isMobileView = false) {
+      const apiKey = getStoredApiKey();
+      if (!apiKey || !placeId) return null;
+
+      const progressEl = isMobileView ? mUploadProgress : uploadProgress;
+
+      try {
+        // Show progress
+        if (progressEl) {
+          progressEl.style.display = "block";
+          progressEl.querySelector(".upload-progress-text").textContent = "Preparing...";
+        }
+
+        // Read file as base64
+        const fileBase64 = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result.split(",")[1]);
+          reader.readAsDataURL(file);
+        });
+
+        // Generate thumbnail
+        if (progressEl) {
+          progressEl.querySelector(".upload-progress-text").textContent = "Creating thumbnail...";
+        }
+        const thumbnailBase64 = await generateThumbnail(file);
+
+        // Upload via edge function
+        if (progressEl) {
+          progressEl.querySelector(".upload-progress-text").textContent = "Uploading...";
+        }
+
+        const res = await fetch(MANAGE_PLACES_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "upload_photo",
+            user_token: apiKey,
+            place_id: placeId,
+            file_base64: fileBase64,
+            file_name: file.name,
+            file_type: file.type,
+            thumbnail_base64: thumbnailBase64,
+          }),
+        });
+
+        const data = await res.json();
+
+        if (progressEl) {
+          progressEl.style.display = "none";
+        }
+
+        if (!res.ok || data.error) {
+          alert(data.error || "Upload failed");
+          return null;
+        }
+
+        return data.photo;
+      } catch (err) {
+        console.error("Upload error:", err);
+        if (progressEl) {
+          progressEl.style.display = "none";
+        }
+        alert("Upload failed – see console.");
+        return null;
+      }
+    }
+
+    async function deletePhoto(photoId, placeId, isMobileView = false) {
+      const apiKey = getStoredApiKey();
+      if (!apiKey || !photoId || !placeId) return;
+
+      try {
+        const res = await fetch(MANAGE_PLACES_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "delete_photo",
+            user_token: apiKey,
+            photo_id: photoId,
+            place_id: placeId,
+          }),
+        });
+
+        const data = await res.json();
+        if (!res.ok || data.error) {
+          alert(data.error || "Delete failed");
+          return;
+        }
+
+        // Refresh photos in place data and UI
+        const place = userPlaces.find((p) => p.id === placeId);
+        if (place && place.photos) {
+          place.photos = place.photos.filter((p) => p.id !== photoId);
+          renderPhotos(place.photos, isMobileView ? mPhotosGrid : photosGrid, isMobileView);
+        }
+      } catch (err) {
+        console.error("Delete error:", err);
+        alert("Delete failed – see console.");
+      }
+    }
+
+    async function updatePhotoDescription(photoId, placeId, description, isMobileView = false) {
+      const apiKey = getStoredApiKey();
+      if (!apiKey || !photoId || !placeId) return;
+
+      try {
+        const res = await fetch(MANAGE_PLACES_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "update_photo",
+            user_token: apiKey,
+            photo_id: photoId,
+            place_id: placeId,
+            description,
+          }),
+        });
+
+        const data = await res.json();
+        if (!res.ok || data.error) {
+          alert(data.error || "Update failed");
+          return;
+        }
+
+        // Update local data and refresh UI
+        const place = userPlaces.find((p) => p.id === placeId);
+        if (place && place.photos) {
+          const photo = place.photos.find((p) => p.id === photoId);
+          if (photo) photo.description = description;
+          renderPhotos(place.photos, isMobileView ? mPhotosGrid : photosGrid, isMobileView);
+        }
+      } catch (err) {
+        console.error("Update error:", err);
+        alert("Update failed – see console.");
+      }
+    }
+
+    async function handlePhotoUpload(files, isMobileView = false) {
+      if (!activePlaceId) return;
+
+      const place = userPlaces.find((p) => p.id === activePlaceId);
+      const currentCount = place?.photos?.length || 0;
+      const maxPhotos = 5;
+
+      // Limit files to remaining slots
+      const filesToUpload = Array.from(files).slice(0, maxPhotos - currentCount);
+
+      if (filesToUpload.length === 0) {
+        alert("Maximum 5 photos per place.");
+        return;
+      }
+
+      for (const file of filesToUpload) {
+        const photo = await uploadPhoto(file, activePlaceId, isMobileView);
+        if (photo && place) {
+          if (!place.photos) place.photos = [];
+          place.photos.push(photo);
+        }
+      }
+
+      // Refresh UI
+      if (place) {
+        renderPhotos(place.photos, isMobileView ? mPhotosGrid : photosGrid, isMobileView);
+      }
+    }
+
+    // Photo input handlers
+    addPhotoBtn?.addEventListener("click", () => photoInput?.click());
+    photoInput?.addEventListener("change", (e) => {
+      if (e.target.files?.length) {
+        handlePhotoUpload(e.target.files, false);
+        e.target.value = "";
+      }
+    });
+
+    mAddPhotoBtn?.addEventListener("click", () => mPhotoInput?.click());
+    mPhotoInput?.addEventListener("change", (e) => {
+      if (e.target.files?.length) {
+        handlePhotoUpload(e.target.files, true);
+        e.target.value = "";
+      }
+    });
+
     // Saving overlay helpers
     function showSavingOverlay() {
       savingOverlay.classList.remove("success");
@@ -589,6 +1013,10 @@
           editMetaEl.textContent = "";
         }
         editStatusEl.textContent = "";
+
+        // Render links and photos (desktop)
+        renderLinks(place.links || [], linksContainer, addLinkBtn);
+        renderPhotos(place.photos || [], photosGrid, false);
       }
 
       // Mobile
@@ -615,6 +1043,10 @@
           mEditMetaEl.textContent = "";
         }
         mEditStatusEl.textContent = "";
+
+        // Render links and photos (mobile)
+        renderLinks(place.links || [], mLinksContainer, mAddLinkBtn);
+        renderPhotos(place.photos || [], mPhotosGrid, true);
       }
     }
 
@@ -640,6 +1072,18 @@
       editCategorySelect.value = "Other";
       editMetaEl.textContent = "";
 
+      // Clear links and photos (desktop)
+      if (linksContainer) linksContainer.innerHTML = "";
+      if (addLinkBtn) {
+        addLinkBtn.disabled = false;
+        addLinkBtn.style.opacity = "1";
+      }
+      if (photosGrid) photosGrid.innerHTML = '<div class="photos-empty small-help">No photos yet</div>';
+      if (addPhotoBtn) {
+        addPhotoBtn.disabled = false;
+        addPhotoBtn.style.opacity = "1";
+      }
+
       if (mEditFormEl && mEmptyMessageEl) {
         mEditFormEl.style.display = "none";
         mEmptyMessageEl.style.display = "block";
@@ -657,6 +1101,18 @@
       mEditNoteInput.value = "";
       mEditCategorySelect.value = "Other";
       mEditMetaEl.textContent = "";
+
+      // Clear links and photos (mobile)
+      if (mLinksContainer) mLinksContainer.innerHTML = "";
+      if (mAddLinkBtn) {
+        mAddLinkBtn.disabled = false;
+        mAddLinkBtn.style.opacity = "1";
+      }
+      if (mPhotosGrid) mPhotosGrid.innerHTML = '<div class="photos-empty small-help">No photos yet</div>';
+      if (mAddPhotoBtn) {
+        mAddPhotoBtn.disabled = false;
+        mAddPhotoBtn.style.opacity = "1";
+      }
 
       setMobileFabEnabled(false);
     }
@@ -717,7 +1173,8 @@
 
         // NOTE: data.places MUST include:
         // id, title, notes, raw_text, city, state, country,
-        // street_line1, street_line2, postal_code, phone, website, created_at
+        // street_line1, street_line2, postal_code, phone, website, created_at,
+        // links, photos (links = JSONB array, photos = aggregated from place_photos)
         userPlaces = Array.isArray(data.places) ? data.places : [];
         activePlaceId = null;
         renderPlaceList();
@@ -741,6 +1198,7 @@
       postal_code,
       country,
       category,
+      links,
       statusEl,
     }) {
       if (!activePlaceId) return;
@@ -773,6 +1231,7 @@
             postal_code,
             country,
             category,
+            links,
           }),
         });
 
@@ -815,6 +1274,7 @@
               postal_code,
               country,
               category,
+              links,
             };
           }
           renderPlaceList();
@@ -920,6 +1380,7 @@
         postal_code: (editPostalInput.value || "").trim(),
         country: (editCountryInput.value || "").trim(),
         category: editCategorySelect.value || "Other",
+        links: collectLinksFromUI(linksContainer),
         statusEl: editStatusEl,
       }).catch((err) => {
         console.error("Unexpected save error:", err);
@@ -950,6 +1411,7 @@
         postal_code: (mEditPostalInput.value || "").trim(),
         country: (mEditCountryInput.value || "").trim(),
         category: mEditCategorySelect.value || "Other",
+        links: collectLinksFromUI(mLinksContainer),
         statusEl: mEditStatusEl,
       }).catch((err) => {
         console.error("Unexpected save error:", err);

@@ -32,6 +32,20 @@
   <!-- Map fills the screen under the header -->
   <div id="map" class="fw-map-fullscreen"></div>
 
+  <!-- Lightbox for full-screen photo viewing -->
+  <div id="lightbox" class="lightbox lightbox--hidden" aria-hidden="true">
+    <button class="lightbox-close" type="button" aria-label="Close">&times;</button>
+    <button class="lightbox-prev" type="button" aria-label="Previous">&lsaquo;</button>
+    <button class="lightbox-next" type="button" aria-label="Next">&rsaquo;</button>
+    <div class="lightbox-content">
+      <img id="lightbox-img" src="" alt="" />
+    </div>
+    <div class="lightbox-footer">
+      <div id="lightbox-caption" class="lightbox-caption"></div>
+      <div id="lightbox-counter" class="lightbox-counter"></div>
+    </div>
+  </div>
+
   <!-- Mobile place sheet -->
   <section
     id="placeSheet"
@@ -165,8 +179,54 @@
       return parts.join(", ");
     }
 
+    // Supabase storage URL for photos
+    const STORAGE_URL = `${SUPABASE_URL}/storage/v1/object/public/place-photos`;
+
+    function getPhotoUrl(storagePath) {
+      if (!storagePath) return "";
+      return `${STORAGE_URL}/${storagePath}`;
+    }
+
+    // Build links HTML
+    function buildLinksHtml(links) {
+      if (!links || !Array.isArray(links) || links.length === 0) return "";
+
+      const linksItems = links.map(link => {
+        const url = escapeHtml(link.url || "");
+        const text = escapeHtml(link.text || link.url || "Link");
+        const description = link.description ? `<div class="place-link-desc">${escapeHtml(link.description)}</div>` : "";
+        return `
+          <a href="${url}" target="_blank" rel="noopener" class="place-link">
+            <div class="place-link-text">${text}</div>
+            ${description}
+          </a>
+        `;
+      }).join("");
+
+      return `<div class="place-links">${linksItems}</div>`;
+    }
+
+    // Build photos HTML for thumbnails
+    function buildPhotosHtml(photos, placeId) {
+      if (!photos || !Array.isArray(photos) || photos.length === 0) return "";
+
+      const photoItems = photos.map((photo, index) => {
+        const thumbUrl = photo.thumbnail_path
+          ? getPhotoUrl(photo.thumbnail_path)
+          : getPhotoUrl(photo.storage_path);
+        const desc = escapeHtml(photo.description || "");
+        return `
+          <div class="place-photo-thumb" data-place-id="${placeId}" data-photo-index="${index}">
+            <img src="${thumbUrl}" alt="${desc}" loading="lazy" />
+          </div>
+        `;
+      }).join("");
+
+      return `<div class="place-photos">${photoItems}</div>`;
+    }
+
     // Body content used in both popup + sheet (NO title here)
-    function buildPlaceBodyHtml({ title, notes, createdAt, savedBy, category, street_line1, city, state, country, phone, website }) {
+    function buildPlaceBodyHtml({ title, notes, createdAt, savedBy, category, street_line1, city, state, country, phone, website, links, photos, placeId }) {
       const address = buildAddress({ street_line1, city, state, country });
 
       return `
@@ -174,6 +234,8 @@
         ${address ? `<div class="place-address">${escapeHtml(address)}</div>` : ""}
         ${phone ? `<div class="place-phone">📞 ${escapeHtml(phone)}</div>` : ""}
         ${website ? `<div class="place-website"><a href="${escapeHtml(website)}" target="_blank" rel="noopener">${escapeHtml(website)}</a></div>` : ""}
+        ${buildLinksHtml(links)}
+        ${buildPhotosHtml(photos, placeId)}
         ${
           notes
             ? `<div class="place-notes-header">Why ${escapeHtml(title)} is a Wonder:</div><div class="place-notes">${escapeHtml(notes)}</div>`
@@ -197,11 +259,11 @@
     }
 
     // Desktop popup includes the title in the popup itself
-    function buildPopupHtml({ title, notes, createdAt, savedBy, category, street_line1, city, state, country, phone, website }) {
+    function buildPopupHtml({ title, notes, createdAt, savedBy, category, street_line1, city, state, country, phone, website, links, photos, placeId }) {
       return `
         <div class="place-popup">
           <div class="place-title">${escapeHtml(title)}</div>
-          ${buildPlaceBodyHtml({ title, notes, createdAt, savedBy, category, street_line1, city, state, country, phone, website })}
+          ${buildPlaceBodyHtml({ title, notes, createdAt, savedBy, category, street_line1, city, state, country, phone, website, links, photos, placeId })}
         </div>
       `;
     }
@@ -238,7 +300,9 @@
           state,
           country,
           phone,
-          website
+          website,
+          links,
+          photos
         `
         )
         .not("latitude", "is", null)
@@ -282,6 +346,8 @@
         const country = place.country || "";
         const phone = place.phone || "";
         const website = place.website || "";
+        const links = place.links || [];
+        const photos = place.photos || [];
 
         const placeData = {
           title,
@@ -295,7 +361,13 @@
           country,
           phone,
           website,
+          links,
+          photos,
+          placeId: place.id,
         };
+
+        // Store for lightbox access
+        placesDataMap.set(place.id, placeData);
 
         const popupHtml = buildPopupHtml(placeData);
         const bodyHtml = buildPlaceBodyHtml(placeData);
@@ -335,6 +407,138 @@
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#039;");
     }
+
+    // ===== Lightbox functionality =====
+    const lightbox = document.getElementById("lightbox");
+    const lightboxImg = document.getElementById("lightbox-img");
+    const lightboxCaption = document.getElementById("lightbox-caption");
+    const lightboxCounter = document.getElementById("lightbox-counter");
+    const lightboxClose = lightbox?.querySelector(".lightbox-close");
+    const lightboxPrev = lightbox?.querySelector(".lightbox-prev");
+    const lightboxNext = lightbox?.querySelector(".lightbox-next");
+
+    let lightboxPhotos = [];
+    let lightboxIndex = 0;
+
+    // Store all places data for lightbox access
+    let placesDataMap = new Map();
+
+    function openLightbox(photos, startIndex = 0) {
+      if (!photos || photos.length === 0) return;
+
+      lightboxPhotos = photos;
+      lightboxIndex = startIndex;
+      updateLightboxImage();
+
+      lightbox?.classList.remove("lightbox--hidden");
+      lightbox?.setAttribute("aria-hidden", "false");
+      document.body.style.overflow = "hidden";
+    }
+
+    function closeLightbox() {
+      lightbox?.classList.add("lightbox--hidden");
+      lightbox?.setAttribute("aria-hidden", "true");
+      document.body.style.overflow = "";
+    }
+
+    function updateLightboxImage() {
+      const photo = lightboxPhotos[lightboxIndex];
+      if (!photo) return;
+
+      const fullUrl = getPhotoUrl(photo.storage_path);
+      lightboxImg.src = fullUrl;
+      lightboxImg.alt = photo.description || "";
+      lightboxCaption.textContent = photo.description || "";
+      lightboxCounter.textContent = `${lightboxIndex + 1} / ${lightboxPhotos.length}`;
+
+      // Show/hide nav buttons based on photo count
+      if (lightboxPrev) lightboxPrev.style.display = lightboxPhotos.length > 1 ? "flex" : "none";
+      if (lightboxNext) lightboxNext.style.display = lightboxPhotos.length > 1 ? "flex" : "none";
+    }
+
+    function lightboxPrevPhoto() {
+      lightboxIndex = (lightboxIndex - 1 + lightboxPhotos.length) % lightboxPhotos.length;
+      updateLightboxImage();
+    }
+
+    function lightboxNextPhoto() {
+      lightboxIndex = (lightboxIndex + 1) % lightboxPhotos.length;
+      updateLightboxImage();
+    }
+
+    // Lightbox event listeners
+    lightboxClose?.addEventListener("click", closeLightbox);
+    lightboxPrev?.addEventListener("click", lightboxPrevPhoto);
+    lightboxNext?.addEventListener("click", lightboxNextPhoto);
+
+    // Close on background click
+    lightbox?.addEventListener("click", (e) => {
+      if (e.target === lightbox || e.target.classList.contains("lightbox-content")) {
+        closeLightbox();
+      }
+    });
+
+    // Keyboard navigation
+    document.addEventListener("keydown", (e) => {
+      if (lightbox?.classList.contains("lightbox--hidden")) return;
+
+      switch (e.key) {
+        case "Escape":
+          closeLightbox();
+          break;
+        case "ArrowLeft":
+          lightboxPrevPhoto();
+          break;
+        case "ArrowRight":
+          lightboxNextPhoto();
+          break;
+      }
+    });
+
+    // Touch swipe support for mobile
+    let touchStartX = 0;
+    let touchEndX = 0;
+
+    lightbox?.addEventListener("touchstart", (e) => {
+      touchStartX = e.changedTouches[0].screenX;
+    }, { passive: true });
+
+    lightbox?.addEventListener("touchend", (e) => {
+      touchEndX = e.changedTouches[0].screenX;
+      handleSwipe();
+    }, { passive: true });
+
+    function handleSwipe() {
+      const swipeThreshold = 50;
+      const diff = touchStartX - touchEndX;
+
+      if (Math.abs(diff) > swipeThreshold) {
+        if (diff > 0) {
+          lightboxNextPhoto(); // Swipe left = next
+        } else {
+          lightboxPrevPhoto(); // Swipe right = prev
+        }
+      }
+    }
+
+    // Handle photo thumbnail clicks (delegated event handling)
+    function setupPhotoClickHandlers() {
+      // For desktop popups
+      document.addEventListener("click", (e) => {
+        const thumb = e.target.closest(".place-photo-thumb");
+        if (!thumb) return;
+
+        const placeId = thumb.dataset.placeId;
+        const photoIndex = parseInt(thumb.dataset.photoIndex, 10) || 0;
+        const placeData = placesDataMap.get(placeId);
+
+        if (placeData && placeData.photos) {
+          openLightbox(placeData.photos, photoIndex);
+        }
+      });
+    }
+
+    setupPhotoClickHandlers();
 
     loadPlaces();
   </script>
