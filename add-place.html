@@ -196,6 +196,22 @@
           <option value="Recreation">Recreation</option>
           <option value="Shopping">Shopping</option>
         </select>
+
+        <!-- Photos Section -->
+        <div class="photos-section">
+          <label>Photos (up to 5)</label>
+          <div class="small-help" style="margin-bottom:8px;">
+            You can add photos now or later from the Edit page.
+          </div>
+          <div id="photos-grid" class="photos-grid">
+            <div class="photos-empty small-help">No photos yet</div>
+          </div>
+          <div class="photo-upload-area">
+            <input type="file" id="photo-input" accept="image/*" multiple style="display:none;" />
+            <button type="button" id="add-photo-btn" class="btn-ghost add-photo-btn">+ Add photos</button>
+          </div>
+          <div id="upload-status" class="small-help" style="margin-top:6px;"></div>
+        </div>
       </div>
 
       <div class="save-row">
@@ -475,6 +491,15 @@
 
     const saveBtn = document.getElementById("save-btn");
 
+    // Photo elements
+    const photosGrid = document.getElementById("photos-grid");
+    const photoInput = document.getElementById("photo-input");
+    const addPhotoBtn = document.getElementById("add-photo-btn");
+    const uploadStatusEl = document.getElementById("upload-status");
+
+    // Store pending photos (before place is saved)
+    let pendingPhotos = []; // Array of { file, base64, thumbnailBase64, previewUrl }
+
     // ====== MAP SETUP ======
     const map = L.map("map").setView([39.5, -98.35], 4);
 
@@ -668,7 +693,171 @@
       searchInput.value = "";
       searchResultsEl.innerHTML = "";
       searchResultsHeader.classList.remove("visible");
+      // Clear pending photos
+      pendingPhotos.forEach(p => {
+        if (p.previewUrl) URL.revokeObjectURL(p.previewUrl);
+      });
+      pendingPhotos = [];
+      renderPendingPhotos();
     }
+
+    // ====== PHOTO HANDLING ======
+    async function generateThumbnail(file, maxWidth = 400) {
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const img = new Image();
+          img.onload = () => {
+            const canvas = document.createElement("canvas");
+            const ratio = maxWidth / img.width;
+            canvas.width = maxWidth;
+            canvas.height = img.height * ratio;
+
+            const ctx = canvas.getContext("2d");
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+            canvas.toBlob(
+              (blob) => {
+                const thumbReader = new FileReader();
+                thumbReader.onloadend = () => {
+                  const base64 = thumbReader.result.split(",")[1];
+                  resolve(base64);
+                };
+                thumbReader.readAsDataURL(blob);
+              },
+              file.type || "image/jpeg",
+              0.8
+            );
+          };
+          img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    async function readFileAsBase64(file) {
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result.split(",")[1]);
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function renderPendingPhotos() {
+      if (!photosGrid) return;
+
+      if (pendingPhotos.length === 0) {
+        photosGrid.innerHTML = '<div class="photos-empty small-help">No photos yet</div>';
+        if (addPhotoBtn) {
+          addPhotoBtn.disabled = false;
+          addPhotoBtn.style.opacity = "1";
+        }
+        return;
+      }
+
+      photosGrid.innerHTML = "";
+      pendingPhotos.forEach((photo, index) => {
+        const photoHtml = `
+          <div class="photo-item" data-index="${index}">
+            <img src="${photo.previewUrl}" alt="Photo ${index + 1}" class="photo-thumb" />
+            <div class="photo-actions">
+              <button type="button" class="photo-delete-btn" title="Remove photo">✕</button>
+            </div>
+          </div>
+        `;
+        photosGrid.insertAdjacentHTML("beforeend", photoHtml);
+      });
+
+      // Update add button state
+      if (addPhotoBtn) {
+        addPhotoBtn.disabled = pendingPhotos.length >= 5;
+        addPhotoBtn.style.opacity = pendingPhotos.length >= 5 ? "0.5" : "1";
+      }
+
+      // Attach delete handlers
+      photosGrid.querySelectorAll(".photo-delete-btn").forEach((btn) => {
+        btn.onclick = () => {
+          if (confirm("Remove this photo?")) {
+            const item = btn.closest(".photo-item");
+            const index = parseInt(item.dataset.index, 10);
+            if (pendingPhotos[index]?.previewUrl) {
+              URL.revokeObjectURL(pendingPhotos[index].previewUrl);
+            }
+            pendingPhotos.splice(index, 1);
+            renderPendingPhotos();
+          }
+        };
+      });
+    }
+
+    async function handlePhotoSelection(files) {
+      const maxPhotos = 5;
+      const remainingSlots = maxPhotos - pendingPhotos.length;
+      const filesToProcess = Array.from(files).slice(0, remainingSlots);
+
+      if (filesToProcess.length === 0) {
+        alert("Maximum 5 photos allowed.");
+        return;
+      }
+
+      if (uploadStatusEl) uploadStatusEl.textContent = "Processing photos...";
+
+      for (const file of filesToProcess) {
+        try {
+          const base64 = await readFileAsBase64(file);
+          const thumbnailBase64 = await generateThumbnail(file);
+          const previewUrl = URL.createObjectURL(file);
+
+          pendingPhotos.push({
+            file,
+            base64,
+            thumbnailBase64,
+            previewUrl,
+            fileName: file.name,
+            fileType: file.type,
+          });
+        } catch (err) {
+          console.error("Error processing photo:", err);
+        }
+      }
+
+      if (uploadStatusEl) uploadStatusEl.textContent = "";
+      renderPendingPhotos();
+    }
+
+    async function uploadPendingPhotos(placeId) {
+      const apiKey = getStoredApiKey();
+      if (!apiKey || !placeId || pendingPhotos.length === 0) return;
+
+      for (const photo of pendingPhotos) {
+        try {
+          await fetch(MANAGE_PLACES_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              action: "upload_photo",
+              user_token: apiKey,
+              place_id: placeId,
+              file_base64: photo.base64,
+              file_name: photo.fileName,
+              file_type: photo.fileType,
+              thumbnail_base64: photo.thumbnailBase64,
+            }),
+          });
+        } catch (err) {
+          console.error("Error uploading photo:", err);
+        }
+      }
+    }
+
+    // Photo input handlers
+    addPhotoBtn?.addEventListener("click", () => photoInput?.click());
+    photoInput?.addEventListener("change", (e) => {
+      if (e.target.files?.length) {
+        handlePhotoSelection(e.target.files);
+        e.target.value = "";
+      }
+    });
 
     function extractAddressParts(address = {}) {
       const streetLine1 =
@@ -950,6 +1139,28 @@
       }
 
       console.log("Saved place. Response:", text);
+
+      // Parse response to get place_id for photo uploads
+      let placeId = null;
+      try {
+        const responseData = JSON.parse(text);
+        placeId = responseData.place_id || responseData.id || null;
+      } catch (e) {
+        console.warn("Could not parse place response:", e);
+      }
+
+      // Upload pending photos if we have the place_id
+      // Note: ingest-shortcut function must return { place_id: "..." } for this to work
+      if (pendingPhotos.length > 0) {
+        if (placeId) {
+          savingOverlay.querySelector(".saving-overlay-content").innerHTML =
+            '<div class="spinner"></div><span>Uploading photos...</span>';
+
+          await uploadPendingPhotos(placeId);
+        } else {
+          console.warn("No place_id returned - photos not uploaded. Add them from Edit page.");
+        }
+      }
 
       // Show saved indicator
       showSavedOverlay();
