@@ -877,7 +877,9 @@ a:hover{ text-decoration: underline; }
 
 /* ---------- Links Styles (Edit Page) ---------- */
 .links-section{
-  margin-top: 16px;
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid var(--fw-border);
 }
 
 .links-container{
@@ -887,10 +889,12 @@ a:hover{ text-decoration: underline; }
 }
 
 .link-entry{
+  position: relative;
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr auto;
+  grid-template-columns: 1fr 1fr;
   gap: 8px;
   padding: 12px;
+  padding-top: 16px;
   background: var(--fw-soft);
   border-radius: 10px;
   border: 1px solid var(--fw-border);
@@ -900,22 +904,35 @@ a:hover{ text-decoration: underline; }
   min-width: 0;
 }
 
+.link-entry .link-url{
+  grid-column: 1 / -1;
+}
+
+.link-entry .link-description{
+  grid-column: 1 / -1;
+}
+
 .link-remove-btn{
-  padding: 8px 12px;
-  min-height: 40px;
-  font-size: 1.1rem;
-  background: transparent;
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  padding: 4px 8px;
+  min-height: 28px;
+  min-width: 28px;
+  font-size: 0.9rem;
+  background: rgba(239, 68, 68, 0.1);
   border: none;
+  border-radius: 6px;
   color: var(--fw-danger);
   cursor: pointer;
 }
 
 .link-remove-btn:hover{
-  background: rgba(239, 68, 68, 0.1);
+  background: rgba(239, 68, 68, 0.2);
 }
 
 .add-link-btn{
-  margin-top: 8px;
+  margin-top: 12px;
 }
 
 @media (max-width: 768px){
@@ -924,9 +941,9 @@ a:hover{ text-decoration: underline; }
     gap: 8px;
   }
 
-  .link-remove-btn{
-    width: 100%;
-    margin-top: 4px;
+  .link-entry .link-url,
+  .link-entry .link-description{
+    grid-column: 1;
   }
 }
 
@@ -969,7 +986,9 @@ a:hover{ text-decoration: underline; }
 
 /* ---------- Photos Styles (Edit Page) ---------- */
 .photos-section{
-  margin-top: 16px;
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid var(--fw-border);
 }
 
 .photos-grid{
@@ -1290,5 +1309,31 @@ a:hover{ text-decoration: underline; }
     font-size: 0.9rem;
     max-width: 65%;
   }
+}
+
+/* ---------- Edit Page Actions & Meta ---------- */
+.edit-actions{
+  margin-top: 32px;
+  padding-top: 20px;
+  border-top: 1px solid var(--fw-border);
+}
+
+.edit-meta-section{
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid var(--fw-border);
+  font-size: 0.85rem;
+  color: var(--fw-muted);
+  line-height: 1.6;
+}
+
+/* ---------- View Page Links Header ---------- */
+.place-links-header{
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--fw-text);
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
 }
 

@@ -203,7 +203,10 @@
         `;
       }).join("");
 
-      return `<div class="place-links">${linksItems}</div>`;
+      return `
+        <div class="place-links-header">Useful Links</div>
+        <div class="place-links">${linksItems}</div>
+      `;
     }
 
     // Build photos HTML for thumbnails

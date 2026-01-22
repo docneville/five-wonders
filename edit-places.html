@@ -167,17 +167,17 @@
             </div>
           </div>
 
-          <div class="row">
-            <span id="edit-meta"></span>
-          </div>
-
-          <div class="actions">
+          <div class="actions edit-actions">
             <button id="save-changes-btn" class="btn-primary">Save changes</button>
             <button id="delete-btn" class="btn-danger">Delete place</button>
             <button id="cancel-btn" class="btn-ghost">Cancel</button>
           </div>
 
           <div id="edit-status" class="status-msg"></div>
+
+          <div class="edit-meta-section">
+            <span id="edit-meta"></span>
+          </div>
         </div>
       </div>
     </main>
@@ -272,12 +272,8 @@
               </div>
             </div>
 
-            <div class="row">
-              <span id="m-edit-meta"></span>
-            </div>
-
             <!-- Simple vertical button stack; not sticky -->
-            <div class="actions" style="margin-top:16px; display:flex; flex-direction:column; gap:10px;">
+            <div class="actions edit-actions" style="display:flex; flex-direction:column; gap:10px;">
               <button id="m-save-changes-btn" class="btn-primary">
                 Save changes
               </button>
@@ -289,6 +285,10 @@
               </button>
 
               <div id="m-edit-status" class="status-msg"></div>
+            </div>
+
+            <div class="edit-meta-section">
+              <span id="m-edit-meta"></span>
             </div>
           </div>
         </div>
@@ -571,8 +571,10 @@
       // Attach remove handlers
       container.querySelectorAll(".link-remove-btn").forEach((btn) => {
         btn.onclick = () => {
-          btn.closest(".link-entry").remove();
-          updateAddLinkButtonState(container, addBtn);
+          if (confirm("Remove this link?")) {
+            btn.closest(".link-entry").remove();
+            updateAddLinkButtonState(container, addBtn);
+          }
         };
       });
     }
@@ -596,8 +598,10 @@
       const entries = container.querySelectorAll(".link-entry");
       const lastEntry = entries[entries.length - 1];
       lastEntry.querySelector(".link-remove-btn").onclick = () => {
-        lastEntry.remove();
-        updateAddLinkButtonState(container, addBtn);
+        if (confirm("Remove this link?")) {
+          lastEntry.remove();
+          updateAddLinkButtonState(container, addBtn);
+        }
       };
     }
 
@@ -1006,12 +1010,18 @@
         editNoteInput.value = place.notes ?? "";
         editCategorySelect.value = place.category ?? "Other";
 
+        // Build metadata text
+        let metaHtml = "";
         if (place.created_at) {
-          const d = new Date(place.created_at);
-          editMetaEl.textContent = "Created: " + d.toLocaleString();
-        } else {
-          editMetaEl.textContent = "";
+          const createdDate = new Date(place.created_at);
+          metaHtml += "Created: " + createdDate.toLocaleString();
         }
+        if (place.updated_at) {
+          const updatedDate = new Date(place.updated_at);
+          if (metaHtml) metaHtml += "<br>";
+          metaHtml += "Last updated: " + updatedDate.toLocaleString();
+        }
+        editMetaEl.innerHTML = metaHtml;
         editStatusEl.textContent = "";
 
         // Render links and photos (desktop)
@@ -1036,12 +1046,18 @@
         mEditNoteInput.value = place.notes ?? "";
         mEditCategorySelect.value = place.category ?? "Other";
 
+        // Build metadata text (mobile)
+        let mMetaHtml = "";
         if (place.created_at) {
-          const d = new Date(place.created_at);
-          mEditMetaEl.textContent = "Created: " + d.toLocaleString();
-        } else {
-          mEditMetaEl.textContent = "";
+          const createdDate = new Date(place.created_at);
+          mMetaHtml += "Created: " + createdDate.toLocaleString();
         }
+        if (place.updated_at) {
+          const updatedDate = new Date(place.updated_at);
+          if (mMetaHtml) mMetaHtml += "<br>";
+          mMetaHtml += "Last updated: " + updatedDate.toLocaleString();
+        }
+        mEditMetaEl.innerHTML = mMetaHtml;
         mEditStatusEl.textContent = "";
 
         // Render links and photos (mobile)
