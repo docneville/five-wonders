@@ -14,13 +14,21 @@
 
 <body class="fw-home fw-bg">
   <header class="fw-header">
-    <div class="fw-header-title">Five Wonders</div>
-    <nav class="fw-header-nav" aria-label="Primary navigation">
+    <a href="index.html" class="fw-header-title">Five Wonders</a>
+    <button class="fw-hamburger" id="hamburgerBtn" aria-label="Menu" aria-expanded="false">
+      <div class="fw-hamburger-icon">
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+    </button>
+    <nav class="fw-header-nav" id="headerNav" aria-label="Primary navigation">
       <a href="index.html">Home</a>
       <a href="add-place.html">Add</a>
       <a href="edit-places.html">Edit</a>
       <a href="view.html">View</a>
       <a href="about.html">About</a>
+      <a href="faq.html">FAQ</a>
     </nav>
   </header>
 
@@ -37,15 +45,22 @@
           Share the places your friends will love.
         </div>
 
-        <div class="fw-grid">
-          <a href="add-place.html" class="fw-btn fw-btn-primary">Add</a>
+        <div class="fw-btn-group-primary">
+          <a href="view.html" class="fw-btn fw-btn-green fw-btn-large">View All Wonders</a>
+        </div>
+
+        <div class="fw-btn-group-secondary">
+          <a href="add-place.html" class="fw-btn fw-btn-secondary">Add</a>
           <a href="edit-places.html" class="fw-btn fw-btn-secondary">Edit</a>
-          <a href="view.html" class="fw-btn fw-btn-secondary">View</a>
-          <a href="about.html" class="fw-btn fw-btn-secondary">About</a>
         </div>
 
         <div class="fw-footer">
           Invite-only beta · Curated by friends
+        </div>
+
+        <div class="fw-footer-links">
+          <a href="about.html">About</a>
+          <a href="faq.html">FAQ</a>
         </div>
 
         <!-- Visible only when authenticated -->
@@ -279,6 +294,36 @@
         }
       });
     });
+
+    // Mobile hamburger menu toggle
+    const hamburgerBtn = document.getElementById('hamburgerBtn');
+    const headerNav = document.getElementById('headerNav');
+
+    if (hamburgerBtn && headerNav) {
+      hamburgerBtn.addEventListener('click', () => {
+        const isOpen = headerNav.classList.toggle('open');
+        hamburgerBtn.classList.toggle('open', isOpen);
+        hamburgerBtn.setAttribute('aria-expanded', isOpen);
+      });
+
+      // Close menu when clicking a link
+      headerNav.querySelectorAll('a').forEach(link => {
+        link.addEventListener('click', () => {
+          headerNav.classList.remove('open');
+          hamburgerBtn.classList.remove('open');
+          hamburgerBtn.setAttribute('aria-expanded', 'false');
+        });
+      });
+
+      // Close menu when clicking outside
+      document.addEventListener('click', (e) => {
+        if (!hamburgerBtn.contains(e.target) && !headerNav.contains(e.target)) {
+          headerNav.classList.remove('open');
+          hamburgerBtn.classList.remove('open');
+          hamburgerBtn.setAttribute('aria-expanded', 'false');
+        }
+      });
+    }
   </script>
 </body>
 </html>

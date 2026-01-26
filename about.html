@@ -8,13 +8,21 @@
 </head>
 <body class="fw-about">
   <header class="fw-header">
-    <div class="fw-header-title">Five Wonders</div>
-    <nav class="fw-header-nav">
+    <a href="index.html" class="fw-header-title">Five Wonders</a>
+    <button class="fw-hamburger" id="hamburgerBtn" aria-label="Menu" aria-expanded="false">
+      <div class="fw-hamburger-icon">
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+    </button>
+    <nav class="fw-header-nav" id="headerNav">
       <a href="index.html">Home</a>
       <a href="add-place.html">Add</a>
       <a href="edit-places.html">Edit</a>
       <a href="view.html">View</a>
       <a href="about.html">About</a>
+      <a href="faq.html">FAQ</a>
     </nav>
   </header>
 
@@ -60,9 +68,41 @@
       </p>
 
       <p class="back-link">
-        ← <a href="index.html">Back to home</a>
+        &larr; <a href="index.html">Back to home</a>
       </p>
     </div>
   </main>
+
+  <script>
+    // Mobile hamburger menu toggle
+    const hamburgerBtn = document.getElementById('hamburgerBtn');
+    const headerNav = document.getElementById('headerNav');
+
+    if (hamburgerBtn && headerNav) {
+      hamburgerBtn.addEventListener('click', () => {
+        const isOpen = headerNav.classList.toggle('open');
+        hamburgerBtn.classList.toggle('open', isOpen);
+        hamburgerBtn.setAttribute('aria-expanded', isOpen);
+      });
+
+      // Close menu when clicking a link
+      headerNav.querySelectorAll('a').forEach(link => {
+        link.addEventListener('click', () => {
+          headerNav.classList.remove('open');
+          hamburgerBtn.classList.remove('open');
+          hamburgerBtn.setAttribute('aria-expanded', 'false');
+        });
+      });
+
+      // Close menu when clicking outside
+      document.addEventListener('click', (e) => {
+        if (!hamburgerBtn.contains(e.target) && !headerNav.contains(e.target)) {
+          headerNav.classList.remove('open');
+          hamburgerBtn.classList.remove('open');
+          hamburgerBtn.setAttribute('aria-expanded', 'false');
+        }
+      });
+    }
+  </script>
 </body>
 </html>

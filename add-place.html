@@ -122,18 +122,75 @@
     integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
     crossorigin=""
   />
+  <!-- Leaflet MarkerCluster CSS -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"
+  />
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"
+  />
+  <style>
+    /* Custom cluster styles */
+    .marker-cluster-small {
+      background-color: rgba(34, 197, 94, 0.6);
+    }
+    .marker-cluster-small div {
+      background-color: rgba(34, 197, 94, 0.8);
+    }
+    .marker-cluster-medium {
+      background-color: rgba(251, 191, 36, 0.6);
+    }
+    .marker-cluster-medium div {
+      background-color: rgba(251, 191, 36, 0.8);
+    }
+    .marker-cluster-large {
+      background-color: rgba(239, 68, 68, 0.6);
+    }
+    .marker-cluster-large div {
+      background-color: rgba(239, 68, 68, 0.8);
+    }
+    .marker-cluster {
+      background-clip: padding-box;
+      border-radius: 50%;
+    }
+    .marker-cluster div {
+      width: 30px;
+      height: 30px;
+      margin-left: 5px;
+      margin-top: 5px;
+      text-align: center;
+      border-radius: 50%;
+      font: 12px "Helvetica Neue", Arial, Helvetica, sans-serif;
+      color: #fff;
+      font-weight: 700;
+      line-height: 30px;
+    }
+    .marker-cluster span {
+      line-height: 30px;
+    }
+  </style>
 </head>
 
 <body>
   <div id="app" class="fw-app-split fw-add-mobile-map">
     <header class="fw-header">
-      <div class="fw-header-title">Five Wonders</div>
-      <nav class="fw-header-nav">
+      <a href="index.html" class="fw-header-title">Five Wonders</a>
+      <button class="fw-hamburger" id="hamburgerBtn" aria-label="Menu" aria-expanded="false">
+        <div class="fw-hamburger-icon">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+      </button>
+      <nav class="fw-header-nav" id="headerNav">
         <a href="index.html">Home</a>
         <a href="add-place.html">Add</a>
         <a href="edit-places.html">Edit</a>
         <a href="view.html">View</a>
         <a href="about.html">About</a>
+        <a href="faq.html">FAQ</a>
       </nav>
     </header>
 
@@ -274,6 +331,8 @@
     integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
     crossorigin=""
   ></script>
+  <!-- Leaflet MarkerCluster JS -->
+  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 
   <script type="module">
     // ====== CONFIG ======
@@ -365,8 +424,8 @@
                 resetLink.onclick = (e) => {
                   e.preventDefault();
                   resetAccess();
-                  // Clear existing place markers
-                  existingPlacesMarkers.forEach((m) => map.removeLayer(m));
+                  // Clear existing place markers from cluster group
+                  existingPlacesCluster.clearLayers();
                   existingPlacesMarkers = [];
                   userPlaces = [];
                   renderTokenSection();
@@ -525,7 +584,30 @@
     let existingPlacesMarkers = [];
     let userPlaces = [];
 
-    // Color per user_id (same as view.html)
+    // Category icons as SVG
+    const categoryIcons = {
+      Dining: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 002-2V2"/><path d="M7 2v20"/><path d="M21 15V2v0a5 5 0 00-5 5v6c0 1.1.9 2 2 2h3zm0 0v7"/></svg>`,
+      Lodging: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4v16"/><path d="M2 8h18a2 2 0 012 2v10"/><path d="M2 17h20"/><path d="M6 8v9"/></svg>`,
+      Attraction: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`,
+      Recreation: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22v-7l-2-2"/><path d="M17 8v.8A6 6 0 0113.5 20v0a6 6 0 01-6.5-6V8a3 3 0 116 0v4.5a1 1 0 01-1 1H11"/><path d="M12 2v4"/></svg>`,
+      Shopping: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>`,
+      Other: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`
+    };
+
+    function makeCategoryIcon(category) {
+      const cat = category || "Other";
+      const icon = categoryIcons[cat] || categoryIcons.Other;
+      const className = `fw-category-pin fw-category-pin--${cat.toLowerCase()}`;
+      return L.divIcon({
+        className: "",
+        html: `<div class="${className}">${icon}</div>`,
+        iconSize: [28, 28],
+        iconAnchor: [14, 28],
+        popupAnchor: [0, -28],
+      });
+    }
+
+    // Color per user_id (kept for backwards compatibility)
     const userColorCache = new Map();
 
     function colorForUser(key) {
@@ -553,6 +635,15 @@
         popupAnchor: [0, -10],
       });
     }
+
+    // Create marker cluster group for existing places
+    const existingPlacesCluster = L.markerClusterGroup({
+      showCoverageOnHover: false,
+      maxClusterRadius: 50,
+      spiderfyOnMaxZoom: true,
+      disableClusteringAtZoom: 16
+    });
+    map.addLayer(existingPlacesCluster);
 
     function buildAddress({ street_line1, city, state, country }) {
       const parts = [];
@@ -583,9 +674,9 @@
       const lon = place.longitude;
       if (typeof lat !== "number" || typeof lon !== "number") return null;
 
-      const color = colorForUser(userId);
-      const icon = makeDotIcon(color);
-      const marker = L.marker([lat, lon], { icon }).addTo(map);
+      // Use category-based icon
+      const icon = makeCategoryIcon(place.category);
+      const marker = L.marker([lat, lon], { icon });
 
       const popupHtml = buildPopupHtml({
         title: place.title || "(Untitled place)",
@@ -601,6 +692,9 @@
       });
 
       marker.bindPopup(popupHtml, { maxWidth: 320 });
+
+      // Add to cluster group instead of directly to map
+      existingPlacesCluster.addLayer(marker);
       return marker;
     }
 
@@ -644,8 +738,8 @@
 
         userPlaces = Array.isArray(data) ? data : [];
 
-        // Clear old markers
-        existingPlacesMarkers.forEach((m) => map.removeLayer(m));
+        // Clear old markers from cluster group
+        existingPlacesCluster.clearLayers();
         existingPlacesMarkers = [];
 
         userPlaces.forEach((place) => {
@@ -1361,6 +1455,36 @@
     // Load existing places on map (now that map is initialized)
     if (getStoredApiKey()) {
       loadExistingPlaces();
+    }
+
+    // Mobile hamburger menu toggle
+    const hamburgerBtn = document.getElementById('hamburgerBtn');
+    const headerNav = document.getElementById('headerNav');
+
+    if (hamburgerBtn && headerNav) {
+      hamburgerBtn.addEventListener('click', () => {
+        const isOpen = headerNav.classList.toggle('open');
+        hamburgerBtn.classList.toggle('open', isOpen);
+        hamburgerBtn.setAttribute('aria-expanded', isOpen);
+      });
+
+      // Close menu when clicking a link
+      headerNav.querySelectorAll('a').forEach(link => {
+        link.addEventListener('click', () => {
+          headerNav.classList.remove('open');
+          hamburgerBtn.classList.remove('open');
+          hamburgerBtn.setAttribute('aria-expanded', 'false');
+        });
+      });
+
+      // Close menu when clicking outside
+      document.addEventListener('click', (e) => {
+        if (!hamburgerBtn.contains(e.target) && !headerNav.contains(e.target)) {
+          headerNav.classList.remove('open');
+          hamburgerBtn.classList.remove('open');
+          hamburgerBtn.setAttribute('aria-expanded', 'false');
+        }
+      });
     }
   </script>
 </body>

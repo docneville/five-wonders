@@ -79,6 +79,16 @@ body.fw-about{
   letter-spacing: 0.02em;
 }
 
+/* Title as invisible link */
+a.fw-header-title{
+  text-decoration: none;
+  color: var(--fw-header-title);
+}
+a.fw-header-title:hover{
+  text-decoration: none;
+  color: var(--fw-header-title);
+}
+
 .fw-header-nav a{
   color: var(--fw-header-link);
   text-decoration: none;
@@ -93,16 +103,90 @@ body.fw-about{
   text-decoration: underline;
 }
 
-/* Mobile: allow horizontal scroll for nav (used in view.html) */
+/* Hamburger menu button - hidden on desktop */
+.fw-hamburger{
+  display: none;
+  background: none;
+  border: none;
+  padding: 8px;
+  cursor: pointer;
+  color: var(--fw-header-link);
+  min-height: 44px;
+  min-width: 44px;
+  align-items: center;
+  justify-content: center;
+}
+
+.fw-hamburger:hover{
+  color: var(--fw-header-link-hover);
+}
+
+.fw-hamburger-icon{
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 20px;
+}
+
+.fw-hamburger-icon span{
+  display: block;
+  height: 2px;
+  background: currentColor;
+  border-radius: 1px;
+  transition: transform 0.2s, opacity 0.2s;
+}
+
+/* Hamburger animation when open */
+.fw-hamburger.open .fw-hamburger-icon span:nth-child(1){
+  transform: rotate(45deg) translate(4px, 4px);
+}
+.fw-hamburger.open .fw-hamburger-icon span:nth-child(2){
+  opacity: 0;
+}
+.fw-hamburger.open .fw-hamburger-icon span:nth-child(3){
+  transform: rotate(-45deg) translate(4px, -4px);
+}
+
+/* Mobile: hamburger menu */
 @media (max-width: 768px){
-  .fw-header-nav{
+  .fw-hamburger{
     display: flex;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
   }
-  .fw-header-nav::-webkit-scrollbar{ display: none; }
-  .fw-header-nav a{ flex: 0 0 auto; }
+
+  .fw-header-nav{
+    position: fixed;
+    top: var(--fw-header-h);
+    right: 0;
+    width: 200px;
+    background: var(--fw-header-bg);
+    display: flex;
+    flex-direction: column;
+    padding: 12px 0;
+    box-shadow: -4px 4px 12px rgba(0,0,0,0.2);
+    border-bottom-left-radius: 12px;
+    transform: translateX(100%);
+    transition: transform 0.2s ease;
+    z-index: 9000;
+  }
+
+  .fw-header-nav.open{
+    transform: translateX(0);
+  }
+
+  .fw-header-nav a{
+    margin: 0;
+    padding: 12px 20px;
+    font-size: 15px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+
+  .fw-header-nav a:last-child{
+    border-bottom: none;
+  }
+
+  .fw-header-nav a:hover{
+    background: rgba(255,255,255,0.05);
+  }
 }
 
 /* ---------- Home (index) card + buttons ---------- */
@@ -240,6 +324,7 @@ label{
 }
 
 input[type="text"],
+input[type="url"],
 textarea,
 select{
   width: 100%;
@@ -1335,5 +1420,154 @@ a:hover{ text-decoration: underline; }
   margin-bottom: 8px;
   text-transform: uppercase;
   letter-spacing: 0.03em;
+}
+
+/* ---------- Homepage Button Layout ---------- */
+.fw-btn-group-primary{
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.fw-btn-group-secondary{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.fw-btn-large{
+  padding: 14px 16px;
+  font-size: 16px;
+}
+
+.fw-btn-green{
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  color: #fff;
+  box-shadow: 0 10px 25px rgba(34, 197, 94, 0.35);
+}
+
+/* ---------- Footer Links ---------- */
+.fw-footer-links{
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(0,0,0,0.08);
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  font-size: 12px;
+}
+
+.fw-footer-links a{
+  color: var(--fw-muted);
+  text-decoration: none;
+}
+
+.fw-footer-links a:hover{
+  color: var(--fw-text);
+  text-decoration: underline;
+}
+
+/* ---------- Category Icons/Thumbnails ---------- */
+.category-icon{
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+.category-icon svg{
+  width: 16px;
+  height: 16px;
+}
+
+.category-icon--dining{ background: #fef3c7; color: #d97706; }
+.category-icon--lodging{ background: #dbeafe; color: #2563eb; }
+.category-icon--attraction{ background: #fce7f3; color: #db2777; }
+.category-icon--recreation{ background: #d1fae5; color: #059669; }
+.category-icon--shopping{ background: #ede9fe; color: #7c3aed; }
+.category-icon--other{ background: #f3f4f6; color: #6b7280; }
+
+/* Place row with category icon */
+.place-row-header{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ---------- Category Map Pins ---------- */
+.fw-category-pin{
+  width: 28px;
+  height: 28px;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.35);
+  border: 2px solid #fff;
+}
+
+.fw-category-pin svg{
+  width: 14px;
+  height: 14px;
+  transform: rotate(45deg);
+}
+
+.fw-category-pin--dining{ background: #f59e0b; color: #fff; }
+.fw-category-pin--lodging{ background: #3b82f6; color: #fff; }
+.fw-category-pin--attraction{ background: #ec4899; color: #fff; }
+.fw-category-pin--recreation{ background: #10b981; color: #fff; }
+.fw-category-pin--shopping{ background: #8b5cf6; color: #fff; }
+.fw-category-pin--other{ background: #6b7280; color: #fff; }
+
+@media (max-width: 768px){
+  .fw-category-pin{
+    width: 32px;
+    height: 32px;
+  }
+  .fw-category-pin svg{
+    width: 16px;
+    height: 16px;
+  }
+}
+
+/* ---------- FAQ Page Styles ---------- */
+.faq-list{
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.faq-item{
+  margin-bottom: 16px;
+  padding: 16px;
+  background: var(--fw-soft);
+  border-radius: 12px;
+  border: 1px solid var(--fw-border);
+}
+
+.faq-question{
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--fw-text);
+  margin-bottom: 8px;
+}
+
+.faq-answer{
+  font-size: 0.95rem;
+  color: #374151;
+  line-height: 1.6;
+}
+
+.faq-answer p{
+  margin: 0 0 8px;
+}
+
+.faq-answer p:last-child{
+  margin-bottom: 0;
 }
 

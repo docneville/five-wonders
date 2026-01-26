@@ -67,13 +67,21 @@
 <body>
   <div id="app" class="fw-app-split fw-edit-mobile-list">
     <header class="fw-header">
-      <div class="fw-header-title">Five Wonders</div>
-      <nav class="fw-header-nav">
+      <a href="index.html" class="fw-header-title">Five Wonders</a>
+      <button class="fw-hamburger" id="hamburgerBtn" aria-label="Menu" aria-expanded="false">
+        <div class="fw-hamburger-icon">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+      </button>
+      <nav class="fw-header-nav" id="headerNav">
         <a href="index.html">Home</a>
         <a href="add-place.html">Add</a>
         <a href="edit-places.html">Edit</a>
         <a href="view.html">View</a>
         <a href="about.html">About</a>
+        <a href="faq.html">FAQ</a>
       </nav>
     </header>
 
@@ -351,6 +359,23 @@
         .replace(/>/g, "&gt;")
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#039;");
+    }
+
+    // Category icons as SVG
+    const categoryIcons = {
+      Dining: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 002-2V2"/><path d="M7 2v20"/><path d="M21 15V2v0a5 5 0 00-5 5v6c0 1.1.9 2 2 2h3zm0 0v7"/></svg>`,
+      Lodging: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4v16"/><path d="M2 8h18a2 2 0 012 2v10"/><path d="M2 17h20"/><path d="M6 8v9"/></svg>`,
+      Attraction: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`,
+      Recreation: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22v-7l-2-2"/><path d="M17 8v.8A6 6 0 0113.5 20v0a6 6 0 01-6.5-6V8a3 3 0 116 0v4.5a1 1 0 01-1 1H11"/><path d="M12 2v4"/></svg>`,
+      Shopping: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>`,
+      Other: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`
+    };
+
+    function getCategoryIconHtml(category) {
+      const cat = category || "Other";
+      const icon = categoryIcons[cat] || categoryIcons.Other;
+      const className = `category-icon category-icon--${cat.toLowerCase()}`;
+      return `<div class="${className}">${icon}</div>`;
     }
 
     // "City, State, Country" for list, falling back to raw_text so it's never empty
@@ -954,6 +979,25 @@
     // FAB removed – keep as no-op so callers are safe
     function setMobileFabEnabled(_enabled) { return; }
 
+    // Sort places by country, then state/region
+    function sortPlacesByLocation(places) {
+      return [...places].sort((a, b) => {
+        const countryA = (a.country || "").toLowerCase();
+        const countryB = (b.country || "").toLowerCase();
+        if (countryA !== countryB) {
+          // Empty countries go to the end
+          if (!countryA) return 1;
+          if (!countryB) return -1;
+          return countryA.localeCompare(countryB);
+        }
+        const stateA = (a.state || "").toLowerCase();
+        const stateB = (b.state || "").toLowerCase();
+        if (!stateA) return 1;
+        if (!stateB) return -1;
+        return stateA.localeCompare(stateB);
+      });
+    }
+
     function renderPlaceList() {
       placeListEl.innerHTML = "";
 
@@ -966,16 +1010,23 @@
 
       setMobileFabEnabled(!!activePlaceId);
 
-      userPlaces.forEach((p) => {
+      // Sort places by country, then state/region
+      const sortedPlaces = sortPlacesByLocation(userPlaces);
+
+      sortedPlaces.forEach((p) => {
         const row = document.createElement("div");
         row.className = "place-row" + (p.id === activePlaceId ? " active" : "");
         row.dataset.id = p.id;
 
         const title = p.title || "(Untitled place)";
         const addressLine = formatAddressFromPlace(p);
+        const categoryIcon = getCategoryIconHtml(p.category);
 
         row.innerHTML = `
-          <div class="place-row-title">${escapeHtml(title)}</div>
+          <div class="place-row-header">
+            ${categoryIcon}
+            <div class="place-row-title">${escapeHtml(title)}</div>
+          </div>
           ${
             addressLine
               ? `<div class="place-row-note">${escapeHtml(addressLine)}</div>`
@@ -1460,6 +1511,36 @@
     window.addEventListener("resize", () => {
       if (!isMobile()) closeSheet();
     });
+
+    // Mobile hamburger menu toggle
+    const hamburgerBtn = document.getElementById('hamburgerBtn');
+    const headerNav = document.getElementById('headerNav');
+
+    if (hamburgerBtn && headerNav) {
+      hamburgerBtn.addEventListener('click', () => {
+        const isOpen = headerNav.classList.toggle('open');
+        hamburgerBtn.classList.toggle('open', isOpen);
+        hamburgerBtn.setAttribute('aria-expanded', isOpen);
+      });
+
+      // Close menu when clicking a link
+      headerNav.querySelectorAll('a').forEach(link => {
+        link.addEventListener('click', () => {
+          headerNav.classList.remove('open');
+          hamburgerBtn.classList.remove('open');
+          hamburgerBtn.setAttribute('aria-expanded', 'false');
+        });
+      });
+
+      // Close menu when clicking outside
+      document.addEventListener('click', (e) => {
+        if (!hamburgerBtn.contains(e.target) && !headerNav.contains(e.target)) {
+          headerNav.classList.remove('open');
+          hamburgerBtn.classList.remove('open');
+          hamburgerBtn.setAttribute('aria-expanded', 'false');
+        }
+      });
+    }
   </script>
 </body>
 </html>

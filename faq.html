@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>FAQ – Five Wonders</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="fw.css" />
+</head>
+<body class="fw-about">
+  <header class="fw-header">
+    <a href="index.html" class="fw-header-title">Five Wonders</a>
+    <button class="fw-hamburger" id="hamburgerBtn" aria-label="Menu" aria-expanded="false">
+      <div class="fw-hamburger-icon">
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+    </button>
+    <nav class="fw-header-nav" id="headerNav">
+      <a href="index.html">Home</a>
+      <a href="add-place.html">Add</a>
+      <a href="edit-places.html">Edit</a>
+      <a href="view.html">View</a>
+      <a href="about.html">About</a>
+      <a href="faq.html">FAQ</a>
+    </nav>
+  </header>
+
+  <main>
+    <div class="shell">
+      <div class="pill">FAQ</div>
+
+      <h1>Frequently Asked Questions</h1>
+
+      <!--
+        ============================================
+        HOW TO EDIT THIS FAQ:
+
+        Each question is inside a <li class="faq-item">
+        - The question goes in <div class="faq-question">
+        - The answer goes in <div class="faq-answer">
+
+        To add a new question, copy an existing <li>...</li>
+        block and paste it where you want the new question.
+        ============================================
+      -->
+
+      <ul class="faq-list">
+
+        <li class="faq-item">
+          <div class="faq-question">What is Five Wonders?</div>
+          <div class="faq-answer">
+            <p>
+              Five Wonders is an invite-only app for sharing your favorite places with
+              friends. Think of it as a private map of recommendations from people you
+              actually trust, not algorithms or anonymous reviewers.
+            </p>
+          </div>
+        </li>
+
+        <li class="faq-item">
+          <div class="faq-question">How does it work?</div>
+          <div class="faq-answer">
+            <p>
+              <strong>Add</strong> places you love by searching or dropping a pin on the map.
+              Add notes about why you recommend them.
+            </p>
+            <p>
+              <strong>View</strong> the shared map to see all the places your friends have saved.
+              Click on markers to see details and notes.
+            </p>
+            <p>
+              <strong>Edit</strong> your saved places anytime to update details, add photos,
+              or remove places you no longer recommend.
+            </p>
+          </div>
+        </li>
+
+        <li class="faq-item">
+          <div class="faq-question">What if I can't find my Wonder on the map?</div>
+          <div class="faq-answer">
+            <p>
+              No problem! If searching doesn't find your place, you can simply click or tap
+              directly on the map to drop a pin at the exact location. Then fill in the name
+              and details manually. This works great for hidden gems, new businesses, or
+              places that aren't in standard map databases yet.
+            </p>
+          </div>
+        </li>
+
+        <li class="faq-item">
+          <div class="faq-question">What's an invite code?</div>
+          <div class="faq-answer">
+            <p>
+              Five Wonders is invite-only to keep the community small and trusted. Your
+              invite code is an 8-character code that identifies you. Enter it once and
+              it's saved on your device. If you need an invite code, ask the person who
+              told you about Five Wonders.
+            </p>
+          </div>
+        </li>
+
+        <li class="faq-item">
+          <div class="faq-question">Can I use Five Wonders on multiple devices?</div>
+          <div class="faq-answer">
+            <p>
+              Yes! Just enter your same invite code on each device. Your places are
+              stored in the cloud, so they'll appear on any device where you've
+              entered your code.
+            </p>
+          </div>
+        </li>
+
+        <li class="faq-item">
+          <div class="faq-question">Who can see my saved places?</div>
+          <div class="faq-answer">
+            <p>
+              Everyone in the Five Wonders community can see places on the View map.
+              That's the point – sharing great spots with friends! Only you can edit
+              or delete your own places though.
+            </p>
+          </div>
+        </li>
+
+        <li class="faq-item">
+          <div class="faq-question">How do I add photos to a place?</div>
+          <div class="faq-answer">
+            <p>
+              You can add up to 5 photos per place. When adding a new place, click
+              "+ Add photos" before saving. For places you've already saved, go to
+              the Edit page, select the place, and use the photos section to upload images.
+            </p>
+          </div>
+        </li>
+
+        <li class="faq-item">
+          <div class="faq-question">What are the categories for?</div>
+          <div class="faq-answer">
+            <p>
+              Categories help organize places by type: Dining, Lodging, Attraction,
+              Recreation, Shopping, and Other. They make it easier to find specific
+              types of recommendations when viewing the map.
+            </p>
+          </div>
+        </li>
+
+      </ul>
+
+      <p class="back-link">
+        &larr; <a href="index.html">Back to home</a>
+      </p>
+    </div>
+  </main>
+
+  <script>
+    // Mobile hamburger menu toggle
+    const hamburgerBtn = document.getElementById('hamburgerBtn');
+    const headerNav = document.getElementById('headerNav');
+
+    if (hamburgerBtn && headerNav) {
+      hamburgerBtn.addEventListener('click', () => {
+        const isOpen = headerNav.classList.toggle('open');
+        hamburgerBtn.classList.toggle('open', isOpen);
+        hamburgerBtn.setAttribute('aria-expanded', isOpen);
+      });
+
+      // Close menu when clicking a link
+      headerNav.querySelectorAll('a').forEach(link => {
+        link.addEventListener('click', () => {
+          headerNav.classList.remove('open');
+          hamburgerBtn.classList.remove('open');
+          hamburgerBtn.setAttribute('aria-expanded', 'false');
+        });
+      });
+
+      // Close menu when clicking outside
+      document.addEventListener('click', (e) => {
+        if (!hamburgerBtn.contains(e.target) && !headerNav.contains(e.target)) {
+          headerNav.classList.remove('open');
+          hamburgerBtn.classList.remove('open');
+          hamburgerBtn.setAttribute('aria-expanded', 'false');
+        }
+      });
+    }
+  </script>
+</body>
+</html>
