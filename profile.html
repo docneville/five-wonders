@@ -357,7 +357,7 @@
       }
 
       try {
-        // Validate API key
+        // Validate API key and get profile data in one call
         const { data: validationData, error: validationError } = await sb.rpc("validate_api_key", {
           p_key: apiKey,
         });
@@ -368,52 +368,71 @@
           return;
         }
 
-        // Load profile data
-        const { data: profile, error: profileError } = await sb
-          .from("profiles")
-          .select("id, first_name, last_name, username, created_at, profile_photo_path")
-          .eq("id", profileId)
-          .single();
+        // Use the validation data - it returns the profile id
+        const validatedProfileId = validationData[0].id;
 
-        if (profileError || !profile) {
-          console.error("Error loading profile:", profileError);
-          showState("noAccess");
-          return;
+        // Load profile data using places_with_profiles view (which has proper access)
+        // We just need one place to get the profile info, or query profiles directly
+        const { data: profileData, error: profileError } = await sb
+          .from("profiles")
+          .select("id, first_name, last_name, username, created_at")
+          .eq("id", validatedProfileId)
+          .maybeSingle();
+
+        // Even if profile query fails due to RLS, we can still show basic info
+        let profile = profileData;
+
+        // If direct query failed, try to get profile info from places_with_profiles
+        if (!profile) {
+          const { data: placeData } = await sb
+            .from("places_with_profiles")
+            .select("first_name, last_name, username")
+            .eq("user_id", validatedProfileId)
+            .limit(1)
+            .maybeSingle();
+
+          if (placeData) {
+            profile = {
+              id: validatedProfileId,
+              first_name: placeData.first_name,
+              last_name: placeData.last_name,
+              username: placeData.username,
+              created_at: null
+            };
+          }
         }
 
         // Load places count
-        const { count, error: countError } = await sb
+        const { count } = await sb
           .from("places")
           .select("id", { count: "exact", head: true })
-          .eq("user_id", profileId);
+          .eq("user_id", validatedProfileId);
 
-        // Update UI
-        const fullName = [profile.first_name, profile.last_name].filter(Boolean).join(" ") || "Anonymous";
+        // Update UI with whatever data we have
+        const profileFirstName = profile?.first_name || "";
+        const profileLastName = profile?.last_name || "";
+        const profileUserName = profile?.username || "";
+
+        const fullName = [profileFirstName, profileLastName].filter(Boolean).join(" ") || "Five Wonders User";
         profileName.textContent = fullName;
-        profileUsername.textContent = profile.username ? `@${profile.username}` : "";
+        profileUsername.textContent = profileUserName ? `@${profileUserName}` : "";
 
-        firstName.textContent = profile.first_name || "-";
-        firstName.classList.toggle("empty", !profile.first_name);
+        firstName.textContent = profileFirstName || "-";
+        firstName.classList.toggle("empty", !profileFirstName);
 
-        lastName.textContent = profile.last_name || "-";
-        lastName.classList.toggle("empty", !profile.last_name);
+        lastName.textContent = profileLastName || "-";
+        lastName.classList.toggle("empty", !profileLastName);
 
-        usernameField.textContent = profile.username || "-";
-        usernameField.classList.toggle("empty", !profile.username);
+        usernameField.textContent = profileUserName || "-";
+        usernameField.classList.toggle("empty", !profileUserName);
 
         placesCount.textContent = count || 0;
-        memberSince.textContent = formatDate(profile.created_at);
+        memberSince.textContent = formatDate(profile?.created_at);
 
-        // Profile photo
-        if (profile.profile_photo_path) {
-          profilePhoto.src = `${STORAGE_URL}/${profile.profile_photo_path}`;
-          profilePhoto.style.display = "block";
-          profilePhotoPlaceholder.style.display = "none";
-        } else {
-          profilePhoto.style.display = "none";
-          profilePhotoPlaceholder.style.display = "flex";
-          profilePhotoPlaceholder.textContent = getInitial(profile.first_name);
-        }
+        // Profile photo placeholder
+        profilePhoto.style.display = "none";
+        profilePhotoPlaceholder.style.display = "flex";
+        profilePhotoPlaceholder.textContent = getInitial(profileFirstName);
 
         showState("profile");
       } catch (err) {

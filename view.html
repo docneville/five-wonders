@@ -324,18 +324,20 @@
       return `<div class="place-photos">${photoItems}</div>`;
     }
 
-    // Build directions links HTML
-    function buildDirectionsHtml(lat, lon) {
+    // Build map links HTML (opens location, not directions)
+    function buildMapLinksHtml(lat, lon) {
       if (typeof lat !== "number" || typeof lon !== "number") return "";
-      const appleMapsUrl = `https://maps.apple.com/?daddr=${lat},${lon}`;
-      const googleMapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}`;
+      const appleMapsUrl = `https://maps.apple.com/?ll=${lat},${lon}&q=${lat},${lon}`;
+      const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${lat},${lon}`;
       return `
-        <div class="place-directions">
-          <a href="${appleMapsUrl}" target="_blank" rel="noopener" class="place-directions-link">
-            <span class="directions-icon">🗺️</span> Apple Maps
+        <div class="place-map-links">
+          <a href="${appleMapsUrl}" target="_blank" rel="noopener" class="place-map-link">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
+            Apple Maps
           </a>
-          <a href="${googleMapsUrl}" target="_blank" rel="noopener" class="place-directions-link">
-            <span class="directions-icon">📍</span> Google Maps
+          <a href="${googleMapsUrl}" target="_blank" rel="noopener" class="place-map-link">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            Google Maps
           </a>
         </div>
       `;
@@ -351,7 +353,6 @@
         ${address ? `<div class="place-address">${escapeHtml(address)}</div>` : ""}
         ${phone ? `<div class="place-phone">📞 ${escapeHtml(phone)}</div>` : ""}
         ${website ? `<div class="place-website"><a href="${escapeHtml(website)}" target="_blank" rel="noopener">${escapeHtml(website)}</a></div>` : ""}
-        ${buildDirectionsHtml(latitude, longitude)}
         ${buildLinksHtml(links)}
         ${buildPhotosHtml(photos, placeId)}
         ${
@@ -373,7 +374,10 @@
         `
             : ""
         }
-        ${isOwner ? `<div class="place-edit-link"><a href="edit-places.html?place=${placeId}">Edit this Wonder</a></div>` : ""}
+        <div class="place-actions">
+          ${buildMapLinksHtml(latitude, longitude)}
+          ${isOwner ? `<a href="edit-places.html?place=${placeId}" class="place-edit-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Edit this Wonder</a>` : ""}
+        </div>
       `;
     }
 

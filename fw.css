@@ -1571,18 +1571,27 @@ a:hover{ text-decoration: underline; }
   margin-bottom: 0;
 }
 
-/* ---------- Directions Links (View Page) ---------- */
-.place-directions{
+/* ---------- Place Actions (View Page) ---------- */
+.place-actions{
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--fw-border);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Map Links (Apple Maps, Google Maps) */
+.place-map-links{
   display: flex;
   gap: 8px;
-  margin: 10px 0;
   flex-wrap: wrap;
 }
 
-.place-directions-link{
+.place-map-link{
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   padding: 8px 12px;
   background: var(--fw-soft);
   border: 1px solid var(--fw-border);
@@ -1594,40 +1603,44 @@ a:hover{ text-decoration: underline; }
   transition: background 0.15s, border-color 0.15s;
 }
 
-.place-directions-link:hover{
+.place-map-link:hover{
   background: #e5e7eb;
   border-color: #d1d5db;
   text-decoration: none;
 }
 
-.directions-icon{
-  font-size: 1rem;
+.place-map-link svg{
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
 }
 
-/* ---------- Edit Link (View Page) ---------- */
+/* Edit Link */
 .place-edit-link{
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid var(--fw-border);
-}
-
-.place-edit-link a{
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 8px 14px;
+  gap: 6px;
+  padding: 10px 14px;
   background: var(--fw-primary);
   color: #fff;
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   font-weight: 600;
   border-radius: 8px;
   text-decoration: none;
   transition: background 0.15s;
+  align-self: flex-start;
 }
 
-.place-edit-link a:hover{
+.place-edit-link:hover{
   background: var(--fw-primary-hover);
   text-decoration: none;
+  color: #fff;
+}
+
+.place-edit-link svg{
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
 }
 
 /* ---------- User Location Marker ---------- */
