@@ -1571,3 +1571,144 @@ a:hover{ text-decoration: underline; }
   margin-bottom: 0;
 }
 
+/* ---------- Directions Links (View Page) ---------- */
+.place-directions{
+  display: flex;
+  gap: 8px;
+  margin: 10px 0;
+  flex-wrap: wrap;
+}
+
+.place-directions-link{
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 12px;
+  background: var(--fw-soft);
+  border: 1px solid var(--fw-border);
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--fw-text);
+  text-decoration: none;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.place-directions-link:hover{
+  background: #e5e7eb;
+  border-color: #d1d5db;
+  text-decoration: none;
+}
+
+.directions-icon{
+  font-size: 1rem;
+}
+
+/* ---------- Edit Link (View Page) ---------- */
+.place-edit-link{
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--fw-border);
+}
+
+.place-edit-link a{
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 14px;
+  background: var(--fw-primary);
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border-radius: 8px;
+  text-decoration: none;
+  transition: background 0.15s;
+}
+
+.place-edit-link a:hover{
+  background: var(--fw-primary-hover);
+  text-decoration: none;
+}
+
+/* ---------- User Location Marker ---------- */
+.user-location-marker{
+  width: 16px;
+  height: 16px;
+  background: #3b82f6;
+  border: 3px solid #fff;
+  border-radius: 50%;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.5);
+  position: relative;
+}
+
+.user-location-marker::after{
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 32px;
+  height: 32px;
+  background: rgba(59, 130, 246, 0.25);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  animation: location-pulse 2s ease-out infinite;
+}
+
+@keyframes location-pulse{
+  0%{
+    transform: translate(-50%, -50%) scale(0.5);
+    opacity: 1;
+  }
+  100%{
+    transform: translate(-50%, -50%) scale(1.5);
+    opacity: 0;
+  }
+}
+
+/* Location button */
+.fw-location-btn{
+  position: absolute;
+  bottom: 16px;
+  right: 16px;
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
+  padding: 0;
+  background: #fff;
+  border: 1px solid rgba(0,0,0,0.15);
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  transition: background 0.15s;
+}
+
+.fw-location-btn:hover{
+  background: #f3f4f6;
+}
+
+.fw-location-btn svg{
+  width: 20px;
+  height: 20px;
+  color: #3b82f6;
+}
+
+/* On view page, position above any FABs */
+.fw-map-fullscreen .fw-location-btn{
+  bottom: 80px;
+}
+
+@media (max-width: 768px){
+  .user-location-marker{
+    width: 18px;
+    height: 18px;
+  }
+  .user-location-marker::after{
+    width: 36px;
+    height: 36px;
+  }
+}
+

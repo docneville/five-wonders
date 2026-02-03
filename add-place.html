@@ -191,6 +191,7 @@
         <a href="view.html">View</a>
         <a href="about.html">About</a>
         <a href="faq.html">FAQ</a>
+        <a href="profile.html">Profile</a>
       </nav>
     </header>
 
@@ -1456,6 +1457,73 @@
     if (getStoredApiKey()) {
       loadExistingPlaces();
     }
+
+    // ===== User Location =====
+    let userLocationMarker = null;
+
+    function createUserLocationIcon() {
+      return L.divIcon({
+        className: "",
+        html: '<div class="user-location-marker"></div>',
+        iconSize: [22, 22],
+        iconAnchor: [11, 11],
+      });
+    }
+
+    function showUserLocation(lat, lon) {
+      if (userLocationMarker) {
+        userLocationMarker.setLatLng([lat, lon]);
+      } else {
+        userLocationMarker = L.marker([lat, lon], {
+          icon: createUserLocationIcon(),
+          zIndexOffset: 1000, // Keep on top of other markers
+        }).addTo(map);
+        userLocationMarker.bindPopup("You are here");
+      }
+    }
+
+    function centerOnUserLocation() {
+      if (userLocationMarker) {
+        const latlng = userLocationMarker.getLatLng();
+        map.setView(latlng, 15);
+      } else {
+        requestUserLocation();
+      }
+    }
+
+    function requestUserLocation() {
+      if (!navigator.geolocation) {
+        console.log("Geolocation not supported");
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const lat = position.coords.latitude;
+          const lon = position.coords.longitude;
+          showUserLocation(lat, lon);
+        },
+        (error) => {
+          console.log("Geolocation error:", error.message);
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 60000, // Cache location for 1 minute
+        }
+      );
+    }
+
+    // Add location button to map
+    const locationBtn = document.createElement("button");
+    locationBtn.className = "fw-location-btn";
+    locationBtn.title = "Show my location";
+    locationBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v4m0 12v4m10-10h-4M6 12H2"/></svg>`;
+    locationBtn.onclick = centerOnUserLocation;
+    document.getElementById("map").appendChild(locationBtn);
+
+    // Request location on page load
+    requestUserLocation();
 
     // Mobile hamburger menu toggle
     const hamburgerBtn = document.getElementById('hamburgerBtn');

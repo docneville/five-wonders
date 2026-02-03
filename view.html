@@ -83,6 +83,7 @@
       <a href="view.html">View</a>
       <a href="about.html">About</a>
       <a href="faq.html">FAQ</a>
+      <a href="profile.html">Profile</a>
     </nav>
   </header>
 
@@ -147,6 +148,11 @@
       "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVrcHNzb253dHp0dWJxZmlobHFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM1Njg2MjAsImV4cCI6MjA3OTE0NDYyMH0.R1_-ctf-6NsVUJEApf4N591lA9TPRCJQFzhrDVRbr_4";
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // Get current user's profile ID from localStorage
+    const LS_ID = "fw_profile_id";
+    const LS_ID_LEGACY = "profile_id";
+    const currentUserId = localStorage.getItem(LS_ID) || localStorage.getItem(LS_ID_LEGACY);
 
     // Initialize the Leaflet map
     const map = L.map("map", { zoomControl: true });
@@ -318,15 +324,34 @@
       return `<div class="place-photos">${photoItems}</div>`;
     }
 
+    // Build directions links HTML
+    function buildDirectionsHtml(lat, lon) {
+      if (typeof lat !== "number" || typeof lon !== "number") return "";
+      const appleMapsUrl = `https://maps.apple.com/?daddr=${lat},${lon}`;
+      const googleMapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}`;
+      return `
+        <div class="place-directions">
+          <a href="${appleMapsUrl}" target="_blank" rel="noopener" class="place-directions-link">
+            <span class="directions-icon">🗺️</span> Apple Maps
+          </a>
+          <a href="${googleMapsUrl}" target="_blank" rel="noopener" class="place-directions-link">
+            <span class="directions-icon">📍</span> Google Maps
+          </a>
+        </div>
+      `;
+    }
+
     // Body content used in both popup + sheet (NO title here)
-    function buildPlaceBodyHtml({ title, notes, createdAt, savedBy, category, street_line1, city, state, country, phone, website, links, photos, placeId }) {
+    function buildPlaceBodyHtml({ title, notes, createdAt, savedBy, category, street_line1, city, state, country, phone, website, links, photos, placeId, latitude, longitude, userId }) {
       const address = buildAddress({ street_line1, city, state, country });
+      const isOwner = currentUserId && userId && currentUserId === userId;
 
       return `
         ${category ? `<div class="place-category">${escapeHtml(category)}</div>` : ""}
         ${address ? `<div class="place-address">${escapeHtml(address)}</div>` : ""}
         ${phone ? `<div class="place-phone">📞 ${escapeHtml(phone)}</div>` : ""}
         ${website ? `<div class="place-website"><a href="${escapeHtml(website)}" target="_blank" rel="noopener">${escapeHtml(website)}</a></div>` : ""}
+        ${buildDirectionsHtml(latitude, longitude)}
         ${buildLinksHtml(links)}
         ${buildPhotosHtml(photos, placeId)}
         ${
@@ -348,15 +373,16 @@
         `
             : ""
         }
+        ${isOwner ? `<div class="place-edit-link"><a href="edit-places.html?place=${placeId}">Edit this Wonder</a></div>` : ""}
       `;
     }
 
     // Desktop popup includes the title in the popup itself
-    function buildPopupHtml({ title, notes, createdAt, savedBy, category, street_line1, city, state, country, phone, website, links, photos, placeId }) {
+    function buildPopupHtml({ title, notes, createdAt, savedBy, category, street_line1, city, state, country, phone, website, links, photos, placeId, latitude, longitude, userId }) {
       return `
         <div class="place-popup">
           <div class="place-title">${escapeHtml(title)}</div>
-          ${buildPlaceBodyHtml({ title, notes, createdAt, savedBy, category, street_line1, city, state, country, phone, website, links, photos, placeId })}
+          ${buildPlaceBodyHtml({ title, notes, createdAt, savedBy, category, street_line1, city, state, country, phone, website, links, photos, placeId, latitude, longitude, userId })}
         </div>
       `;
     }
@@ -460,6 +486,9 @@
           links,
           photos,
           placeId: place.id,
+          latitude: lat,
+          longitude: lon,
+          userId: place.user_id,
         };
 
         // Store for lightbox access
@@ -642,6 +671,73 @@
     setupPhotoClickHandlers();
 
     loadPlaces();
+
+    // ===== User Location =====
+    let userLocationMarker = null;
+
+    function createUserLocationIcon() {
+      return L.divIcon({
+        className: "",
+        html: '<div class="user-location-marker"></div>',
+        iconSize: [22, 22],
+        iconAnchor: [11, 11],
+      });
+    }
+
+    function showUserLocation(lat, lon) {
+      if (userLocationMarker) {
+        userLocationMarker.setLatLng([lat, lon]);
+      } else {
+        userLocationMarker = L.marker([lat, lon], {
+          icon: createUserLocationIcon(),
+          zIndexOffset: 1000, // Keep on top of other markers
+        }).addTo(map);
+        userLocationMarker.bindPopup("You are here");
+      }
+    }
+
+    function centerOnUserLocation() {
+      if (userLocationMarker) {
+        const latlng = userLocationMarker.getLatLng();
+        map.setView(latlng, 15);
+      } else {
+        requestUserLocation();
+      }
+    }
+
+    function requestUserLocation() {
+      if (!navigator.geolocation) {
+        console.log("Geolocation not supported");
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const lat = position.coords.latitude;
+          const lon = position.coords.longitude;
+          showUserLocation(lat, lon);
+        },
+        (error) => {
+          console.log("Geolocation error:", error.message);
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 60000, // Cache location for 1 minute
+        }
+      );
+    }
+
+    // Add location button to map
+    const locationBtn = document.createElement("button");
+    locationBtn.className = "fw-location-btn";
+    locationBtn.title = "Show my location";
+    locationBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v4m0 12v4m10-10h-4M6 12H2"/></svg>`;
+    locationBtn.onclick = centerOnUserLocation;
+    document.getElementById("map").appendChild(locationBtn);
+
+    // Request location on page load
+    requestUserLocation();
 
     // Mobile hamburger menu toggle
     const hamburgerBtn = document.getElementById('hamburgerBtn');

@@ -82,6 +82,7 @@
         <a href="view.html">View</a>
         <a href="about.html">About</a>
         <a href="faq.html">FAQ</a>
+        <a href="profile.html">Profile</a>
       </nav>
     </header>
 
@@ -1498,10 +1499,34 @@
       });
     });
 
+    // Helper to get URL query parameter
+    function getQueryParam(name) {
+      const params = new URLSearchParams(window.location.search);
+      return params.get(name);
+    }
+
+    // Auto-select place from URL parameter after loading places
+    async function loadUserPlacesAndSelect() {
+      await loadUserPlaces();
+
+      // Check for ?place= parameter
+      const placeIdFromUrl = getQueryParam("place");
+      if (placeIdFromUrl && userPlaces.length > 0) {
+        const place = userPlaces.find((p) => p.id === placeIdFromUrl);
+        if (place) {
+          selectPlace(place.id);
+          // On mobile, auto-open the edit sheet
+          if (isMobile()) {
+            openSheet("open");
+          }
+        }
+      }
+    }
+
     // ===== Init =====
     const hasAccess = await renderTokenSection();
     if (hasAccess) {
-      loadUserPlaces();
+      loadUserPlacesAndSelect();
     } else {
       sidebarStatusEl.textContent = "Set invite code to load places.";
       renderPlaceList();
