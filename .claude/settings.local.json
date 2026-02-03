@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git -C \"C:/code/five-wonders\" remote -v)",
+      "Bash(git -C \"C:/code/five-wonders\" status)",
+      "Bash(git -C \"C:/code/five-wonders\" ls-remote:*)",
+      "Bash(git -C \"C:/code/five-wonders\" fetch origin main)",
+      "Bash(git -C \"C:/code/five-wonders\" branch -m master main)",
+      "Bash(git -C \"C:/code/five-wonders\" reset origin/main)",
+      "Bash(git -C \"C:/code/five-wonders\" restore CNAME five-wonders-logo.png)"
+    ]
+  }
+}
