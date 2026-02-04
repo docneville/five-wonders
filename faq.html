@@ -13,12 +13,11 @@
     }
 
     .faq-anchor {
-      opacity: 0;
-      transition: opacity 0.15s ease;
       color: var(--fw-muted);
       display: inline-flex;
       align-items: center;
       padding: 4px;
+      transition: color 0.15s ease;
     }
 
     .faq-anchor svg {
@@ -28,11 +27,6 @@
 
     .faq-anchor:hover {
       color: var(--fw-primary);
-    }
-
-    .faq-item:hover .faq-anchor,
-    .faq-anchor:focus {
-      opacity: 1;
     }
 
     .faq-item:target {

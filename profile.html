@@ -525,6 +525,7 @@
 
         if (!res.ok || data.error) {
           uploadStatus.textContent = data.error || "Upload failed";
+          uploadStatus.style.color = "#dc2626";
           return;
         }
 
@@ -535,13 +536,16 @@
           profilePhotoPlaceholder.style.display = "none";
         }
 
+        uploadStatus.style.color = "#10b981";
         uploadStatus.textContent = "Photo updated!";
         setTimeout(() => {
           uploadStatus.style.display = "none";
+          uploadStatus.style.color = "";
         }, 2000);
       } catch (err) {
         console.error("Upload error:", err);
-        uploadStatus.textContent = "Upload failed - please try again";
+        uploadStatus.style.color = "#dc2626";
+        uploadStatus.textContent = "Upload failed - check console for details";
       }
     }
 

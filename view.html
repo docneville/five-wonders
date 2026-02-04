@@ -293,13 +293,14 @@
       return color;
     }
 
-    // Create marker cluster group
+    // Create marker cluster group and add to map
     const markerClusterGroup = L.markerClusterGroup({
       showCoverageOnHover: false,
       maxClusterRadius: 50,
       spiderfyOnMaxZoom: true,
       disableClusteringAtZoom: 16
     });
+    map.addLayer(markerClusterGroup);
 
     // Build readable address from parts
     function buildAddress({ street_line1, city, state, country }) {
@@ -550,8 +551,9 @@
         bounds.extend([lat, lon]);
       });
 
-      // Fit bounds if we have markers and no user location zoom pending
-      if (bounds.isValid() && hasZoomedToUser) {
+      // Only fit bounds when explicitly filtering (not on initial load)
+      // Initial load zoom is handled by user location or loadPlaces
+      if (bounds.isValid() && activeFilters.size > 0) {
         map.fitBounds(bounds.pad(0.1));
       }
     }
@@ -657,12 +659,24 @@
       updateFilterUI();
       renderFilteredMarkers();
 
-      // Fit to all places bounds initially (if no user location zoom)
-      if (!hasZoomedToUser) {
-        const bounds = L.latLngBounds(allPlacesData.map(p => [p.latitude, p.longitude]));
-        if (bounds.isValid()) {
-          map.fitBounds(bounds.pad(0.1));
-        }
+      // Mark that places are loaded (for geolocation fallback)
+      placesLoaded = true;
+
+      // If user location already set the view, don't override it
+      // Otherwise wait briefly for geolocation, then fall back to all places
+      if (!hasZoomedToUser && !waitingForGeolocation) {
+        fitToAllPlaces();
+      }
+    }
+
+    let placesLoaded = false;
+    let waitingForGeolocation = true;
+
+    function fitToAllPlaces() {
+      if (allPlacesData.length === 0) return;
+      const bounds = L.latLngBounds(allPlacesData.map(p => [p.latitude, p.longitude]));
+      if (bounds.isValid()) {
+        map.fitBounds(bounds.pad(0.1));
       }
     }
 
@@ -848,6 +862,11 @@
     function requestUserLocation(zoomToLocation = false) {
       if (!navigator.geolocation) {
         console.log("Geolocation not supported");
+        waitingForGeolocation = false;
+        // Fall back to showing all places
+        if (placesLoaded && !hasZoomedToUser) {
+          fitToAllPlaces();
+        }
         return;
       }
 
@@ -856,6 +875,7 @@
           const lat = position.coords.latitude;
           const lon = position.coords.longitude;
           showUserLocation(lat, lon);
+          waitingForGeolocation = false;
 
           // Zoom to user location on initial load (zoom 7 ≈ 500 miles view)
           if (!hasZoomedToUser || zoomToLocation) {
@@ -865,10 +885,15 @@
         },
         (error) => {
           console.log("Geolocation error:", error.message);
+          waitingForGeolocation = false;
+          // Fall back to showing all places
+          if (placesLoaded && !hasZoomedToUser) {
+            fitToAllPlaces();
+          }
         },
         {
           enableHighAccuracy: true,
-          timeout: 10000,
+          timeout: 5000, // Reduced timeout for faster fallback
           maximumAge: 60000, // Cache location for 1 minute
         }
       );
