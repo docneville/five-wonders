@@ -87,6 +87,28 @@
     </nav>
   </header>
 
+  <!-- Filter bar -->
+  <div id="filterBar" class="fw-filter-bar">
+    <button id="filterToggle" class="fw-filter-toggle" type="button" aria-expanded="false">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+      <span>Filters</span>
+      <span id="filterCount" class="fw-filter-count" style="display: none;">0</span>
+    </button>
+    <div id="filterChips" class="fw-filter-chips" style="display: none;">
+      <button class="fw-filter-chip" data-filter="mine" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        My Wonders
+      </button>
+      <button class="fw-filter-chip" data-filter="Dining" type="button">Dining</button>
+      <button class="fw-filter-chip" data-filter="Lodging" type="button">Lodging</button>
+      <button class="fw-filter-chip" data-filter="Attraction" type="button">Attraction</button>
+      <button class="fw-filter-chip" data-filter="Recreation" type="button">Recreation</button>
+      <button class="fw-filter-chip" data-filter="Shopping" type="button">Shopping</button>
+      <button class="fw-filter-chip" data-filter="Other" type="button">Other</button>
+      <button id="clearFilters" class="fw-filter-clear" type="button" style="display: none;">Clear all</button>
+    </div>
+  </div>
+
   <!-- Map fills the screen under the header -->
   <div id="map" class="fw-map-fullscreen"></div>
 
@@ -153,6 +175,24 @@
     const LS_ID = "fw_profile_id";
     const LS_ID_LEGACY = "profile_id";
     const currentUserId = localStorage.getItem(LS_ID) || localStorage.getItem(LS_ID_LEGACY);
+
+    // ===== Filter state =====
+    let allPlacesData = []; // Store all places for filtering
+    const activeFilters = new Set(); // Active filter values
+
+    // Check URL for filter parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlFilters = urlParams.get('filter');
+    if (urlFilters) {
+      urlFilters.split(',').forEach(f => activeFilters.add(f.trim()));
+    }
+
+    // Filter UI elements
+    const filterToggle = document.getElementById('filterToggle');
+    const filterChips = document.getElementById('filterChips');
+    const filterCount = document.getElementById('filterCount');
+    const clearFiltersBtn = document.getElementById('clearFilters');
+    const chipButtons = document.querySelectorAll('.fw-filter-chip');
 
     // Initialize the Leaflet map
     const map = L.map("map", { zoomControl: true });
@@ -401,6 +441,121 @@
       });
     }
 
+    // ===== Filter Functions =====
+    function updateFilterUI() {
+      // Update chip active states
+      chipButtons.forEach(chip => {
+        const filterValue = chip.dataset.filter;
+        chip.classList.toggle('active', activeFilters.has(filterValue));
+      });
+
+      // Update filter count badge
+      const count = activeFilters.size;
+      if (filterCount) {
+        filterCount.textContent = count;
+        filterCount.style.display = count > 0 ? 'inline-flex' : 'none';
+      }
+
+      // Show/hide clear button
+      if (clearFiltersBtn) {
+        clearFiltersBtn.style.display = count > 0 ? 'inline-flex' : 'none';
+      }
+
+      // Update URL with current filters
+      const url = new URL(window.location);
+      if (count > 0) {
+        url.searchParams.set('filter', Array.from(activeFilters).join(','));
+      } else {
+        url.searchParams.delete('filter');
+      }
+      window.history.replaceState({}, '', url);
+    }
+
+    function toggleFilter(filterValue) {
+      if (activeFilters.has(filterValue)) {
+        activeFilters.delete(filterValue);
+      } else {
+        activeFilters.add(filterValue);
+      }
+      updateFilterUI();
+      renderFilteredMarkers();
+    }
+
+    function clearAllFilters() {
+      activeFilters.clear();
+      updateFilterUI();
+      renderFilteredMarkers();
+    }
+
+    function getFilteredPlaces() {
+      if (activeFilters.size === 0) {
+        return allPlacesData;
+      }
+
+      return allPlacesData.filter(place => {
+        // Check "mine" filter
+        if (activeFilters.has('mine')) {
+          if (place.userId === currentUserId) return true;
+        }
+
+        // Check category filters
+        const categoryFilters = Array.from(activeFilters).filter(f => f !== 'mine');
+        if (categoryFilters.length > 0) {
+          const placeCategory = place.category || 'Other';
+          if (categoryFilters.includes(placeCategory)) return true;
+        }
+
+        // If only category filters active (no "mine"), check just category
+        if (!activeFilters.has('mine') && categoryFilters.length > 0) {
+          return false;
+        }
+
+        // If only "mine" filter, already handled above
+        if (activeFilters.has('mine') && categoryFilters.length === 0) {
+          return place.userId === currentUserId;
+        }
+
+        return false;
+      });
+    }
+
+    function renderFilteredMarkers() {
+      const filteredPlaces = getFilteredPlaces();
+      const bounds = L.latLngBounds([]);
+
+      // Clear existing markers
+      markerClusterGroup.clearLayers();
+
+      filteredPlaces.forEach((placeData) => {
+        const { title, latitude: lat, longitude: lon, category } = placeData;
+
+        const popupHtml = buildPopupHtml(placeData);
+        const bodyHtml = buildPlaceBodyHtml(placeData);
+        const icon = makeCategoryIcon(category);
+        const marker = L.marker([lat, lon], { icon });
+
+        if (isMobile()) {
+          marker.on("click", () => {
+            if (placeSheetTitleEl) {
+              placeSheetTitleEl.textContent = title;
+            }
+            placeSheetContent.innerHTML = `<div class="place-popup">${bodyHtml}</div>`;
+            openPlaceSheet("open");
+          });
+        } else {
+          marker.bindPopup(popupHtml, { maxWidth: 320 });
+        }
+
+        markerClusterGroup.addLayer(marker);
+        bounds.extend([lat, lon]);
+      });
+
+      // Fit bounds if we have markers and no user location zoom pending
+      if (bounds.isValid() && hasZoomedToUser) {
+        map.fitBounds(bounds.pad(0.1));
+      }
+    }
+
     async function loadPlaces() {
       const { data, error } = await supabase
         .from("places_with_profiles")
@@ -443,10 +598,9 @@
         return;
       }
 
-      const bounds = L.latLngBounds([]);
-
-      // Clear existing markers from cluster group
-      markerClusterGroup.clearLayers();
+      // Process and store all places data
+      allPlacesData = [];
+      placesDataMap.clear();
 
       data.forEach((place) => {
         const lat = place.latitude;
@@ -495,41 +649,20 @@
           userId: place.user_id,
         };
 
-        // Store for lightbox access
+        allPlacesData.push(placeData);
         placesDataMap.set(place.id, placeData);
-
-        const popupHtml = buildPopupHtml(placeData);
-        const bodyHtml = buildPlaceBodyHtml(placeData);
-
-        // Use category-based icon instead of user color
-        const icon = makeCategoryIcon(category);
-
-        const marker = L.marker([lat, lon], { icon });
-
-        if (isMobile()) {
-          marker.on("click", () => {
-            // Set sheet header to place title and body to details only
-            if (placeSheetTitleEl) {
-              placeSheetTitleEl.textContent = title;
-            }
-            placeSheetContent.innerHTML = `<div class="place-popup">${bodyHtml}</div>`;
-            openPlaceSheet("open");
-          });
-        } else {
-          marker.bindPopup(popupHtml, { maxWidth: 320 });
-        }
-
-        // Add marker to cluster group instead of directly to map
-        markerClusterGroup.addLayer(marker);
-
-        bounds.extend([lat, lon]);
       });
 
-      // Add the cluster group to the map
-      map.addLayer(markerClusterGroup);
+      // Apply filters from URL and render
+      updateFilterUI();
+      renderFilteredMarkers();
 
-      if (bounds.isValid()) {
-        map.fitBounds(bounds.pad(0.1));
+      // Fit to all places bounds initially (if no user location zoom)
+      if (!hasZoomedToUser) {
+        const bounds = L.latLngBounds(allPlacesData.map(p => [p.latitude, p.longitude]));
+        if (bounds.isValid()) {
+          map.fitBounds(bounds.pad(0.1));
+        }
       }
     }
 
@@ -703,13 +836,16 @@
     function centerOnUserLocation() {
       if (userLocationMarker) {
         const latlng = userLocationMarker.getLatLng();
-        map.setView(latlng, 15);
+        map.setView(latlng, 12); // Closer zoom when clicking button
       } else {
-        requestUserLocation();
+        requestUserLocation(true);
       }
     }
 
-    function requestUserLocation() {
+    // Track if we've already zoomed to user on initial load
+    let hasZoomedToUser = false;
+
+    function requestUserLocation(zoomToLocation = false) {
       if (!navigator.geolocation) {
         console.log("Geolocation not supported");
         return;
@@ -720,6 +856,12 @@
           const lat = position.coords.latitude;
           const lon = position.coords.longitude;
           showUserLocation(lat, lon);
+
+          // Zoom to user location on initial load (zoom 7 ≈ 500 miles view)
+          if (!hasZoomedToUser || zoomToLocation) {
+            map.setView([lat, lon], zoomToLocation ? 12 : 7);
+            hasZoomedToUser = true;
+          }
         },
         (error) => {
           console.log("Geolocation error:", error.message);
@@ -771,6 +913,31 @@
           hamburgerBtn.setAttribute('aria-expanded', 'false');
         }
       });
+    }
+
+    // ===== Filter Event Handlers =====
+    // Toggle filter panel visibility
+    filterToggle?.addEventListener('click', () => {
+      const isExpanded = filterChips.style.display !== 'none';
+      filterChips.style.display = isExpanded ? 'none' : 'flex';
+      filterToggle.setAttribute('aria-expanded', !isExpanded);
+    });
+
+    // Handle filter chip clicks
+    chipButtons.forEach(chip => {
+      chip.addEventListener('click', () => {
+        toggleFilter(chip.dataset.filter);
+      });
+    });
+
+    // Handle clear all filters
+    clearFiltersBtn?.addEventListener('click', clearAllFilters);
+
+    // Initialize filter UI on page load (for URL params)
+    if (activeFilters.size > 0) {
+      filterChips.style.display = 'flex';
+      filterToggle?.setAttribute('aria-expanded', 'true');
+      updateFilterUI();
     }
   </script>
 </body>

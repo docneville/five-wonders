@@ -29,6 +29,14 @@ Five Wonders is an invite-only web application for sharing curated place recomme
 - Located in `supabase/migrations/`
 - Apply via Supabase CLI or dashboard
 
+## Model Usage Strategy
+
+For cost-effective development:
+- **Use Opus for planning** - Complex reasoning, architecture decisions, multi-file change planning
+- **Use Sonnet for implementation** - When spawning Task agents to write code, use `model: "sonnet"`
+
+This reduces token costs while maintaining quality for planning and implementation.
+
 ## Architecture
 
 ### Frontend Pages

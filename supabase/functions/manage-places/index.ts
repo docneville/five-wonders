@@ -573,6 +573,107 @@ serve(async (req: Request): Promise<Response> => {
     });
   }
 
+  // ---- ACTION: upload_profile_photo ----
+  if (action === "upload_profile_photo") {
+    const { file_base64, file_name, file_type } = payload ?? {};
+
+    if (!file_base64 || !file_name) {
+      return new Response(
+        JSON.stringify({ error: "Missing file_base64 or file_name" }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+
+    // Check file size (max 5MB for profile photos)
+    const fileSizeBytes = Math.ceil((file_base64.length * 3) / 4);
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (fileSizeBytes > maxSize) {
+      return new Response(
+        JSON.stringify({ error: "File too large. Maximum size is 5MB." }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+
+    // Delete old profile photo if exists
+    const { data: currentProfile } = await supabaseAdmin
+      .from("profiles")
+      .select("profile_photo_path")
+      .eq("id", userId)
+      .single();
+
+    if (currentProfile?.profile_photo_path) {
+      await supabaseAdmin.storage
+        .from("place-photos")
+        .remove([currentProfile.profile_photo_path]);
+    }
+
+    // Decode base64 and upload to storage
+    const fileBuffer = Uint8Array.from(atob(file_base64), (c) => c.charCodeAt(0));
+    const timestamp = Date.now();
+    const sanitizedFileName = file_name.replace(/[^a-zA-Z0-9._-]/g, "_");
+    const storagePath = `profiles/${userId}/${timestamp}_${sanitizedFileName}`;
+
+    const { error: uploadError } = await supabaseAdmin.storage
+      .from("place-photos")
+      .upload(storagePath, fileBuffer, {
+        contentType: file_type || "image/jpeg",
+        upsert: false,
+      });
+
+    if (uploadError) {
+      console.error("Profile photo upload error:", uploadError);
+      return new Response(
+        JSON.stringify({ error: "Upload failed: " + uploadError.message }),
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+
+    // Update profile with photo path
+    const { error: updateError } = await supabaseAdmin
+      .from("profiles")
+      .update({ profile_photo_path: storagePath })
+      .eq("id", userId);
+
+    if (updateError) {
+      console.error("Profile update error:", updateError);
+      // Clean up uploaded file
+      await supabaseAdmin.storage.from("place-photos").remove([storagePath]);
+      return new Response(
+        JSON.stringify({ error: "Failed to update profile" }),
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+
+    // Get public URL
+    const { data: urlData } = supabaseAdmin.storage
+      .from("place-photos")
+      .getPublicUrl(storagePath);
+
+    return new Response(
+      JSON.stringify({
+        status: "ok",
+        profile_photo_path: storagePath,
+        profile_photo_url: urlData?.publicUrl || null,
+      }),
+      {
+        status: 200,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      }
+    );
+  }
+
   // ---- Unknown action ----
   return new Response("Unknown action", {
     status: 400,

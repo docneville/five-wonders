@@ -5,6 +5,63 @@
   <title>FAQ – Five Wonders</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="stylesheet" href="fw.css" />
+  <style>
+    .faq-question {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .faq-anchor {
+      opacity: 0;
+      transition: opacity 0.15s ease;
+      color: var(--fw-muted);
+      display: inline-flex;
+      align-items: center;
+      padding: 4px;
+    }
+
+    .faq-anchor svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    .faq-anchor:hover {
+      color: var(--fw-primary);
+    }
+
+    .faq-item:hover .faq-anchor,
+    .faq-anchor:focus {
+      opacity: 1;
+    }
+
+    .faq-item:target {
+      background: rgba(16, 185, 129, 0.08);
+      border-radius: 8px;
+      margin: -8px;
+      padding: 8px;
+    }
+
+    .faq-copied-toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--fw-text);
+      color: #fff;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+      pointer-events: none;
+      z-index: 1000;
+    }
+
+    .faq-copied-toast.show {
+      opacity: 1;
+    }
+  </style>
 </head>
 <body class="fw-about">
   <header class="fw-header">
@@ -48,8 +105,13 @@
 
       <ul class="faq-list">
 
-        <li class="faq-item">
-          <div class="faq-question">What is Five Wonders?</div>
+        <li class="faq-item" id="what-is-five-wonders">
+          <div class="faq-question">
+            What is Five Wonders?
+            <a href="#what-is-five-wonders" class="faq-anchor" title="Copy link to this question">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+            </a>
+          </div>
           <div class="faq-answer">
             <p>
               Five Wonders is an invite-only app for sharing your favorite places with
@@ -59,8 +121,13 @@
           </div>
         </li>
 
-        <li class="faq-item">
-          <div class="faq-question">How does it work?</div>
+        <li class="faq-item" id="how-does-it-work">
+          <div class="faq-question">
+            How does it work?
+            <a href="#how-does-it-work" class="faq-anchor" title="Copy link to this question">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+            </a>
+          </div>
           <div class="faq-answer">
             <p>
               <strong>Add</strong> places you love by searching or dropping a pin on the map.
@@ -77,8 +144,13 @@
           </div>
         </li>
 
-        <li class="faq-item">
-          <div class="faq-question">What if I can't find my Wonder on the map?</div>
+        <li class="faq-item" id="cant-find-wonder">
+          <div class="faq-question">
+            What if I can't find my Wonder on the map?
+            <a href="#cant-find-wonder" class="faq-anchor" title="Copy link to this question">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+            </a>
+          </div>
           <div class="faq-answer">
             <p>
               No problem! If searching doesn't find your place, you can simply click or tap
@@ -89,8 +161,13 @@
           </div>
         </li>
 
-        <li class="faq-item">
-          <div class="faq-question">What's an invite code?</div>
+        <li class="faq-item" id="invite-code">
+          <div class="faq-question">
+            What's an invite code?
+            <a href="#invite-code" class="faq-anchor" title="Copy link to this question">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+            </a>
+          </div>
           <div class="faq-answer">
             <p>
               Five Wonders is invite-only to keep the community small and trusted. Your
@@ -101,8 +178,13 @@
           </div>
         </li>
 
-        <li class="faq-item">
-          <div class="faq-question">Can I use Five Wonders on multiple devices?</div>
+        <li class="faq-item" id="multiple-devices">
+          <div class="faq-question">
+            Can I use Five Wonders on multiple devices?
+            <a href="#multiple-devices" class="faq-anchor" title="Copy link to this question">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+            </a>
+          </div>
           <div class="faq-answer">
             <p>
               Yes! Just enter your same invite code on each device. Your places are
@@ -112,8 +194,13 @@
           </div>
         </li>
 
-        <li class="faq-item">
-          <div class="faq-question">Who can see my saved places?</div>
+        <li class="faq-item" id="who-can-see">
+          <div class="faq-question">
+            Who can see my saved places?
+            <a href="#who-can-see" class="faq-anchor" title="Copy link to this question">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+            </a>
+          </div>
           <div class="faq-answer">
             <p>
               Everyone in the Five Wonders community can see places on the View map.
@@ -123,8 +210,13 @@
           </div>
         </li>
 
-        <li class="faq-item">
-          <div class="faq-question">How do I add photos to a place?</div>
+        <li class="faq-item" id="add-photos">
+          <div class="faq-question">
+            How do I add photos to a place?
+            <a href="#add-photos" class="faq-anchor" title="Copy link to this question">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+            </a>
+          </div>
           <div class="faq-answer">
             <p>
               You can add up to 5 photos per place. When adding a new place, click
@@ -134,8 +226,13 @@
           </div>
         </li>
 
-        <li class="faq-item">
-          <div class="faq-question">What are the categories for?</div>
+        <li class="faq-item" id="categories">
+          <div class="faq-question">
+            What are the categories for?
+            <a href="#categories" class="faq-anchor" title="Copy link to this question">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+            </a>
+          </div>
           <div class="faq-answer">
             <p>
               Categories help organize places by type: Dining, Lodging, Attraction,
@@ -145,8 +242,13 @@
           </div>
         </li>
 
-        <li class="faq-item">
-          <div class="faq-question">How do I add Five Wonders to my home screen?</div>
+        <li class="faq-item" id="home-screen">
+          <div class="faq-question">
+            How do I add Five Wonders to my home screen?
+            <a href="#home-screen" class="faq-anchor" title="Copy link to this question">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+            </a>
+          </div>
           <div class="faq-answer">
             <p><strong>On iPhone (Safari):</strong></p>
             <p>
@@ -172,6 +274,9 @@
       </p>
     </div>
   </main>
+
+  <!-- Toast for copy feedback -->
+  <div id="copiedToast" class="faq-copied-toast">Link copied!</div>
 
   <script>
     // Mobile hamburger menu toggle
@@ -202,6 +307,43 @@
           hamburgerBtn.setAttribute('aria-expanded', 'false');
         }
       });
+    }
+
+    // FAQ anchor link functionality
+    const copiedToast = document.getElementById('copiedToast');
+
+    function showToast() {
+      copiedToast.classList.add('show');
+      setTimeout(() => copiedToast.classList.remove('show'), 2000);
+    }
+
+    // Handle anchor link clicks - copy URL to clipboard
+    document.querySelectorAll('.faq-anchor').forEach(anchor => {
+      anchor.addEventListener('click', (e) => {
+        e.preventDefault();
+        const url = window.location.origin + window.location.pathname + anchor.getAttribute('href');
+
+        navigator.clipboard.writeText(url).then(() => {
+          showToast();
+          // Update URL without scrolling
+          history.replaceState(null, '', anchor.getAttribute('href'));
+        }).catch(() => {
+          // Fallback: just update the URL
+          window.location.hash = anchor.getAttribute('href').slice(1);
+        });
+      });
+    });
+
+    // Scroll to hash on page load (with offset for header)
+    if (window.location.hash) {
+      const target = document.querySelector(window.location.hash);
+      if (target) {
+        setTimeout(() => {
+          const headerHeight = 70; // Approximate header height
+          const targetPosition = target.getBoundingClientRect().top + window.scrollY - headerHeight;
+          window.scrollTo({ top: targetPosition, behavior: 'smooth' });
+        }, 100);
+      }
     }
   </script>
 </body>

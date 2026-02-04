@@ -1643,6 +1643,141 @@ a:hover{ text-decoration: underline; }
   flex-shrink: 0;
 }
 
+/* ---------- Filter Bar (View Page) ---------- */
+.fw-filter-bar{
+  position: absolute;
+  top: calc(var(--fw-header-h) + 10px);
+  left: 10px;
+  right: 10px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.fw-filter-bar > *{
+  pointer-events: auto;
+}
+
+.fw-filter-toggle{
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: #fff;
+  border: 1px solid rgba(0,0,0,0.15);
+  border-radius: 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--fw-text);
+  cursor: pointer;
+  align-self: flex-start;
+  transition: background 0.15s, box-shadow 0.15s;
+}
+
+.fw-filter-toggle:hover{
+  background: #f9fafb;
+}
+
+.fw-filter-toggle.active{
+  background: var(--fw-primary);
+  color: #fff;
+  border-color: var(--fw-primary);
+}
+
+.fw-filter-toggle svg{
+  width: 16px;
+  height: 16px;
+}
+
+.fw-filter-count{
+  background: var(--fw-accent);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 10px;
+  min-width: 18px;
+  text-align: center;
+}
+
+.fw-filter-chips{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 12px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+  border: 1px solid rgba(0,0,0,0.08);
+}
+
+.fw-filter-chip{
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  background: var(--fw-soft);
+  border: 1px solid var(--fw-border);
+  border-radius: 16px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--fw-text);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.fw-filter-chip:hover{
+  background: #e5e7eb;
+  border-color: #d1d5db;
+}
+
+.fw-filter-chip.active{
+  background: var(--fw-primary);
+  border-color: var(--fw-primary);
+  color: #fff;
+}
+
+.fw-filter-chip svg{
+  width: 14px;
+  height: 14px;
+}
+
+.fw-filter-clear{
+  padding: 6px 12px;
+  background: transparent;
+  border: 1px dashed var(--fw-border);
+  border-radius: 16px;
+  font-size: 0.85rem;
+  color: var(--fw-muted);
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.fw-filter-clear:hover{
+  color: var(--fw-danger);
+  border-color: var(--fw-danger);
+}
+
+@media (max-width: 768px){
+  .fw-filter-bar{
+    left: 8px;
+    right: 8px;
+    top: calc(var(--fw-header-h) + 8px);
+  }
+
+  .fw-filter-chips{
+    padding: 10px;
+  }
+
+  .fw-filter-chip{
+    padding: 8px 12px;
+    font-size: 0.9rem;
+  }
+}
+
 /* ---------- User Location Marker ---------- */
 .user-location-marker{
   width: 16px;

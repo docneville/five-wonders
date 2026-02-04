@@ -1485,13 +1485,16 @@
     function centerOnUserLocation() {
       if (userLocationMarker) {
         const latlng = userLocationMarker.getLatLng();
-        map.setView(latlng, 15);
+        map.setView(latlng, 12); // Closer zoom when clicking button
       } else {
-        requestUserLocation();
+        requestUserLocation(true);
       }
     }
 
-    function requestUserLocation() {
+    // Track if we've already zoomed to user on initial load
+    let hasZoomedToUser = false;
+
+    function requestUserLocation(zoomToLocation = false) {
       if (!navigator.geolocation) {
         console.log("Geolocation not supported");
         return;
@@ -1502,6 +1505,12 @@
           const lat = position.coords.latitude;
           const lon = position.coords.longitude;
           showUserLocation(lat, lon);
+
+          // Zoom to user location on initial load (zoom 7 ≈ 500 miles view)
+          if (!hasZoomedToUser || zoomToLocation) {
+            map.setView([lat, lon], zoomToLocation ? 12 : 7);
+            hasZoomedToUser = true;
+          }
         },
         (error) => {
           console.log("Geolocation error:", error.message);

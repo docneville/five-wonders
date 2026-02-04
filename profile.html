@@ -98,6 +98,26 @@
       text-align: center;
     }
 
+    .stat-item--link {
+      text-decoration: none;
+      color: inherit;
+      border-radius: 8px;
+      transition: background 0.15s ease;
+    }
+
+    .stat-item--link:hover {
+      background: rgba(16, 185, 129, 0.1);
+    }
+
+    .stat-item--link .stat-value {
+      color: var(--fw-primary);
+    }
+
+    .stat-item--link .stat-label {
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+
     .stat-value {
       font-size: 1.5rem;
       font-weight: 700;
@@ -221,10 +241,10 @@
           </div>
 
           <div class="profile-stats">
-            <div class="stat-item">
+            <a href="view.html?filter=mine" class="stat-item stat-item--link" title="View my Wonders on map">
               <div class="stat-value" id="placesCount">0</div>
               <div class="stat-label">Wonders Saved</div>
-            </div>
+            </a>
             <div class="stat-item">
               <div class="stat-value" id="memberSince">-</div>
               <div class="stat-label">Member Since</div>
@@ -371,13 +391,29 @@
         // Use the validation data - it returns the profile id
         const validatedProfileId = validationData[0].id;
 
-        // Load profile data using places_with_profiles view (which has proper access)
-        // We just need one place to get the profile info, or query profiles directly
-        const { data: profileData, error: profileError } = await sb
+        // Load profile data - try with profile_photo_path, fall back without it
+        let profileData = null;
+        let profileError = null;
+
+        // First try with profile_photo_path (in case column exists)
+        const result1 = await sb
           .from("profiles")
-          .select("id, first_name, last_name, username, created_at")
+          .select("id, first_name, last_name, username, created_at, profile_photo_path")
           .eq("id", validatedProfileId)
           .maybeSingle();
+
+        if (!result1.error) {
+          profileData = result1.data;
+        } else {
+          // Fall back without profile_photo_path (column might not exist yet)
+          const result2 = await sb
+            .from("profiles")
+            .select("id, first_name, last_name, username, created_at")
+            .eq("id", validatedProfileId)
+            .maybeSingle();
+          profileData = result2.data;
+          profileError = result2.error;
+        }
 
         // Even if profile query fails due to RLS, we can still show basic info
         let profile = profileData;
@@ -429,10 +465,16 @@
         placesCount.textContent = count || 0;
         memberSince.textContent = formatDate(profile?.created_at);
 
-        // Profile photo placeholder
-        profilePhoto.style.display = "none";
-        profilePhotoPlaceholder.style.display = "flex";
-        profilePhotoPlaceholder.textContent = getInitial(profileFirstName);
+        // Profile photo
+        if (profile?.profile_photo_path) {
+          profilePhoto.src = `${STORAGE_URL}/${profile.profile_photo_path}`;
+          profilePhoto.style.display = "block";
+          profilePhotoPlaceholder.style.display = "none";
+        } else {
+          profilePhoto.style.display = "none";
+          profilePhotoPlaceholder.style.display = "flex";
+          profilePhotoPlaceholder.textContent = getInitial(profileFirstName);
+        }
 
         showState("profile");
       } catch (err) {
@@ -446,6 +488,14 @@
       const profileId = getStoredProfileId();
 
       if (!apiKey || !profileId || !file) return;
+
+      // Check file size (max 5MB)
+      const maxSize = 5 * 1024 * 1024;
+      if (file.size > maxSize) {
+        uploadStatus.textContent = "File too large. Maximum size is 5MB.";
+        uploadStatus.style.display = "block";
+        return;
+      }
 
       uploadStatus.textContent = "Uploading photo...";
       uploadStatus.style.display = "block";
@@ -478,16 +528,20 @@
           return;
         }
 
+        // Show the new photo immediately
+        if (data.profile_photo_url) {
+          profilePhoto.src = data.profile_photo_url;
+          profilePhoto.style.display = "block";
+          profilePhotoPlaceholder.style.display = "none";
+        }
+
         uploadStatus.textContent = "Photo updated!";
         setTimeout(() => {
           uploadStatus.style.display = "none";
         }, 2000);
-
-        // Reload profile to show new photo
-        await loadProfile();
       } catch (err) {
         console.error("Upload error:", err);
-        uploadStatus.textContent = "Upload failed";
+        uploadStatus.textContent = "Upload failed - please try again";
       }
     }
 
