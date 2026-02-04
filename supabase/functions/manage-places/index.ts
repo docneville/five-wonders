@@ -63,7 +63,7 @@ serve(async (req: Request): Promise<Response> => {
   }
 
   const { action, user_token } = payload ?? {};
-  console.log("manage-places payload:", JSON.stringify(payload));
+  console.log("manage-places action:", action, "has_token:", !!user_token);
 
   if (!user_token) {
     return new Response("Missing user_token", {
@@ -575,102 +575,62 @@ serve(async (req: Request): Promise<Response> => {
 
   // ---- ACTION: upload_profile_photo ----
   if (action === "upload_profile_photo") {
-    const { file_base64, file_name, file_type } = payload ?? {};
-
-    if (!file_base64 || !file_name) {
-      return new Response(
-        JSON.stringify({ error: "Missing file_base64 or file_name" }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
-        }
-      );
-    }
-
-    // Check file size (max 5MB for profile photos)
-    const fileSizeBytes = Math.ceil((file_base64.length * 3) / 4);
-    const maxSize = 5 * 1024 * 1024; // 5MB
-    if (fileSizeBytes > maxSize) {
-      return new Response(
-        JSON.stringify({ error: "File too large. Maximum size is 5MB." }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
-        }
-      );
-    }
-
-    // Try to delete old profile photo if exists (ignore errors if column doesn't exist)
     try {
+      const { file_base64, file_name, file_type } = payload ?? {};
+
+      if (!file_base64 || !file_name) {
+        return new Response(
+          JSON.stringify({ error: "Missing file_base64 or file_name" }),
+          {
+            status: 400,
+            headers: { "Content-Type": "application/json", ...corsHeaders },
+          }
+        );
+      }
+
+      // Check file size (max 5MB for profile photos)
+      const fileSizeBytes = Math.ceil((file_base64.length * 3) / 4);
+      const maxSize = 5 * 1024 * 1024; // 5MB
+      if (fileSizeBytes > maxSize) {
+        return new Response(
+          JSON.stringify({ error: "File too large. Maximum size is 5MB." }),
+          {
+            status: 400,
+            headers: { "Content-Type": "application/json", ...corsHeaders },
+          }
+        );
+      }
+
+      // Try to delete old profile photo if exists
       const { data: currentProfile } = await supabaseAdmin
         .from("profiles")
         .select("profile_photo_path")
         .eq("id", userId)
-        .single();
+        .maybeSingle();
 
       if (currentProfile?.profile_photo_path) {
         await supabaseAdmin.storage
           .from("place-photos")
           .remove([currentProfile.profile_photo_path]);
       }
-    } catch (e) {
-      // Column might not exist yet, continue with upload
-      console.log("Note: Could not check for existing profile photo:", e);
-    }
 
-    // Decode base64 and upload to storage
-    let fileBuffer: Uint8Array;
-    try {
-      fileBuffer = Uint8Array.from(atob(file_base64), (c) => c.charCodeAt(0));
-    } catch (e) {
-      console.error("Base64 decode error:", e);
-      return new Response(
-        JSON.stringify({ error: "Invalid file data" }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
-        }
-      );
-    }
+      // Decode base64 and upload to storage
+      const fileBuffer = Uint8Array.from(atob(file_base64), (c) => c.charCodeAt(0));
+      const timestamp = Date.now();
+      const sanitizedFileName = file_name.replace(/[^a-zA-Z0-9._-]/g, "_");
+      const storagePath = `profiles/${userId}/${timestamp}_${sanitizedFileName}`;
 
-    const timestamp = Date.now();
-    const sanitizedFileName = file_name.replace(/[^a-zA-Z0-9._-]/g, "_");
-    const storagePath = `profiles/${userId}/${timestamp}_${sanitizedFileName}`;
+      const { error: uploadError } = await supabaseAdmin.storage
+        .from("place-photos")
+        .upload(storagePath, fileBuffer, {
+          contentType: file_type || "image/jpeg",
+          upsert: false,
+        });
 
-    const { error: uploadError } = await supabaseAdmin.storage
-      .from("place-photos")
-      .upload(storagePath, fileBuffer, {
-        contentType: file_type || "image/jpeg",
-        upsert: false,
-      });
-
-    if (uploadError) {
-      console.error("Profile photo upload error:", uploadError);
-      return new Response(
-        JSON.stringify({ error: "Storage upload failed: " + uploadError.message }),
-        {
-          status: 500,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
-        }
-      );
-    }
-
-    // Update profile with photo path
-    const { error: updateError } = await supabaseAdmin
-      .from("profiles")
-      .update({ profile_photo_path: storagePath })
-      .eq("id", userId);
-
-    if (updateError) {
-      console.error("Profile update error:", updateError);
-      // Clean up uploaded file
-      await supabaseAdmin.storage.from("place-photos").remove([storagePath]);
-
-      // Check if it's a column-not-found error
-      const errorMsg = updateError.message || String(updateError);
-      if (errorMsg.includes("profile_photo_path") || errorMsg.includes("column")) {
+      if (uploadError) {
+        console.error("Profile photo upload error:", uploadError);
         return new Response(
-          JSON.stringify({ error: "Profile photo column not configured. Please run database migration 004." }),
+          JSON.stringify({ error: "Storage upload failed: " + uploadError.message }),
           {
             status: 500,
             headers: { "Content-Type": "application/json", ...corsHeaders },
@@ -678,31 +638,51 @@ serve(async (req: Request): Promise<Response> => {
         );
       }
 
+      // Update profile with photo path
+      const { error: updateError } = await supabaseAdmin
+        .from("profiles")
+        .update({ profile_photo_path: storagePath })
+        .eq("id", userId);
+
+      if (updateError) {
+        console.error("Profile update error:", updateError);
+        // Clean up uploaded file
+        await supabaseAdmin.storage.from("place-photos").remove([storagePath]);
+        return new Response(
+          JSON.stringify({ error: "Failed to update profile: " + (updateError.message || updateError) }),
+          {
+            status: 500,
+            headers: { "Content-Type": "application/json", ...corsHeaders },
+          }
+        );
+      }
+
+      // Get public URL
+      const { data: urlData } = supabaseAdmin.storage
+        .from("place-photos")
+        .getPublicUrl(storagePath);
+
       return new Response(
-        JSON.stringify({ error: "Failed to update profile: " + errorMsg }),
+        JSON.stringify({
+          status: "ok",
+          profile_photo_path: storagePath,
+          profile_photo_url: urlData?.publicUrl || null,
+        }),
+        {
+          status: 200,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    } catch (err) {
+      console.error("upload_profile_photo unexpected error:", err);
+      return new Response(
+        JSON.stringify({ error: "Unexpected error: " + (err instanceof Error ? err.message : String(err)) }),
         {
           status: 500,
           headers: { "Content-Type": "application/json", ...corsHeaders },
         }
       );
     }
-
-    // Get public URL
-    const { data: urlData } = supabaseAdmin.storage
-      .from("place-photos")
-      .getPublicUrl(storagePath);
-
-    return new Response(
-      JSON.stringify({
-        status: "ok",
-        profile_photo_path: storagePath,
-        profile_photo_url: urlData?.publicUrl || null,
-      }),
-      {
-        status: 200,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      }
-    );
   }
 
   // ---- Unknown action ----
