@@ -194,6 +194,12 @@
     const clearFiltersBtn = document.getElementById('clearFilters');
     const chipButtons = document.querySelectorAll('.fw-filter-chip');
 
+    // State variables (declared early to avoid temporal dead zone)
+    let placesDataMap = new Map();
+    let placesLoaded = false;
+    let waitingForGeolocation = true;
+    let hasZoomedToUser = false;
+
     // Initialize the Leaflet map
     const map = L.map("map", { zoomControl: true });
 
@@ -669,9 +675,6 @@
       }
     }
 
-    let placesLoaded = false;
-    let waitingForGeolocation = true;
-
     function fitToAllPlaces() {
       if (allPlacesData.length === 0) return;
       const bounds = L.latLngBounds(allPlacesData.map(p => [p.latitude, p.longitude]));
@@ -700,9 +703,6 @@
 
     let lightboxPhotos = [];
     let lightboxIndex = 0;
-
-    // Store all places data for lightbox access
-    let placesDataMap = new Map();
 
     function openLightbox(photos, startIndex = 0) {
       if (!photos || photos.length === 0) return;
@@ -855,9 +855,6 @@
         requestUserLocation(true);
       }
     }
-
-    // Track if we've already zoomed to user on initial load
-    let hasZoomedToUser = false;
 
     function requestUserLocation(zoomToLocation = false) {
       if (!navigator.geolocation) {
