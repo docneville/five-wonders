@@ -1,6 +1,7 @@
 {
   "database": "dolt",
-  "jsonl_export": "issues.jsonl",
   "backend": "dolt",
-  "dolt_database": "beads_five-wonders"
+  "dolt_mode": "embedded",
+  "dolt_database": "five_wonders",
+  "project_id": "424b33da-2f8e-4c47-9dec-e2f62331dc16"
 }

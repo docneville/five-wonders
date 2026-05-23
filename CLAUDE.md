@@ -1,105 +1,70 @@
-# CLAUDE.md
+# Project Instructions for AI Agents
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides instructions and context for AI coding agents working on this project.
 
-## Project Overview
+<!-- BEGIN BEADS INTEGRATION v:1 profile:minimal hash:7510c1e2 -->
+## Beads Issue Tracker
 
-Five Wonders is an invite-only web application for sharing curated place recommendations with friends via an interactive map. Users save places (restaurants, cafes, landmarks, etc.) and view them on a shared map with clustering.
+This project uses **bd (beads)** for issue tracking. Run `bd prime` to see full workflow context and commands.
 
-## Tech Stack
+### Quick Reference
 
-- **Frontend:** Vanilla JavaScript (ES6+), HTML5, CSS3 - no build step required
-- **Backend:** Supabase (PostgreSQL + Edge Functions)
-- **Mapping:** Leaflet.js 1.9.4 with MarkerCluster plugin
-- **APIs:** OpenStreetMap Nominatim (address lookup), Apple Maps API (SMS ingestion)
-- **Deployment:** GitHub Pages (frontend), Supabase (backend)
+```bash
+bd ready              # Find available work
+bd show <id>          # View issue details
+bd update <id> --claim  # Claim work
+bd close <id>         # Complete work
+```
 
-## Development
+### Rules
 
-**Local Development:**
-- Open HTML files directly in browser, or use any static file server
-- No npm/yarn dependencies in the frontend
+- Use `bd` for ALL task tracking — do NOT use TodoWrite, TaskCreate, or markdown TODO lists
+- Run `bd prime` for detailed command reference and session close protocol
+- Use `bd remember` for persistent knowledge — do NOT use MEMORY.md files
 
-**Supabase Edge Functions:**
-- Runtime: Deno (TypeScript)
-- Location: `supabase/functions/*/index.ts`
-- Deploy via Supabase CLI: `supabase functions deploy <function-name>`
+**Architecture in one line:** issues live in a local Dolt DB; sync uses `refs/dolt/data` on your git remote; `.beads/issues.jsonl` is a passive export. See https://github.com/gastownhall/beads/blob/main/docs/SYNC_CONCEPTS.md for details and anti-patterns.
 
-**Database Migrations:**
-- Located in `supabase/migrations/`
-- Apply via Supabase CLI or dashboard
+## Session Completion
 
-## Model Usage Strategy
+**When ending a work session**, you MUST complete ALL steps below. Work is NOT complete until `git push` succeeds.
 
-For cost-effective development:
-- **Use Opus for planning** - Complex reasoning, architecture decisions, multi-file change planning
-- **Use Sonnet for implementation** - When spawning Task agents to write code, use `model: "sonnet"`
+**MANDATORY WORKFLOW:**
 
-This reduces token costs while maintaining quality for planning and implementation.
+1. **File issues for remaining work** - Create issues for anything that needs follow-up
+2. **Run quality gates** (if code changed) - Tests, linters, builds
+3. **Update issue status** - Close finished work, update in-progress items
+4. **PUSH TO REMOTE** - This is MANDATORY:
+   ```bash
+   git pull --rebase
+   git push
+   git status  # MUST show "up to date with origin"
+   ```
+5. **Clean up** - Clear stashes, prune remote branches
+6. **Verify** - All changes committed AND pushed
+7. **Hand off** - Provide context for next session
 
-## Architecture
+**CRITICAL RULES:**
+- Work is NOT complete until `git push` succeeds
+- NEVER stop before pushing - that leaves work stranded locally
+- NEVER say "ready to push when you are" - YOU must push
+- If push fails, resolve and retry until it succeeds
+<!-- END BEADS INTEGRATION -->
 
-### Frontend Pages
 
-| File | Purpose |
-|------|---------|
-| `index.html` | Landing page with invite code gate |
-| `add-place.html` | Add new places with map search |
-| `edit-places.html` | Edit/delete saved places (complex form handling) |
-| `view.html` | View all places on interactive map |
+## Build & Test
 
-### Supabase Edge Functions
+_Add your build and test commands here_
 
-| Function | Purpose |
-|----------|---------|
-| `manage-places` | CRUD operations: list, update, delete, photo upload/delete/reorder |
-| `ingest-shortcut` | Accept places from iOS Shortcuts via OpenStreetMap lookup |
-| `ingest-sms` | SMS-based place ingestion via Apple Maps API |
+```bash
+# Example:
+# npm install
+# npm test
+```
 
-### Database Schema
+## Architecture Overview
 
-**Core Tables:**
-- `profiles` - Users with invite codes (`api_key` field) and metadata
-- `places` - Place records with coordinates, address components, category, links (JSONB, max 3)
-- `place_photos` - Photo metadata with storage paths and display order
-- `places_with_profiles` - View joining places with user info and photos
+_Add a brief overview of your project architecture_
 
-**Key Fields in `places`:**
-- Coordinates stored as `latitude`/`longitude` (numeric) and `location` (PostGIS geography)
-- Full address components: `street_number`, `street_name`, `city`, `state`, `postal_code`, `country`
-- `links` is JSONB array for external URLs
+## Conventions & Patterns
 
-### Authentication
-
-Token-based using invite codes:
-- Invite code stored as `api_key` (UUID) in `profiles` table
-- Frontend stores token in localStorage
-- Edge functions validate token on every request
-- Row Level Security (RLS) restricts data access by `user_id`
-
-### Storage
-
-- Bucket: `place-photos`
-- Max file size: 10MB
-- Allowed types: image/jpeg, image/png, image/gif, image/webp
-- Public read access, authenticated upload
-
-## Code Patterns
-
-**Frontend:**
-- CSS classes use `fw-` prefix (e.g., `fw-card`, `fw-header`)
-- DOM IDs follow camelCase or hyphenated conventions
-- Single-page behavior using CSS `display` toggling
-- localStorage for client-side token persistence
-
-**Edge Functions:**
-- CORS preflight handling (OPTIONS method) required
-- First operation: validate user token
-- Permission checks: verify `user_id` matches for updates/deletes
-- Response format: JSON with appropriate HTTP status codes
-
-## Important Notes
-
-- Supabase anon key is intentionally public (RLS handles security)
-- Edge functions require `SERVICE_ROLE_KEY` from environment
-- All user data is scoped by `user_id` - maintain this in any new queries
+_Add your project-specific conventions here_
