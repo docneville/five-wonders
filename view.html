@@ -395,9 +395,11 @@
     }
 
     // Body content used in both popup + sheet (NO title here)
-    function buildPlaceBodyHtml({ title, notes, createdAt, savedBy, category, street_line1, city, state, country, phone, website, links, photos, placeId, latitude, longitude, userId }) {
+    function buildPlaceBodyHtml({ title, notes, createdAt, savedBy, category, street_line1, city, state, country, phone, website, links, photos, placeId, latitude, longitude, userId, isPrivate }) {
       const address = buildAddress({ street_line1, city, state, country });
       const isOwner = currentUserId && userId && currentUserId === userId;
+
+      const shareIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>`;
 
       return `
         ${category ? `<div class="place-category">${escapeHtml(category)}</div>` : ""}
@@ -416,11 +418,7 @@
             ? `
           <div class="place-meta">
             ${createdAt ? `Saved: ${escapeHtml(createdAt)}` : ""}
-            ${
-              savedBy
-                ? `${createdAt ? "<br/>" : ""}Saved by ${escapeHtml(savedBy)}`
-                : ""
-            }
+            ${savedBy ? `${createdAt ? "<br/>" : ""}Saved by ${escapeHtml(savedBy)}` : ""}
           </div>
         `
             : ""
@@ -428,6 +426,8 @@
         <div class="place-actions">
           ${buildMapLinksHtml(latitude, longitude)}
           ${isOwner ? `<a href="edit-places.html?place=${placeId}" class="place-edit-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Edit this Wonder</a>` : ""}
+          <button class="place-share-btn" data-place-id="${placeId}" data-is-private="${isPrivate}" title="Share" aria-label="Share this place" style="background:none;border:none;cursor:pointer;padding:4px;display:inline-flex;align-items:center;color:inherit;opacity:0.7;">${shareIcon}</button>
+          <span class="place-share-feedback" data-place-id="${placeId}" style="font-size:0.8rem;margin-left:4px;"></span>
         </div>
       `;
     }
@@ -592,7 +592,8 @@
           phone,
           website,
           links,
-          photos
+          photos,
+          is_private
         `
         )
         .not("latitude", "is", null)
@@ -659,6 +660,7 @@
           latitude: lat,
           longitude: lon,
           userId: place.user_id,
+          isPrivate: place.is_private ?? false,
         };
 
         allPlacesData.push(placeData);
@@ -824,6 +826,41 @@
     }
 
     setupPhotoClickHandlers();
+
+    // Share button handler (delegated — buttons are inside dynamic popup/sheet HTML)
+    document.addEventListener("click", async (e) => {
+      const btn = e.target.closest(".place-share-btn");
+      if (!btn) return;
+
+      const placeId = btn.dataset.placeId;
+      const isPrivate = btn.dataset.isPrivate === "true";
+      const feedback = document.querySelector(`.place-share-feedback[data-place-id="${placeId}"]`);
+
+      if (isPrivate) {
+        if (feedback) { feedback.textContent = "This place is private and cannot be shared."; }
+        return;
+      }
+
+      const base = window.location.origin + window.location.pathname;
+      const url = `${base}?place=${placeId}`;
+
+      try {
+        await navigator.clipboard.writeText(url);
+      } catch {
+        // fallback: construct a temporary input
+        const inp = document.createElement("input");
+        inp.value = url;
+        document.body.appendChild(inp);
+        inp.select();
+        document.execCommand("copy");
+        document.body.removeChild(inp);
+      }
+
+      if (feedback) {
+        feedback.textContent = "Link copied!";
+        setTimeout(() => { feedback.textContent = ""; }, 2500);
+      }
+    });
 
     const MANAGE_PLACES_URL = "https://ekpssonwtztubqfihlqm.supabase.co/functions/v1/manage-places";
     const STORAGE_URL_VIEW = "https://ekpssonwtztubqfihlqm.supabase.co/storage/v1/object/public/place-photos";

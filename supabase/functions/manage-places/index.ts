@@ -65,6 +65,26 @@ serve(async (req: Request): Promise<Response> => {
   const { action, user_token } = payload ?? {};
   console.log("manage-places action:", action, "has_token:", !!user_token);
 
+  // ---- ACTION: get_public (no auth required) ----
+  if (action === "get_public") {
+    const { place_id } = payload ?? {};
+    if (!place_id) {
+      return new Response(JSON.stringify({ error: "missing_place_id" }), { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } });
+    }
+    const { data, error } = await supabaseAdmin
+      .from("places_with_profiles")
+      .select(`id, user_id, title, raw_text, notes, latitude, longitude, created_at, updated_at, street_line1, street_line2, city, state, postal_code, country, phone, website, category, links, photos, is_private, first_name, last_name, username`)
+      .eq("id", place_id)
+      .single();
+    if (error || !data) {
+      return new Response(JSON.stringify({ error: "not_found" }), { status: 404, headers: { "Content-Type": "application/json", ...corsHeaders } });
+    }
+    if (data.is_private) {
+      return new Response(JSON.stringify({ error: "private" }), { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } });
+    }
+    return new Response(JSON.stringify({ status: "ok", place: data }), { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } });
+  }
+
   if (!user_token) {
     return new Response("Missing user_token", {
       status: 401,
@@ -237,46 +257,6 @@ serve(async (req: Request): Promise<Response> => {
     }
 
     return new Response(JSON.stringify({ status: "ok" }), {
-      status: 200,
-      headers: { "Content-Type": "application/json", ...corsHeaders },
-    });
-  }
-
-  // ---- ACTION: get_public ----
-  // Fetch a single place by ID — no auth required, only works for public places.
-  if (action === "get_public") {
-    const { place_id } = payload ?? {};
-
-    if (!place_id) {
-      return new Response("Missing place_id", { status: 400, headers: corsHeaders });
-    }
-
-    const { data, error } = await supabaseAdmin
-      .from("places_with_profiles")
-      .select(`
-        id, user_id, title, raw_text, notes, latitude, longitude,
-        created_at, updated_at, street_line1, street_line2, city, state,
-        postal_code, country, phone, website, category, links, photos,
-        is_private, first_name, last_name, username
-      `)
-      .eq("id", place_id)
-      .single();
-
-    if (error || !data) {
-      return new Response(JSON.stringify({ error: "not_found" }), {
-        status: 404,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      });
-    }
-
-    if (data.is_private) {
-      return new Response(JSON.stringify({ error: "private" }), {
-        status: 403,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      });
-    }
-
-    return new Response(JSON.stringify({ status: "ok", place: data }), {
       status: 200,
       headers: { "Content-Type": "application/json", ...corsHeaders },
     });
