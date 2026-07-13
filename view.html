@@ -825,7 +825,112 @@
 
     setupPhotoClickHandlers();
 
-    loadPlaces();
+    const MANAGE_PLACES_URL = "https://ekpssonwtztubqfihlqm.supabase.co/functions/v1/manage-places";
+    const STORAGE_URL_VIEW = "https://ekpssonwtztubqfihlqm.supabase.co/storage/v1/object/public/place-photos";
+
+    // Open a place by ID — used when ?place= param is present.
+    // Tries placesDataMap first (already loaded), then falls back to get_public.
+    async function openPlaceById(placeId) {
+      let placeData = placesDataMap.get(placeId);
+
+      if (!placeData) {
+        // Recipient may not be logged in — fetch via get_public
+        try {
+          const res = await fetch(MANAGE_PLACES_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "get_public", user_token: "public", place_id: placeId }),
+          });
+          const json = await res.json().catch(() => ({}));
+          if (json.error === "private" || !json.place) return;
+
+          const p = json.place;
+          if (typeof p.latitude !== "number" || typeof p.longitude !== "number") return;
+
+          const savedBy = p.first_name || p.username || (p.last_name ? `Friend (${p.last_name})` : "Someone");
+          placeData = {
+            title: p.title || "(Untitled place)",
+            notes: p.notes || "",
+            createdAt: p.created_at ? new Date(p.created_at).toLocaleString() : "",
+            savedBy,
+            category: p.category || "",
+            street_line1: p.street_line1 || "",
+            city: p.city || "",
+            state: p.state || "",
+            country: p.country || "",
+            phone: p.phone || "",
+            website: p.website || "",
+            links: p.links || [],
+            photos: p.photos || [],
+            placeId: p.id,
+            latitude: p.latitude,
+            longitude: p.longitude,
+            userId: p.user_id,
+          };
+
+          // Add a temporary marker for this place
+          const icon = makeCategoryIcon(placeData.category);
+          const marker = L.marker([placeData.latitude, placeData.longitude], { icon });
+          const popupHtml = buildPopupHtml(placeData);
+          const bodyHtml = buildPlaceBodyHtml(placeData);
+
+          if (isMobile()) {
+            marker.on("click", () => {
+              if (placeSheetTitleEl) placeSheetTitleEl.textContent = placeData.title;
+              placeSheetContent.innerHTML = `<div class="place-popup">${bodyHtml}</div>`;
+              openPlaceSheet("open");
+            });
+          } else {
+            marker.bindPopup(popupHtml, { maxWidth: 320 });
+          }
+
+          markerClusterGroup.addLayer(marker);
+          map.setView([placeData.latitude, placeData.longitude], 14);
+
+          if (isMobile()) {
+            if (placeSheetTitleEl) placeSheetTitleEl.textContent = placeData.title;
+            placeSheetContent.innerHTML = `<div class="place-popup">${bodyHtml}</div>`;
+            openPlaceSheet("open");
+          } else {
+            marker.openPopup();
+          }
+        } catch (e) {
+          console.error("get_public failed:", e);
+        }
+        return;
+      }
+
+      // Place already in map — fly to it and open
+      map.setView([placeData.latitude, placeData.longitude], 14);
+
+      if (isMobile()) {
+        if (placeSheetTitleEl) placeSheetTitleEl.textContent = placeData.title;
+        placeSheetContent.innerHTML = `<div class="place-popup">${buildPlaceBodyHtml(placeData)}</div>`;
+        openPlaceSheet("open");
+      } else {
+        // Find and open the marker's popup
+        markerClusterGroup.eachLayer((layer) => {
+          if (layer instanceof L.Marker) {
+            const latlng = layer.getLatLng();
+            if (Math.abs(latlng.lat - placeData.latitude) < 0.0001 &&
+                Math.abs(latlng.lng - placeData.longitude) < 0.0001) {
+              layer.openPopup();
+            }
+          }
+        });
+      }
+    }
+
+    async function loadPlacesAndOpenShared() {
+      await loadPlaces();
+      const params = new URLSearchParams(window.location.search);
+      const sharedPlaceId = params.get("place");
+      if (sharedPlaceId) {
+        await openPlaceById(sharedPlaceId);
+      }
+    }
+
+    loadPlacesAndOpenShared();
 
     // ===== User Location =====
     let userLocationMarker = null;

@@ -186,6 +186,7 @@
             <button id="save-changes-btn" class="btn-primary">Save changes</button>
             <button id="delete-btn" class="btn-danger">Delete place</button>
             <button id="cancel-btn" class="btn-ghost">Cancel</button>
+            <button id="share-btn" class="btn-ghost" type="button">Share link</button>
           </div>
 
           <div id="edit-status" class="status-msg"></div>
@@ -304,6 +305,7 @@
               <button id="m-cancel-btn" class="btn-ghost">
                 Close
               </button>
+              <button id="m-share-btn" class="btn-ghost" type="button">Share link</button>
 
               <div id="m-edit-status" class="status-msg"></div>
             </div>
@@ -1212,6 +1214,36 @@
       populateEditor(place);
       setMobileFabEnabled(true);
     }
+
+    const shareBtn = document.getElementById("share-btn");
+    const mShareBtn = document.getElementById("m-share-btn");
+
+    async function sharePlace() {
+      if (!activePlaceId) return;
+      const place = userPlaces.find((p) => p.id === activePlaceId);
+      if (!place) return;
+
+      if (place.is_private) {
+        alert("This place is marked Private. Uncheck \"Private\" and save before sharing.");
+        return;
+      }
+
+      const base = window.location.origin + window.location.pathname.replace("edit-places.html", "");
+      const url = `${base}view.html?place=${activePlaceId}`;
+
+      try {
+        await navigator.clipboard.writeText(url);
+        const btn = document.activeElement;
+        const orig = btn.textContent;
+        btn.textContent = "✓ Link copied!";
+        setTimeout(() => { btn.textContent = orig; }, 2000);
+      } catch {
+        prompt("Copy this link to share:", url);
+      }
+    }
+
+    shareBtn?.addEventListener("click", sharePlace);
+    mShareBtn?.addEventListener("click", sharePlace);
 
     cancelBtn?.addEventListener("click", clearEditor);
 
