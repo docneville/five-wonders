@@ -452,15 +452,23 @@
       return "";
     }
 
+    function buildGoogleMapsUrl(latitude, longitude, address) {
+      if (latitude && longitude) return `https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`;
+      if (address) return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
+      return "";
+    }
+
     // Shared body content — used in both popup and sheet
-    function buildPlaceContentHtml({ title, notes, savedBy, category, street_line1, city, state, country, phone, website, links, photos, placeId, latitude, longitude, userId, isPrivate }) {
+    function buildPlaceContentHtml({ title, notes, savedBy, createdAt, category, street_line1, city, state, country, phone, website, links, photos, placeId, latitude, longitude, userId, isPrivate }) {
       const address = buildAddress({ street_line1, city, state, country });
       const isOwner = currentUserId && userId && currentUserId === userId;
-      const mapsUrl = buildMapsUrl(latitude, longitude, address);
+      const appleMapsUrl = buildMapsUrl(latitude, longitude, address);
+      const googleMapsUrl = buildGoogleMapsUrl(latitude, longitude, address);
 
       // Action buttons row
       const actionBtns = [
-        mapsUrl ? `<a href="${mapsUrl}" target="_blank" rel="noopener" class="place-action-btn place-action-btn--primary">${SVG.directions}<span>Directions</span></a>` : "",
+        appleMapsUrl ? `<a href="${appleMapsUrl}" target="_blank" rel="noopener" class="place-action-btn place-action-btn--primary">${SVG.directions}<span>Apple Maps</span></a>` : "",
+        googleMapsUrl ? `<a href="${googleMapsUrl}" target="_blank" rel="noopener" class="place-action-btn place-action-btn--primary">${SVG.directions}<span>Google Maps</span></a>` : "",
         phone ? `<a href="tel:${escapeHtml(phone)}" class="place-action-btn place-action-btn--secondary">${SVG.call}<span>Call</span></a>` : "",
         website ? `<a href="${escapeHtml(website)}" target="_blank" rel="noopener" class="place-action-btn place-action-btn--secondary">${SVG.website}<span>Website</span></a>` : "",
         isOwner ? `<a href="edit-places.html?place=${placeId}" class="place-action-btn place-action-btn--secondary">${SVG.edit}<span>Edit</span></a>` : "",
@@ -489,9 +497,11 @@
         : "";
 
       // Meta
-      const metaHtml = savedBy
-        ? `<div class="place-meta-row">Saved by ${escapeHtml(savedBy)}</div>`
-        : "";
+      const metaParts = [
+        savedBy ? `Saved by ${escapeHtml(savedBy)}` : "",
+        createdAt ? escapeHtml(createdAt) : "",
+      ].filter(Boolean);
+      const metaHtml = metaParts.length ? `<div class="place-meta-row">${metaParts.join(" · ")}</div>` : "";
 
       return `
         <div class="place-action-row">${actionBtns}</div>
@@ -897,16 +907,17 @@
       }
     }
 
-    // Handle photo thumbnail clicks (delegated event handling)
+    // Handle photo thumbnail clicks (delegated — covers both old .place-photo-thumb and new .place-photo-strip-thumb)
     function setupPhotoClickHandlers() {
-      // For desktop popups
       document.addEventListener("click", (e) => {
-        const thumb = e.target.closest(".place-photo-thumb");
+        const thumb = e.target.closest(".place-photo-thumb, .place-photo-strip-thumb");
         if (!thumb) return;
 
         const placeId = thumb.dataset.placeId;
         const photoIndex = parseInt(thumb.dataset.photoIndex, 10) || 0;
-        const placeData = placesDataMap.get(placeId);
+
+        // Try the map first; fall back to currentSheetPlace (for get_public / shared links)
+        const placeData = placesDataMap.get(placeId) ?? (currentSheetPlace?.placeId === placeId ? currentSheetPlace : null);
 
         if (placeData && placeData.photos) {
           openLightbox(placeData.photos, photoIndex);
