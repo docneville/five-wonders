@@ -132,21 +132,17 @@
     class="fw-sheet fw-sheet--view fw-sheet--hidden"
     aria-hidden="true"
   >
-    <div
-      class="fw-sheet-handle"
-      id="placeSheetHandle"
-      title="Tap to collapse/expand"
-    ></div>
-    <div class="fw-sheet-header">
-      <!-- CHANGED: give this an id so we can set it to the place title -->
-      <div class="fw-sheet-title" id="placeSheetTitle">Place</div>
-      <button
-        id="closePlaceSheetBtn"
-        class="fw-sheet-close"
-        type="button"
-        aria-label="Close"
-      >
-        ✕
+    <div class="fw-sheet-handle" id="placeSheetHandle"></div>
+    <div class="ps-header">
+      <button class="ps-share-btn" id="placeSheetShareBtn" aria-label="Share this place">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+      </button>
+      <div class="ps-header-text">
+        <div class="ps-title" id="placeSheetTitle">Place</div>
+        <div class="ps-subtitle" id="placeSheetSubtitle"></div>
+      </div>
+      <button class="ps-close-btn" id="closePlaceSheetBtn" aria-label="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
     </div>
     <div class="fw-sheet-content" id="placeSheetContent"></div>
@@ -221,37 +217,81 @@
     const placeSheet = document.getElementById("placeSheet");
     const placeSheetContent = document.getElementById("placeSheetContent");
     const placeSheetTitleEl = document.getElementById("placeSheetTitle");
+    const placeSheetSubtitleEl = document.getElementById("placeSheetSubtitle");
+    const placeSheetShareBtn = document.getElementById("placeSheetShareBtn");
     const closePlaceSheetBtn = document.getElementById("closePlaceSheetBtn");
     const placeSheetHandle = document.getElementById("placeSheetHandle");
 
-    function openPlaceSheet(mode = "open") {
+    // States: hidden → peek → half (default open) → full
+    const SHEET_STATES = ["fw-sheet--hidden", "fw-sheet--peek", "fw-sheet--half", "fw-sheet--full"];
+
+    function setSheetState(state) {
       if (!placeSheet) return;
-      placeSheet.classList.remove(
-        "fw-sheet--hidden",
-        "fw-sheet--peek",
-        "fw-sheet--open"
-      );
-      placeSheet.classList.add(
-        mode === "peek" ? "fw-sheet--peek" : "fw-sheet--open"
-      );
-      placeSheet.setAttribute("aria-hidden", "false");
+      placeSheet.classList.remove(...SHEET_STATES);
+      placeSheet.classList.add(state);
+      placeSheet.setAttribute("aria-hidden", state === "fw-sheet--hidden" ? "true" : "false");
+    }
+
+    function openPlaceSheet(mode = "half") {
+      setSheetState(mode === "open" || mode === "half" ? "fw-sheet--half" : mode === "full" ? "fw-sheet--full" : "fw-sheet--peek");
     }
 
     function closePlaceSheet() {
-      if (!placeSheet) return;
-      placeSheet.classList.remove("fw-sheet--open", "fw-sheet--peek");
-      placeSheet.classList.add("fw-sheet--hidden");
-      placeSheet.setAttribute("aria-hidden", "true");
+      setSheetState("fw-sheet--hidden");
+      currentSheetPlace = null;
     }
 
-    function togglePeek() {
-      if (!placeSheet) return;
-      if (placeSheet.classList.contains("fw-sheet--open")) openPlaceSheet("peek");
-      else openPlaceSheet("open");
-    }
+    // Swipe gesture on sheet
+    let sheetTouchStartY = 0;
+    placeSheet?.addEventListener("touchstart", (e) => {
+      sheetTouchStartY = e.touches[0].clientY;
+    }, { passive: true });
+
+    placeSheet?.addEventListener("touchend", (e) => {
+      const delta = sheetTouchStartY - e.changedTouches[0].clientY;
+      const threshold = 40;
+      if (Math.abs(delta) < threshold) return;
+
+      const cur = SHEET_STATES.find(s => placeSheet.classList.contains(s)) || "fw-sheet--half";
+      const idx = SHEET_STATES.indexOf(cur);
+
+      if (delta > 0) {
+        // Swipe up — expand
+        if (idx < SHEET_STATES.length - 1) setSheetState(SHEET_STATES[idx + 1]);
+      } else {
+        // Swipe down — collapse
+        if (idx > 0) setSheetState(SHEET_STATES[idx - 1]);
+      }
+    }, { passive: true });
+
+    placeSheetHandle?.addEventListener("click", () => {
+      const cur = SHEET_STATES.find(s => placeSheet.classList.contains(s)) || "fw-sheet--half";
+      const idx = SHEET_STATES.indexOf(cur);
+      // Toggle between half and full on tap
+      if (cur === "fw-sheet--full") setSheetState("fw-sheet--half");
+      else if (cur === "fw-sheet--half") setSheetState("fw-sheet--full");
+      else setSheetState("fw-sheet--half");
+    });
 
     closePlaceSheetBtn?.addEventListener("click", closePlaceSheet);
-    placeSheetHandle?.addEventListener("click", togglePeek);
+
+    // Shared share handler — works from both sheet button and popup button
+    let currentSheetPlace = null;
+    async function handleShareClick() {
+      if (!currentSheetPlace) return;
+      if (currentSheetPlace.isPrivate) {
+        placeSheetSubtitleEl.textContent = "This place is private and cannot be shared.";
+        setTimeout(() => { placeSheetSubtitleEl.textContent = currentSheetPlace.category || ""; }, 3000);
+        return;
+      }
+      const url = `${location.origin}${location.pathname}?place=${currentSheetPlace.placeId}`;
+      try { await navigator.clipboard.writeText(url); }
+      catch { const i = document.createElement("input"); i.value = url; document.body.appendChild(i); i.select(); document.execCommand("copy"); document.body.removeChild(i); }
+      const orig = placeSheetSubtitleEl.textContent;
+      placeSheetSubtitleEl.textContent = "Link copied!";
+      setTimeout(() => { placeSheetSubtitleEl.textContent = orig; }, 2500);
+    }
+    placeSheetShareBtn?.addEventListener("click", handleShareClick);
 
     mqMobile.addEventListener("change", (e) => {
       if (!e.matches) closePlaceSheet();
@@ -394,52 +434,95 @@
       `;
     }
 
-    // Body content used in both popup + sheet (NO title here)
-    function buildPlaceBodyHtml({ title, notes, createdAt, savedBy, category, street_line1, city, state, country, phone, website, links, photos, placeId, latitude, longitude, userId, isPrivate }) {
+    // SVG icons for action buttons
+    const SVG = {
+      directions: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>`,
+      call: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81a19.79 19.79 0 01-3.07-8.67A2 2 0 012 1h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L6.09 8.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>`,
+      website: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>`,
+      edit: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`,
+      address: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>`,
+      phone: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81a19.79 19.79 0 01-3.07-8.67A2 2 0 012 1h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L6.09 8.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>`,
+      link: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>`,
+      share: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>`,
+    };
+
+    function buildMapsUrl(latitude, longitude, address) {
+      if (latitude && longitude) return `https://maps.apple.com/?ll=${latitude},${longitude}&q=${encodeURIComponent(address || '')}`;
+      if (address) return `https://maps.apple.com/?q=${encodeURIComponent(address)}`;
+      return "";
+    }
+
+    // Shared body content — used in both popup and sheet
+    function buildPlaceContentHtml({ title, notes, savedBy, category, street_line1, city, state, country, phone, website, links, photos, placeId, latitude, longitude, userId, isPrivate }) {
       const address = buildAddress({ street_line1, city, state, country });
       const isOwner = currentUserId && userId && currentUserId === userId;
+      const mapsUrl = buildMapsUrl(latitude, longitude, address);
 
-      const shareIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>`;
+      // Action buttons row
+      const actionBtns = [
+        mapsUrl ? `<a href="${mapsUrl}" target="_blank" rel="noopener" class="place-action-btn place-action-btn--primary">${SVG.directions}<span>Directions</span></a>` : "",
+        phone ? `<a href="tel:${escapeHtml(phone)}" class="place-action-btn place-action-btn--secondary">${SVG.call}<span>Call</span></a>` : "",
+        website ? `<a href="${escapeHtml(website)}" target="_blank" rel="noopener" class="place-action-btn place-action-btn--secondary">${SVG.website}<span>Website</span></a>` : "",
+        isOwner ? `<a href="edit-places.html?place=${placeId}" class="place-action-btn place-action-btn--secondary">${SVG.edit}<span>Edit</span></a>` : "",
+      ].filter(Boolean).join("");
+
+      // Info rows
+      const infoRows = [
+        address ? `<div class="place-info-row"><div class="place-info-icon">${SVG.address}</div><div class="place-info-text">${escapeHtml(address)}</div></div>` : "",
+        phone ? `<div class="place-info-row"><div class="place-info-icon">${SVG.phone}</div><div class="place-info-text"><a href="tel:${escapeHtml(phone)}" class="place-info-link">${escapeHtml(phone)}</a></div></div>` : "",
+        website ? `<div class="place-info-row"><div class="place-info-icon">${SVG.website}</div><div class="place-info-text"><a href="${escapeHtml(website)}" target="_blank" rel="noopener" class="place-info-link">${escapeHtml(website)}</a></div></div>` : "",
+      ].filter(Boolean).join("");
+
+      // Links rows
+      const linkRows = (Array.isArray(links) && links.length > 0)
+        ? links.map(l => `<div class="place-info-row"><div class="place-info-icon">${SVG.link}</div><div class="place-info-text"><a href="${escapeHtml(l.url)}" target="_blank" rel="noopener" class="place-info-link">${escapeHtml(l.text || l.url)}</a>${l.description ? `<div class="place-info-sub">${escapeHtml(l.description)}</div>` : ""}</div></div>`).join("")
+        : "";
+
+      // Photo strip
+      const photoStrip = (Array.isArray(photos) && photos.length > 0)
+        ? `<div class="place-photo-strip">${photos.map((ph, i) => `<div class="place-photo-strip-thumb" data-place-id="${placeId}" data-photo-index="${i}"><img src="${getPhotoUrl(ph.thumbnail_path || ph.storage_path)}" alt="${escapeHtml(ph.description || '')}" loading="lazy"/></div>`).join("")}</div>`
+        : "";
+
+      // Notes
+      const notesHtml = notes
+        ? `<div class="place-notes-section"><h4>Why it's a Wonder</h4><div class="place-notes-body">${escapeHtml(notes)}</div></div>`
+        : "";
+
+      // Meta
+      const metaHtml = savedBy
+        ? `<div class="place-meta-row">Saved by ${escapeHtml(savedBy)}</div>`
+        : "";
 
       return `
-        ${category ? `<div class="place-category">${escapeHtml(category)}</div>` : ""}
-        ${address ? `<div class="place-address">${escapeHtml(address)}</div>` : ""}
-        ${phone ? `<div class="place-phone">📞 ${escapeHtml(phone)}</div>` : ""}
-        ${website ? `<div class="place-website"><a href="${escapeHtml(website)}" target="_blank" rel="noopener">${escapeHtml(website)}</a></div>` : ""}
-        ${buildLinksHtml(links)}
-        ${buildPhotosHtml(photos, placeId)}
-        ${
-          notes
-            ? `<div class="place-notes-header">Why ${escapeHtml(title)} is a Wonder:</div><div class="place-notes">${escapeHtml(notes)}</div>`
-            : ""
-        }
-        ${
-          createdAt || savedBy
-            ? `
-          <div class="place-meta">
-            ${createdAt ? `Saved: ${escapeHtml(createdAt)}` : ""}
-            ${savedBy ? `${createdAt ? "<br/>" : ""}Saved by ${escapeHtml(savedBy)}` : ""}
+        <div class="place-action-row">${actionBtns}</div>
+        ${(infoRows || linkRows) ? `<div class="place-info-section">${infoRows}${linkRows}</div>` : ""}
+        ${photoStrip}
+        ${notesHtml}
+        ${metaHtml}
+        <div style="height:32px;"></div>
+      `;
+    }
+
+    // Desktop popup card (includes title + category in body)
+    function buildPopupHtml(placeData) {
+      const { title, category, placeId, isPrivate } = placeData;
+      return `
+        <div class="place-popup-card">
+          <div class="place-popup-header">
+            <div>
+              <div class="place-popup-title">${escapeHtml(title)}</div>
+              ${category ? `<div class="place-popup-subtitle">${escapeHtml(category)}</div>` : ""}
+            </div>
+            <button class="place-share-btn ps-share-btn--popup" data-place-id="${placeId}" data-is-private="${isPrivate}" aria-label="Share">${SVG.share}</button>
           </div>
-        `
-            : ""
-        }
-        <div class="place-actions">
-          ${buildMapLinksHtml(latitude, longitude)}
-          ${isOwner ? `<a href="edit-places.html?place=${placeId}" class="place-edit-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Edit this Wonder</a>` : ""}
-          <button class="place-share-btn" data-place-id="${placeId}" data-is-private="${isPrivate}" title="Share" aria-label="Share this place" style="background:none;border:none;cursor:pointer;padding:4px;display:inline-flex;align-items:center;color:inherit;opacity:0.7;">${shareIcon}</button>
-          <span class="place-share-feedback" data-place-id="${placeId}" style="font-size:0.8rem;margin-left:4px;"></span>
+          ${buildPlaceContentHtml(placeData)}
         </div>
       `;
     }
 
-    // Desktop popup includes the title in the popup itself
-    function buildPopupHtml({ title, notes, createdAt, savedBy, category, street_line1, city, state, country, phone, website, links, photos, placeId, latitude, longitude, userId }) {
-      return `
-        <div class="place-popup">
-          <div class="place-title">${escapeHtml(title)}</div>
-          ${buildPlaceBodyHtml({ title, notes, createdAt, savedBy, category, street_line1, city, state, country, phone, website, links, photos, placeId, latitude, longitude, userId })}
-        </div>
-      `;
+    // Mobile sheet body (title lives in sheet header)
+    function buildPlaceBodyHtml(placeData) {
+      return buildPlaceContentHtml(placeData);
     }
 
     function makeDotIcon(color) {
@@ -547,14 +630,20 @@
 
         if (isMobile()) {
           marker.on("click", () => {
-            if (placeSheetTitleEl) {
-              placeSheetTitleEl.textContent = title;
-            }
-            placeSheetContent.innerHTML = `<div class="place-popup">${bodyHtml}</div>`;
-            openPlaceSheet("open");
+            currentSheetPlace = placeData;
+            placeSheetTitleEl.textContent = title;
+            placeSheetSubtitleEl.textContent = category || "";
+            placeSheetContent.innerHTML = bodyHtml;
+            openPlaceSheet("half");
           });
         } else {
-          marker.bindPopup(popupHtml, { maxWidth: 320 });
+          marker.bindPopup(buildPopupHtml(placeData), { maxWidth: 340 });
+          marker.on("popupopen", () => {
+            marker.getPopup().getElement()?.querySelector(".ps-share-btn--popup")?.addEventListener("click", async () => {
+              currentSheetPlace = placeData;
+              await handleShareClick();
+            });
+          });
         }
 
         markerClusterGroup.addLayer(marker);
@@ -913,21 +1002,31 @@
 
           if (isMobile()) {
             marker.on("click", () => {
-              if (placeSheetTitleEl) placeSheetTitleEl.textContent = placeData.title;
-              placeSheetContent.innerHTML = `<div class="place-popup">${bodyHtml}</div>`;
-              openPlaceSheet("open");
+              currentSheetPlace = placeData;
+              placeSheetTitleEl.textContent = placeData.title;
+              placeSheetSubtitleEl.textContent = placeData.category || "";
+              placeSheetContent.innerHTML = buildPlaceBodyHtml(placeData);
+              openPlaceSheet("half");
             });
           } else {
-            marker.bindPopup(popupHtml, { maxWidth: 320 });
+            marker.bindPopup(buildPopupHtml(placeData), { maxWidth: 340 });
+            marker.on("popupopen", () => {
+              marker.getPopup().getElement()?.querySelector(".ps-share-btn--popup")?.addEventListener("click", async () => {
+                currentSheetPlace = placeData;
+                await handleShareClick();
+              });
+            });
           }
 
           markerClusterGroup.addLayer(marker);
           map.setView([placeData.latitude, placeData.longitude], 14);
 
           if (isMobile()) {
-            if (placeSheetTitleEl) placeSheetTitleEl.textContent = placeData.title;
-            placeSheetContent.innerHTML = `<div class="place-popup">${bodyHtml}</div>`;
-            openPlaceSheet("open");
+            currentSheetPlace = placeData;
+            placeSheetTitleEl.textContent = placeData.title;
+            placeSheetSubtitleEl.textContent = placeData.category || "";
+            placeSheetContent.innerHTML = buildPlaceBodyHtml(placeData);
+            openPlaceSheet("half");
           } else {
             marker.openPopup();
           }
@@ -941,9 +1040,11 @@
       map.setView([placeData.latitude, placeData.longitude], 14);
 
       if (isMobile()) {
-        if (placeSheetTitleEl) placeSheetTitleEl.textContent = placeData.title;
-        placeSheetContent.innerHTML = `<div class="place-popup">${buildPlaceBodyHtml(placeData)}</div>`;
-        openPlaceSheet("open");
+        currentSheetPlace = placeData;
+        placeSheetTitleEl.textContent = placeData.title;
+        placeSheetSubtitleEl.textContent = placeData.category || "";
+        placeSheetContent.innerHTML = buildPlaceBodyHtml(placeData);
+        openPlaceSheet("half");
       } else {
         // Find and open the marker's popup
         markerClusterGroup.eachLayer((layer) => {

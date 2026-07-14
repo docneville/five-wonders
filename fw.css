@@ -542,7 +542,9 @@ button{
 }
 
 .fw-sheet--open{ transform: translateY(0); }
-.fw-sheet--peek{ transform: translateY(55%); }
+.fw-sheet--peek{ transform: translateY(calc(100% - 120px)); }
+.fw-sheet--half{ transform: translateY(42%); }
+.fw-sheet--full{ transform: translateY(0); }
 .fw-sheet--hidden{ transform: translateY(100%); }
 
 .fw-sheet-handle{
@@ -596,12 +598,228 @@ button{
   padding-bottom: calc(110px + env(safe-area-inset-bottom));
 }
 
-/* View “place sheet” sizing */
-.fw-sheet--view{ height: 76vh; z-index: 4000; }
+/* View “place sheet” sizing — full height so --full state works */
+.fw-sheet--view{ height: 100dvh; z-index: 4000; }
 .fw-sheet--view .fw-sheet-content{
-  height: calc(76vh - 64px);
-  padding-bottom: calc(16px + env(safe-area-inset-bottom));
+  height: calc(100dvh - 72px);
+  padding: 0 0 calc(16px + env(safe-area-inset-bottom));
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
+
+/* ---- Place Sheet Header (Apple Maps style) ---- */
+.ps-header{
+  display: flex;
+  align-items: center;
+  padding: 8px 12px 10px;
+  gap: 10px;
+  min-height: 58px;
+}
+.ps-header-text{
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+}
+.ps-title{
+  font-size: 1.05rem;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.3;
+}
+.ps-subtitle{
+  font-size: 0.78rem;
+  color: var(--fw-text-secondary,#666);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 1px;
+}
+.ps-share-btn,
+.ps-close-btn{
+  flex: 0 0 auto;
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(120,120,128,0.12);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  color: var(--fw-accent,#0071e3);
+  padding: 0;
+}
+.ps-share-btn svg, .ps-close-btn svg{ width: 18px; height: 18px; }
+.ps-close-btn{ color: var(--fw-text,#222); }
+.ps-share-btn:hover,.ps-close-btn:hover{ background: rgba(120,120,128,0.22); }
+
+/* ---- Place Action Buttons Row ---- */
+.place-action-row{
+  display: flex;
+  gap: 10px;
+  padding: 12px 16px 16px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.place-action-row::-webkit-scrollbar{ display: none; }
+
+.place-action-btn{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  text-decoration: none;
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+  min-width: 64px;
+  transition: opacity 0.15s;
+  cursor: pointer;
+}
+.place-action-btn:hover{ opacity: 0.75; text-decoration: none; }
+.place-action-btn svg{ width: 22px; height: 22px; }
+.place-action-btn--primary{
+  background: var(--fw-accent,#0071e3);
+  color: #fff;
+}
+.place-action-btn--secondary{
+  background: rgba(120,120,128,0.12);
+  color: var(--fw-accent,#0071e3);
+}
+
+/* ---- Info Rows ---- */
+.place-info-section{
+  border-top: 1px solid var(--fw-border,#e5e7eb);
+  border-bottom: 1px solid var(--fw-border,#e5e7eb);
+  margin: 0 0 16px;
+}
+.place-info-row{
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--fw-border,#e5e7eb);
+}
+.place-info-row:last-child{ border-bottom: none; }
+.place-info-icon{
+  flex: 0 0 20px;
+  color: var(--fw-text-secondary,#666);
+  padding-top: 1px;
+}
+.place-info-icon svg{ width: 18px; height: 18px; }
+.place-info-text{
+  flex: 1;
+  font-size: 0.95rem;
+  line-height: 1.4;
+  color: var(--fw-text,#222);
+  word-break: break-word;
+}
+.place-info-link{ color: var(--fw-accent,#0071e3); text-decoration: none; }
+.place-info-link:hover{ text-decoration: underline; }
+.place-info-sub{ font-size: 0.8rem; color: var(--fw-text-secondary,#666); margin-top: 2px; }
+
+/* ---- Photo Strip ---- */
+.place-photo-strip{
+  display: flex;
+  gap: 8px;
+  padding: 0 16px 16px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.place-photo-strip::-webkit-scrollbar{ display: none; }
+.place-photo-strip-thumb{
+  flex: 0 0 auto;
+  width: 100px;
+  height: 80px;
+  border-radius: 10px;
+  overflow: hidden;
+  cursor: pointer;
+}
+.place-photo-strip-thumb img{
+  width: 100%; height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* ---- Notes Section ---- */
+.place-notes-section{
+  padding: 14px 16px 0;
+  border-top: 1px solid var(--fw-border,#e5e7eb);
+  margin-bottom: 16px;
+}
+.place-notes-section h4{
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--fw-text-secondary,#666);
+  margin: 0 0 8px;
+}
+.place-notes-body{
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: var(--fw-text,#222);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* ---- Meta row ---- */
+.place-meta-row{
+  padding: 0 16px 8px;
+  font-size: 0.8rem;
+  color: var(--fw-text-secondary,#888);
+}
+
+/* ---- Desktop popup card ---- */
+.place-popup-card{
+  min-width: 260px;
+  max-width: 320px;
+}
+.place-popup-header{
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--fw-border,#e5e7eb);
+  margin-bottom: 4px;
+}
+.place-popup-title{
+  font-weight: 700;
+  font-size: 1rem;
+  line-height: 1.3;
+}
+.place-popup-subtitle{
+  font-size: 0.78rem;
+  color: var(--fw-text-secondary,#666);
+  margin-top: 2px;
+}
+.ps-share-btn--popup{
+  flex: 0 0 auto;
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(120,120,128,0.12);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  color: var(--fw-accent,#0071e3);
+  padding: 0;
+}
+.ps-share-btn--popup svg{ width: 16px; height: 16px; }
+.ps-share-btn--popup:hover{ background: rgba(120,120,128,0.22); }
+/* Compact popup overrides for info/action rows */
+.place-popup-card .place-action-row{ padding: 8px 0 10px; gap: 8px; }
+.place-popup-card .place-action-btn{ min-width: 52px; font-size: 0.72rem; padding: 8px; border-radius: 12px; }
+.place-popup-card .place-action-btn svg{ width: 18px; height: 18px; }
+.place-popup-card .place-info-section{ margin: 0 0 8px; }
+.place-popup-card .place-info-row{ padding: 8px 0; }
+.place-popup-card .place-notes-section{ padding: 10px 0 0; margin-bottom: 8px; }
+.place-popup-card .place-photo-strip{ padding: 0 0 10px; }
+.place-popup-card .place-photo-strip-thumb{ width: 72px; height: 56px; }
 
 /* Sticky action row variants */
 .save-row,
