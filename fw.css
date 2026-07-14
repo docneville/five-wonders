@@ -2078,3 +2078,43 @@ a:hover{ text-decoration: underline; }
   }
 }
 
+
+/* ---------- Guest Banner (share-link visitors) ---------- */
+.guest-banner{
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  z-index: 9000;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+  background: var(--fw-card,#fff);
+  border-top: 1px solid var(--fw-border,#e5e7eb);
+  box-shadow: 0 -2px 12px rgba(0,0,0,0.10);
+  font-size: 0.9rem;
+  color: var(--fw-text,#222);
+  flex-wrap: wrap;
+}
+.guest-banner span{ flex: 1; min-width: 0; }
+.guest-banner-cta{
+  flex: 0 0 auto;
+  padding: 7px 14px;
+  border-radius: 20px;
+  background: var(--fw-accent,#0071e3);
+  color: #fff;
+  text-decoration: none;
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.guest-banner-cta:hover{ opacity: 0.88; text-decoration: none; }
+.guest-banner-close{
+  flex: 0 0 auto;
+  background: none;
+  border: none;
+  font-size: 1.3rem;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--fw-text-secondary,#888);
+  padding: 0 4px;
+}

@@ -701,7 +701,10 @@
 
       if (error) {
         console.error("Error loading places_with_profiles:", error);
-        alert("Error loading places – check console/logs.");
+        // Don't alert for anon users — they may lack RLS permission, which is expected.
+        if (currentUserId) {
+          alert("Error loading places – check console/logs.");
+        }
         return;
       }
 
@@ -1071,12 +1074,35 @@
     }
 
     async function loadPlacesAndOpenShared() {
-      await loadPlaces();
       const params = new URLSearchParams(window.location.search);
       const sharedPlaceId = params.get("place");
+
+      if (sharedPlaceId && !currentUserId) {
+        // Guest opening a share link — skip loadPlaces (requires auth) and go straight
+        // to get_public which uses the service role and needs no registration.
+        await openPlaceById(sharedPlaceId);
+        showGuestBanner();
+        return;
+      }
+
+      await loadPlaces();
       if (sharedPlaceId) {
         await openPlaceById(sharedPlaceId);
       }
+    }
+
+    function showGuestBanner() {
+      if (document.getElementById("guestBanner")) return;
+      const banner = document.createElement("div");
+      banner.id = "guestBanner";
+      banner.className = "guest-banner";
+      banner.innerHTML = `
+        <span>You're viewing a shared Wonder.</span>
+        <a href="index.html" class="guest-banner-cta">Join Five Wonders →</a>
+        <button class="guest-banner-close" aria-label="Dismiss">×</button>
+      `;
+      banner.querySelector(".guest-banner-close").addEventListener("click", () => banner.remove());
+      document.body.appendChild(banner);
     }
 
     loadPlacesAndOpenShared();
