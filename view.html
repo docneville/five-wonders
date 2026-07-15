@@ -284,7 +284,8 @@
         setTimeout(() => { placeSheetSubtitleEl.textContent = currentSheetPlace.category || ""; }, 3000);
         return;
       }
-      const url = `${location.origin}${location.pathname}?place=${currentSheetPlace.placeId}`;
+      // Use the Edge Function URL so link previews in iMessage/WhatsApp get rich OG tags
+      const url = `https://ekpssonwtztubqfihlqm.supabase.co/functions/v1/share-place?id=${currentSheetPlace.placeId}`;
       try { await navigator.clipboard.writeText(url); }
       catch { const i = document.createElement("input"); i.value = url; document.body.appendChild(i); i.select(); document.execCommand("copy"); document.body.removeChild(i); }
       const orig = placeSheetSubtitleEl.textContent;
