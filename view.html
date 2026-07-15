@@ -287,13 +287,16 @@
 
       const { placeId, title, category, city, state } = currentSheetPlace;
 
-      // Edge Function URL — serves dynamic og:title + og:image so iMessage/WhatsApp
-      // show the place name and photo thumbnail in the link preview card.
-      // It redirects the user's browser straight to the app.
-      const shareUrl = `https://ekpssonwtztubqfihlqm.supabase.co/functions/v1/share-place?id=${placeId}`;
+      // Use the GitHub Pages URL — trusted domain, unfurls cleanly in iMessage.
+      const shareUrl = `${location.origin}${location.pathname}?place=${placeId}`;
 
+      // Put the place name + location in the message text so the recipient
+      // sees it immediately even before tapping the link.
       const locationStr = [city, state].filter(Boolean).join(", ");
-      const shareText = [category, locationStr].filter(Boolean).join(" · ");
+      const contextParts = [category, locationStr].filter(Boolean);
+      const shareText = contextParts.length
+        ? `${title} — ${contextParts.join(" · ")}`
+        : title;
 
       if (navigator.share) {
         try {
@@ -304,7 +307,7 @@
         }
       }
 
-      // Desktop fallback — copy the Edge Function URL (also works as a direct link)
+      // Desktop fallback — copy the direct link
       try { await navigator.clipboard.writeText(shareUrl); }
       catch {
         const i = document.createElement("input");
