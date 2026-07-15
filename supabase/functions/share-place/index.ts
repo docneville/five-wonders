@@ -77,13 +77,13 @@ serve(async (req: Request): Promise<Response> => {
     if (path) ogImage = `${STORAGE_URL}/${path}`;
   }
 
-  const ogTitle = `${escapeHtml(data.title || "A Wonder")} — ${SITE_NAME}`;
+  const ogTitle = escapeHtml(data.title || "A Wonder");
 
   const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>${ogTitle}</title>
+  <title>${ogTitle} — ${SITE_NAME}</title>
 
   <!-- Open Graph (iMessage, WhatsApp, Slack, Facebook) -->
   <meta property="og:type"        content="website" />

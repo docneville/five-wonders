@@ -286,31 +286,29 @@
       }
 
       const { placeId, title, category, city, state } = currentSheetPlace;
-      // Deep link back into the app
-      const appUrl = `${location.origin}${location.pathname}?place=${placeId}`;
 
-      // Build a human-readable description for the share sheet
+      // Edge Function URL — serves dynamic og:title + og:image so iMessage/WhatsApp
+      // show the place name and photo thumbnail in the link preview card.
+      // It redirects the user's browser straight to the app.
+      const shareUrl = `https://ekpssonwtztubqfihlqm.supabase.co/functions/v1/share-place?id=${placeId}`;
+
       const locationStr = [city, state].filter(Boolean).join(", ");
       const shareText = [category, locationStr].filter(Boolean).join(" · ");
 
-      // Use native share sheet on mobile (iMessage, WhatsApp, etc.)
-      // This lets iOS format the message preview natively — far more reliable
-      // than OG tags on a Supabase domain.
       if (navigator.share) {
         try {
-          await navigator.share({ title: `${title} — Five Wonders`, text: shareText, url: appUrl });
-          return; // Share sheet handled it — no subtitle feedback needed
+          await navigator.share({ title, text: shareText, url: shareUrl });
+          return;
         } catch (err) {
-          if (err.name === "AbortError") return; // User cancelled — do nothing
-          // Fall through to clipboard on other errors
+          if (err.name === "AbortError") return;
         }
       }
 
-      // Desktop / unsupported browser — copy the direct app URL
-      try { await navigator.clipboard.writeText(appUrl); }
+      // Desktop fallback — copy the Edge Function URL (also works as a direct link)
+      try { await navigator.clipboard.writeText(shareUrl); }
       catch {
         const i = document.createElement("input");
-        i.value = appUrl; document.body.appendChild(i); i.select();
+        i.value = shareUrl; document.body.appendChild(i); i.select();
         document.execCommand("copy"); document.body.removeChild(i);
       }
       const orig = placeSheetSubtitleEl.textContent;
