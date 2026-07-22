@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>My Lists – Five Wonders</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="fw.css" />
+  <style>
+    .lists-shell {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 24px 16px 80px;
+    }
+    .lists-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+    .lists-header h1 {
+      font-size: 1.4rem;
+      font-weight: 700;
+      margin: 0;
+    }
+
+    /* List cards */
+    .list-card {
+      background: var(--fw-card-bg, #fff);
+      border: 1px solid var(--fw-border, #e5e7eb);
+      border-radius: 14px;
+      padding: 16px;
+      margin-bottom: 12px;
+      cursor: pointer;
+      transition: box-shadow 0.15s;
+    }
+    .list-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.08); }
+    .list-card-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .list-card-title {
+      font-weight: 700;
+      font-size: 1rem;
+      line-height: 1.3;
+    }
+    .list-card-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 4px;
+      font-size: 0.82rem;
+      color: var(--fw-text-secondary, #666);
+    }
+    .list-card-desc {
+      margin-top: 6px;
+      font-size: 0.88rem;
+      color: var(--fw-text-secondary, #666);
+      line-height: 1.4;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .list-privacy-badge {
+      flex: 0 0 auto;
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 20px;
+      letter-spacing: 0.03em;
+    }
+    .list-privacy-badge--public {
+      background: rgba(16,185,129,0.12);
+      color: #059669;
+    }
+    .list-privacy-badge--private {
+      background: rgba(107,114,128,0.12);
+      color: #6b7280;
+    }
+    .list-card-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+      padding-top: 10px;
+      border-top: 1px solid var(--fw-border, #e5e7eb);
+    }
+    .list-action-btn {
+      flex: 1;
+      padding: 7px 0;
+      border-radius: 8px;
+      border: 1px solid var(--fw-border, #e5e7eb);
+      background: none;
+      font-size: 0.82rem;
+      font-weight: 500;
+      cursor: pointer;
+      color: var(--fw-text, #222);
+      transition: background 0.15s;
+    }
+    .list-action-btn:hover { background: var(--fw-soft, #f3f4f6); }
+    .list-action-btn--danger { color: #ef4444; border-color: #fecaca; }
+    .list-action-btn--danger:hover { background: #fff1f1; }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--fw-text-secondary, #666);
+    }
+    .empty-state h2 { font-size: 1.1rem; margin-bottom: 8px; color: var(--fw-text, #222); }
+
+    /* Sheet / modal for create + edit list */
+    .list-sheet-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.4);
+      z-index: 5000;
+    }
+    .list-sheet-overlay.open { display: block; }
+    .list-sheet {
+      position: fixed;
+      left: 0; right: 0; bottom: 0;
+      background: var(--fw-card-bg, #fff);
+      border-radius: 20px 20px 0 0;
+      padding: 20px 20px calc(24px + env(safe-area-inset-bottom));
+      z-index: 5001;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+    .list-sheet h2 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin: 0 0 18px;
+    }
+    .list-sheet label {
+      display: block;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--fw-text-secondary, #666);
+      margin-bottom: 4px;
+    }
+    .list-sheet input,
+    .list-sheet textarea {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 10px 12px;
+      border: 1px solid var(--fw-border, #e5e7eb);
+      border-radius: 10px;
+      font-size: 0.95rem;
+      font-family: inherit;
+      background: var(--fw-soft, #f9fafb);
+      color: var(--fw-text, #222);
+      margin-bottom: 14px;
+    }
+    .list-sheet textarea { min-height: 80px; resize: vertical; }
+    .list-sheet-privacy {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 18px;
+      font-size: 0.9rem;
+    }
+    .list-sheet-privacy input[type=checkbox] { width: 18px; height: 18px; }
+    .list-sheet-btns {
+      display: flex;
+      gap: 10px;
+    }
+    .list-sheet-btns button { flex: 1; }
+
+    /* Place picker inside a list */
+    .place-picker-section {
+      margin-top: 24px;
+    }
+    .place-picker-section h3 {
+      font-size: 0.9rem;
+      font-weight: 700;
+      margin: 0 0 12px;
+      color: var(--fw-text-secondary, #666);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .place-picker-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      max-height: 340px;
+      overflow-y: auto;
+    }
+    .place-picker-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 12px;
+      border: 1px solid var(--fw-border, #e5e7eb);
+      border-radius: 10px;
+      cursor: pointer;
+      background: none;
+      text-align: left;
+      width: 100%;
+      font-family: inherit;
+      transition: background 0.12s;
+    }
+    .place-picker-item:hover { background: var(--fw-soft, #f3f4f6); }
+    .place-picker-item.selected {
+      border-color: var(--fw-accent, #0071e3);
+      background: rgba(0,113,227,0.06);
+    }
+    .place-picker-check {
+      width: 20px; height: 20px;
+      border-radius: 50%;
+      border: 2px solid var(--fw-border, #d1d5db);
+      flex: 0 0 auto;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .place-picker-item.selected .place-picker-check {
+      background: var(--fw-accent, #0071e3);
+      border-color: var(--fw-accent, #0071e3);
+      color: #fff;
+    }
+    .place-picker-info { flex: 1; min-width: 0; }
+    .place-picker-title { font-weight: 600; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .place-picker-sub { font-size: 0.78rem; color: var(--fw-text-secondary, #666); }
+    .no-places-msg { color: var(--fw-text-secondary, #888); font-size: 0.9rem; padding: 8px 0; }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="fw-about">
+  <header class="fw-header">
+    <a href="index.html" class="fw-header-title">Five Wonders</a>
+    <button class="fw-hamburger" id="hamburgerBtn" aria-label="Menu" aria-expanded="false">
+      <div class="fw-hamburger-icon"><span></span><span></span><span></span></div>
+    </button>
+    <nav class="fw-header-nav" id="headerNav">
+      <a href="index.html">Home</a>
+      <a href="add-place.html">Add</a>
+      <a href="edit-places.html">Edit</a>
+      <a href="view.html">View</a>
+      <a href="lists.html">Lists</a>
+      <a href="about.html">About</a>
+      <a href="faq.html">FAQ</a>
+      <a href="profile.html">Profile</a>
+    </nav>
+  </header>
+
+  <main>
+    <div class="lists-shell">
+      <div id="noAccessMsg" style="display:none; text-align:center; padding:60px 0; color:var(--fw-text-secondary,#666);">
+        <h2 style="margin-bottom:8px;">Sign in required</h2>
+        <p>Enter your invite code on the <a href="profile.html">Profile page</a> to manage lists.</p>
+      </div>
+
+      <div id="listsMain" style="display:none;">
+        <div class="lists-header">
+          <h1>My Lists</h1>
+          <button class="btn-primary" id="newListBtn" style="padding:8px 18px; font-size:0.9rem;">+ New List</button>
+        </div>
+
+        <div id="listsContainer">
+          <div style="text-align:center; padding:40px 0; color:var(--fw-text-secondary,#888);">Loading…</div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Create / Edit sheet -->
+  <div class="list-sheet-overlay" id="listSheetOverlay">
+    <div class="list-sheet" id="listSheet">
+      <h2 id="listSheetTitle">New List</h2>
+
+      <label for="listTitleInput">Title</label>
+      <input id="listTitleInput" type="text" placeholder="e.g. Best spots in Ann Arbor" maxlength="80" />
+
+      <label for="listDescInput">Description <span style="font-weight:400;">(optional)</span></label>
+      <textarea id="listDescInput" placeholder="What's this list about?" maxlength="400"></textarea>
+
+      <div class="list-sheet-privacy">
+        <input type="checkbox" id="listPrivateCheck" />
+        <label for="listPrivateCheck" style="margin:0; font-weight:400; color:var(--fw-text,#222);">Private — only visible to me</label>
+      </div>
+
+      <!-- Place picker — shown when editing an existing list -->
+      <div class="place-picker-section" id="placePicker" style="display:none;">
+        <h3>Places in this list</h3>
+        <div class="place-picker-list" id="placePickerList"></div>
+      </div>
+
+      <div id="listSheetError" style="color:#ef4444; font-size:0.85rem; margin-bottom:10px; display:none;"></div>
+
+      <div class="list-sheet-btns">
+        <button class="btn-ghost" id="listSheetCancel">Cancel</button>
+        <button class="btn-primary" id="listSheetSave">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    const SUPABASE_URL = "https://ekpssonwtztubqfihlqm.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVrcHNzb253dHp0dWJxZmlobHFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM1Njg2MjAsImV4cCI6MjA3OTE0NDYyMH0.R1_-ctf-6NsVUJEApf4N591lA9TPRCJQFzhrDVRbr_4";
+    const MANAGE_LISTS_URL = `${SUPABASE_URL}/functions/v1/manage-lists`;
+    const MANAGE_PLACES_URL = `${SUPABASE_URL}/functions/v1/manage-places`;
+
+    const LS_KEY = "fw_api_key";
+    const LS_KEY_LEGACY = "api_key";
+
+    function getApiKey() {
+      return localStorage.getItem(LS_KEY) || localStorage.getItem(LS_KEY_LEGACY);
+    }
+
+    async function callLists(body) {
+      const res = await fetch(MANAGE_LISTS_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...body, user_token: getApiKey() }),
+      });
+      return res.json().catch(() => ({}));
+    }
+
+    async function callPlaces(body) {
+      const res = await fetch(MANAGE_PLACES_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...body, user_token: getApiKey() }),
+      });
+      return res.json().catch(() => ({}));
+    }
+
+    // ---- State ----
+    let lists = [];
+    let myPlaces = [];          // user's saved places (for picker)
+    let editingListId = null;   // null = creating new
+    let listPlaceIds = new Set(); // place IDs currently in the editing list
+
+    // ---- DOM ----
+    const noAccessMsg = document.getElementById("noAccessMsg");
+    const listsMain = document.getElementById("listsMain");
+    const listsContainer = document.getElementById("listsContainer");
+    const newListBtn = document.getElementById("newListBtn");
+    const overlay = document.getElementById("listSheetOverlay");
+    const listSheetTitle = document.getElementById("listSheetTitle");
+    const listTitleInput = document.getElementById("listTitleInput");
+    const listDescInput = document.getElementById("listDescInput");
+    const listPrivateCheck = document.getElementById("listPrivateCheck");
+    const placePicker = document.getElementById("placePicker");
+    const placePickerList = document.getElementById("placePickerList");
+    const listSheetError = document.getElementById("listSheetError");
+    const listSheetCancel = document.getElementById("listSheetCancel");
+    const listSheetSave = document.getElementById("listSheetSave");
+
+    // ---- Init ----
+    const apiKey = getApiKey();
+    if (!apiKey) {
+      noAccessMsg.style.display = "block";
+    } else {
+      listsMain.style.display = "block";
+      loadAll();
+    }
+
+    async function loadAll() {
+      const [listsRes, placesRes] = await Promise.all([
+        callLists({ action: "list_lists" }),
+        callPlaces({ action: "list" }),
+      ]);
+      lists = listsRes.lists ?? [];
+      myPlaces = placesRes.places ?? [];
+      renderLists();
+    }
+
+    function renderLists() {
+      if (lists.length === 0) {
+        listsContainer.innerHTML = `
+          <div class="empty-state">
+            <h2>No lists yet</h2>
+            <p>Create a list to organise your Wonders — by city, trip, category, or anything you like.</p>
+          </div>`;
+        return;
+      }
+
+      listsContainer.innerHTML = lists.map(l => {
+        const badge = l.is_private
+          ? `<span class="list-privacy-badge list-privacy-badge--private">Private</span>`
+          : `<span class="list-privacy-badge list-privacy-badge--public">Public</span>`;
+        const count = l.place_count ?? 0;
+        return `
+          <div class="list-card" data-id="${l.id}">
+            <div class="list-card-header">
+              <div class="list-card-title">${escHtml(l.title)}</div>
+              ${badge}
+            </div>
+            <div class="list-card-meta">
+              ${count} ${count === 1 ? "Wonder" : "Wonders"}
+            </div>
+            ${l.description ? `<div class="list-card-desc">${escHtml(l.description)}</div>` : ""}
+            <div class="list-card-actions">
+              <button class="list-action-btn" data-action="edit" data-id="${l.id}">✏️ Edit</button>
+              <button class="list-action-btn list-action-btn--danger" data-action="delete" data-id="${l.id}">Delete</button>
+            </div>
+          </div>`;
+      }).join("");
+
+      // Event delegation
+      listsContainer.querySelectorAll("[data-action='edit']").forEach(btn => {
+        btn.addEventListener("click", e => { e.stopPropagation(); openEditSheet(btn.dataset.id); });
+      });
+      listsContainer.querySelectorAll("[data-action='delete']").forEach(btn => {
+        btn.addEventListener("click", e => { e.stopPropagation(); deleteList(btn.dataset.id); });
+      });
+    }
+
+    // ---- Sheet open/close ----
+    function openCreateSheet() {
+      editingListId = null;
+      listSheetTitle.textContent = "New List";
+      listTitleInput.value = "";
+      listDescInput.value = "";
+      listPrivateCheck.checked = false;
+      listSheetError.style.display = "none";
+      placePicker.style.display = "none";
+      overlay.classList.add("open");
+      listTitleInput.focus();
+    }
+
+    async function openEditSheet(listId) {
+      const list = lists.find(l => l.id === listId);
+      if (!list) return;
+
+      editingListId = listId;
+      listSheetTitle.textContent = "Edit List";
+      listTitleInput.value = list.title;
+      listDescInput.value = list.description ?? "";
+      listPrivateCheck.checked = list.is_private;
+      listSheetError.style.display = "none";
+      placePicker.style.display = "block";
+      overlay.classList.add("open");
+
+      // Load places in this list
+      placePickerList.innerHTML = `<div class="no-places-msg">Loading…</div>`;
+      const res = await callLists({ action: "get_list_places", list_id: listId });
+      const inList = res.places ?? [];
+      listPlaceIds = new Set(inList.map(p => p.id));
+      renderPlacePicker();
+    }
+
+    function closeSheet() {
+      overlay.classList.remove("open");
+      editingListId = null;
+      listPlaceIds = new Set();
+    }
+
+    function renderPlacePicker() {
+      if (myPlaces.length === 0) {
+        placePickerList.innerHTML = `<div class="no-places-msg">You haven't saved any Wonders yet.</div>`;
+        return;
+      }
+      placePickerList.innerHTML = myPlaces.map(p => {
+        const inList = listPlaceIds.has(p.id);
+        const sub = [p.category, p.city, p.state].filter(Boolean).join(" · ");
+        return `
+          <button class="place-picker-item ${inList ? "selected" : ""}" data-place-id="${p.id}">
+            <div class="place-picker-check">${inList ? "✓" : ""}</div>
+            <div class="place-picker-info">
+              <div class="place-picker-title">${escHtml(p.title)}</div>
+              ${sub ? `<div class="place-picker-sub">${escHtml(sub)}</div>` : ""}
+            </div>
+          </button>`;
+      }).join("");
+
+      placePickerList.querySelectorAll(".place-picker-item").forEach(btn => {
+        btn.addEventListener("click", () => togglePlace(btn.dataset.placeId, btn));
+      });
+    }
+
+    async function togglePlace(placeId, btn) {
+      if (!editingListId) return;
+      const isIn = listPlaceIds.has(placeId);
+      const action = isIn ? "remove_place_from_list" : "add_place_to_list";
+      const res = await callLists({ action, list_id: editingListId, place_id: placeId });
+      if (res.status === "ok") {
+        if (isIn) listPlaceIds.delete(placeId);
+        else listPlaceIds.add(placeId);
+        btn.classList.toggle("selected", !isIn);
+        btn.querySelector(".place-picker-check").textContent = isIn ? "" : "✓";
+        // Update place_count on the list card
+        const list = lists.find(l => l.id === editingListId);
+        if (list) { list.place_count = listPlaceIds.size; renderLists(); }
+      }
+    }
+
+    // ---- Save ----
+    listSheetSave.addEventListener("click", async () => {
+      const title = listTitleInput.value.trim();
+      if (!title) {
+        listSheetError.textContent = "Please enter a title.";
+        listSheetError.style.display = "block";
+        return;
+      }
+      listSheetError.style.display = "none";
+      listSheetSave.textContent = "Saving…";
+      listSheetSave.disabled = true;
+
+      const payload = {
+        title,
+        description: listDescInput.value.trim() || null,
+        is_private: listPrivateCheck.checked,
+      };
+
+      let res;
+      if (editingListId) {
+        res = await callLists({ action: "update_list", list_id: editingListId, ...payload });
+        if (res.status === "ok") {
+          const idx = lists.findIndex(l => l.id === editingListId);
+          if (idx !== -1) lists[idx] = { ...lists[idx], ...res.list };
+        }
+      } else {
+        res = await callLists({ action: "create_list", ...payload });
+        if (res.status === "ok") lists.unshift({ ...res.list, place_count: 0 });
+      }
+
+      listSheetSave.textContent = "Save";
+      listSheetSave.disabled = false;
+
+      if (res.status === "ok") {
+        renderLists();
+        closeSheet();
+      } else {
+        listSheetError.textContent = res.error ?? "Something went wrong.";
+        listSheetError.style.display = "block";
+      }
+    });
+
+    // ---- Delete ----
+    async function deleteList(listId) {
+      const list = lists.find(l => l.id === listId);
+      if (!list) return;
+      if (!confirm(`Delete "${list.title}"? This cannot be undone.`)) return;
+
+      const res = await callLists({ action: "delete_list", list_id: listId });
+      if (res.status === "ok") {
+        lists = lists.filter(l => l.id !== listId);
+        renderLists();
+      } else {
+        alert("Failed to delete list.");
+      }
+    }
+
+    newListBtn.addEventListener("click", openCreateSheet);
+    listSheetCancel.addEventListener("click", closeSheet);
+    overlay.addEventListener("click", e => { if (e.target === overlay) closeSheet(); });
+
+    // ---- Escape key ----
+    document.addEventListener("keydown", e => {
+      if (e.key === "Escape" && overlay.classList.contains("open")) closeSheet();
+    });
+
+    // ---- Util ----
+    function escHtml(str) {
+      return String(str ?? "")
+        .replace(/&/g, "&amp;").replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    }
+
+    // ---- Hamburger ----
+    const hamburgerBtn = document.getElementById("hamburgerBtn");
+    const headerNav = document.getElementById("headerNav");
+    hamburgerBtn?.addEventListener("click", () => {
+      const isOpen = headerNav.classList.toggle("open");
+      hamburgerBtn.classList.toggle("open", isOpen);
+      hamburgerBtn.setAttribute("aria-expanded", isOpen);
+    });
+    headerNav?.querySelectorAll("a").forEach(link => {
+      link.addEventListener("click", () => {
+        headerNav.classList.remove("open");
+        hamburgerBtn.classList.remove("open");
+        hamburgerBtn.setAttribute("aria-expanded", "false");
+      });
+    });
+    document.addEventListener("click", e => {
+      if (!hamburgerBtn?.contains(e.target) && !headerNav?.contains(e.target)) {
+        headerNav?.classList.remove("open");
+        hamburgerBtn?.classList.remove("open");
+        hamburgerBtn?.setAttribute("aria-expanded", "false");
+      }
+    });
+  </script>
+</body>
+</html>

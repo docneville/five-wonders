@@ -240,10 +240,14 @@
             </div>
           </div>
 
-          <div class="profile-stats">
+          <div class="profile-stats" style="grid-template-columns: repeat(3, 1fr);">
             <a href="view.html?filter=mine" class="stat-item stat-item--link" title="View my Wonders on map">
               <div class="stat-value" id="placesCount">0</div>
-              <div class="stat-label">Wonders Saved</div>
+              <div class="stat-label">Wonders</div>
+            </a>
+            <a href="lists.html" class="stat-item stat-item--link" title="My Lists">
+              <div class="stat-value" id="listsCount">0</div>
+              <div class="stat-label">Lists</div>
             </a>
             <div class="stat-item">
               <div class="stat-value" id="memberSince">-</div>
@@ -438,11 +442,11 @@
           }
         }
 
-        // Load places count
-        const { count } = await sb
-          .from("places")
-          .select("id", { count: "exact", head: true })
-          .eq("user_id", validatedProfileId);
+        // Load places count and lists count in parallel
+        const [{ count }, { count: lcount }] = await Promise.all([
+          sb.from("places").select("id", { count: "exact", head: true }).eq("user_id", validatedProfileId),
+          sb.from("lists").select("id", { count: "exact", head: true }).eq("user_id", validatedProfileId),
+        ]);
 
         // Update UI with whatever data we have
         const profileFirstName = profile?.first_name || "";
@@ -463,6 +467,7 @@
         usernameField.classList.toggle("empty", !profileUserName);
 
         placesCount.textContent = count || 0;
+        document.getElementById("listsCount").textContent = lcount || 0;
         memberSince.textContent = formatDate(profile?.created_at);
 
         // Profile photo
