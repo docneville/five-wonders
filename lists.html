@@ -523,8 +523,9 @@
         renderLists();
         closeSheet();
       } else {
-        listSheetError.textContent = res.error ?? "Something went wrong.";
+        listSheetError.textContent = res.error ?? `Error (no details). Check console.`;
         listSheetError.style.display = "block";
+        console.error("create/update list failed:", res);
       }
     });
 

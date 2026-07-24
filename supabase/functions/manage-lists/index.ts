@@ -75,9 +75,9 @@ serve(async (req: Request): Promise<Response> => {
     return json({ status: "ok", list: { ...list, places } });
   }
 
-  if (!user_token) return new Response("Missing user_token", { status: 401, headers: corsHeaders });
+  if (!user_token) return err("Missing user_token", 401);
   const userId = await getUserId(user_token);
-  if (!userId) return new Response("Invalid or inactive user_token", { status: 401, headers: corsHeaders });
+  if (!userId) return err("Invalid or inactive user_token", 401);
 
   // ---- ACTION: list_lists ----
   if (action === "list_lists") {
