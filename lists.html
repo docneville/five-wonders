@@ -313,7 +313,9 @@
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...body, user_token: getApiKey() }),
       });
-      return res.json().catch(() => ({}));
+      const text = await res.text();
+      console.log("manage-lists", body.action, "→", res.status, text);
+      try { return JSON.parse(text); } catch { return {}; }
     }
 
     async function callPlaces(body) {
