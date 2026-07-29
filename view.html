@@ -536,9 +536,45 @@
         ${(infoRows || linkRows) ? `<div class="place-info-section">${infoRows}${linkRows}</div>` : ""}
         ${photoStrip}
         ${notesHtml}
+        <div class="place-lists-section" id="place-lists-${placeId}"></div>
         ${metaHtml}
         <div style="height:32px;"></div>
       `;
+    }
+
+    // Fetch and render the "In your lists" section for a place
+    const MANAGE_LISTS_URL = `${SUPABASE_URL}/functions/v1/manage-lists`;
+    const LS_API_KEY = "fw_api_key";
+    const LS_API_KEY_LEGACY = "api_key";
+    function getApiKey() {
+      return localStorage.getItem(LS_API_KEY) || localStorage.getItem(LS_API_KEY_LEGACY);
+    }
+
+    async function loadPlaceLists(placeId) {
+      const el = document.getElementById(`place-lists-${placeId}`);
+      if (!el) return;
+
+      const apiKey = getApiKey();
+      if (!apiKey) return; // guests don't see lists section
+
+      const res = await fetch(MANAGE_LISTS_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "get_place_lists", place_id: placeId, user_token: apiKey }),
+      }).then(r => r.json()).catch(() => ({}));
+
+      const lists = res.lists ?? [];
+      if (lists.length === 0) return;
+
+      el.innerHTML = `
+        <div class="place-in-lists">
+          <div class="place-in-lists-label">In your lists</div>
+          ${lists.map(l => `
+            <a href="list-detail.html?id=${l.id}" class="place-in-lists-chip">
+              ${escapeHtml(l.title)}
+              ${l.is_private ? `<span class="place-in-lists-private">Private</span>` : ""}
+            </a>`).join("")}
+        </div>`;
     }
 
     // Desktop popup card (includes title + category in body)
@@ -673,6 +709,7 @@
             placeSheetSubtitleEl.textContent = category || "";
             placeSheetContent.innerHTML = bodyHtml;
             openPlaceSheet("half");
+            loadPlaceLists(placeData.placeId);
           });
         } else {
           marker.bindPopup(buildPopupHtml(placeData), { maxWidth: 340 });
@@ -1049,6 +1086,7 @@
               placeSheetSubtitleEl.textContent = placeData.category || "";
               placeSheetContent.innerHTML = buildPlaceBodyHtml(placeData);
               openPlaceSheet("half");
+              loadPlaceLists(placeData.placeId);
             });
           } else {
             marker.bindPopup(buildPopupHtml(placeData), { maxWidth: 340 });
@@ -1069,6 +1107,7 @@
             placeSheetSubtitleEl.textContent = placeData.category || "";
             placeSheetContent.innerHTML = buildPlaceBodyHtml(placeData);
             openPlaceSheet("half");
+            loadPlaceLists(placeData.placeId);
           } else {
             marker.openPopup();
           }
@@ -1087,6 +1126,7 @@
         placeSheetSubtitleEl.textContent = placeData.category || "";
         placeSheetContent.innerHTML = buildPlaceBodyHtml(placeData);
         openPlaceSheet("half");
+        loadPlaceLists(placeData.placeId);
       } else {
         // Find and open the marker's popup
         markerClusterGroup.eachLayer((layer) => {

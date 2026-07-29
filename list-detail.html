@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>List · Five Wonders</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="fw.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+  <style>
+    .marker-cluster-small { background-color: rgba(34,197,94,.6); }
+    .marker-cluster-small div { background-color: rgba(34,197,94,.8); }
+    .marker-cluster-medium { background-color: rgba(251,191,36,.6); }
+    .marker-cluster-medium div { background-color: rgba(251,191,36,.8); }
+    .marker-cluster-large { background-color: rgba(239,68,68,.6); }
+    .marker-cluster-large div { background-color: rgba(239,68,68,.8); }
+    .marker-cluster { background-clip: padding-box; border-radius: 50%; }
+    .marker-cluster div {
+      width:30px; height:30px; margin-left:5px; margin-top:5px;
+      text-align:center; border-radius:50%;
+      font:12px "Helvetica Neue",Arial,Helvetica,sans-serif;
+      color:#fff; font-weight:700; line-height:30px;
+    }
+    .marker-cluster span { line-height:30px; }
+
+    /* ---- List detail specific ---- */
+    .ld-header {
+      position: sticky;
+      top: 0;
+      z-index: 500;
+      background: var(--fw-surface, #fff);
+      border-bottom: 1px solid var(--fw-border, #e5e7eb);
+      padding: 12px 16px;
+    }
+    .ld-header-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+    .ld-back {
+      flex-shrink: 0;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--fw-accent, #2563eb);
+      padding: 4px 0;
+      font-size: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .ld-title-block { flex: 1; min-width: 0; }
+    .ld-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--fw-text, #111827);
+      margin: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .ld-desc {
+      font-size: 0.82rem;
+      color: var(--fw-text-muted, #6b7280);
+      margin: 2px 0 0;
+    }
+    .ld-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+    .ld-share-btn, .ld-toggle-btn {
+      background: var(--fw-surface2, #f3f4f6);
+      border: none;
+      border-radius: 20px;
+      padding: 6px 12px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      color: var(--fw-text, #111827);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      transition: background 0.15s;
+    }
+    .ld-share-btn:hover, .ld-toggle-btn:hover { background: var(--fw-surface3, #e5e7eb); }
+    .ld-share-btn svg, .ld-toggle-btn svg { width: 16px; height: 16px; }
+
+    /* ---- Toggle view ---- */
+    #ldMapContainer {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+    }
+    #ldMap { width: 100%; height: 100%; }
+
+    .ld-list-view {
+      overflow-y: auto;
+      height: 100%;
+      background: var(--fw-bg, #f9fafb);
+    }
+    .ld-place-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--fw-border, #e5e7eb);
+      cursor: pointer;
+      background: var(--fw-surface, #fff);
+      transition: background 0.12s;
+    }
+    .ld-place-item:hover { background: var(--fw-surface2, #f3f4f6); }
+    .ld-place-icon {
+      width: 38px; height: 38px;
+      border-radius: 50%;
+      background: var(--fw-accent-light, #dbeafe);
+      color: var(--fw-accent, #2563eb);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1rem;
+      flex-shrink: 0;
+    }
+    .ld-place-info { flex: 1; min-width: 0; }
+    .ld-place-name {
+      font-weight: 600;
+      font-size: 0.95rem;
+      color: var(--fw-text, #111827);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .ld-place-sub {
+      font-size: 0.78rem;
+      color: var(--fw-text-muted, #6b7280);
+      margin-top: 2px;
+    }
+    .ld-place-chevron {
+      color: var(--fw-text-muted, #9ca3af);
+      flex-shrink: 0;
+    }
+    .ld-empty {
+      text-align: center;
+      padding: 48px 24px;
+      color: var(--fw-text-muted, #6b7280);
+    }
+    .ld-loading {
+      text-align: center;
+      padding: 48px 24px;
+      color: var(--fw-text-muted, #6b7280);
+    }
+    .ld-error {
+      text-align: center;
+      padding: 32px 24px;
+      color: #dc2626;
+    }
+
+    /* ---- Content area below header ---- */
+    .ld-content {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      display: flex;
+      flex-direction: column;
+    }
+    .ld-body {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Hide/show panes */
+    .ld-pane { position: absolute; inset: 0; }
+    .ld-pane--hidden { display: none; }
+  </style>
+</head>
+
+<body>
+  <div class="ld-content">
+    <!-- Sticky header (injected by JS with list info) -->
+    <div class="ld-header" id="ldHeader">
+      <div class="ld-header-row">
+        <button class="ld-back" id="ldBackBtn" onclick="history.back()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><polyline points="15 18 9 12 15 6"/></svg>
+          Lists
+        </button>
+        <div class="ld-title-block">
+          <div class="ld-title" id="ldTitle">Loading…</div>
+          <div class="ld-desc" id="ldDesc"></div>
+        </div>
+        <div class="ld-actions">
+          <button class="ld-share-btn" id="ldShareBtn" style="display:none">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+            Share
+          </button>
+          <button class="ld-toggle-btn" id="ldToggleBtn">
+            <svg id="ldToggleIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+            <span id="ldToggleLabel">List</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Body: map pane + list pane -->
+    <div class="ld-body">
+      <!-- Map -->
+      <div class="ld-pane" id="ldMapPane">
+        <div id="ldMap"></div>
+      </div>
+
+      <!-- List -->
+      <div class="ld-pane ld-pane--hidden ld-list-view" id="ldListPane">
+        <div id="ldListBody"><div class="ld-loading">Loading places…</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Place sheet (mobile) -->
+  <section id="placeSheet" class="fw-sheet fw-sheet--view fw-sheet--hidden" aria-hidden="true">
+    <div class="fw-sheet-handle" id="placeSheetHandle"></div>
+    <div class="ps-header">
+      <button class="ps-share-btn" id="placeSheetShareBtn" aria-label="Share this place">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+      </button>
+      <div class="ps-header-text">
+        <div class="ps-title" id="placeSheetTitle">Place</div>
+        <div class="ps-subtitle" id="placeSheetSubtitle"></div>
+      </div>
+      <button class="ps-close-btn" id="closePlaceSheetBtn" aria-label="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="fw-sheet-content" id="placeSheetContent"></div>
+  </section>
+
+  <!-- Lightbox -->
+  <div id="lightbox" class="lightbox lightbox--hidden" aria-hidden="true">
+    <button class="lightbox-close" type="button" aria-label="Close">&times;</button>
+    <button class="lightbox-prev" type="button" aria-label="Previous">&lsaquo;</button>
+    <button class="lightbox-next" type="button" aria-label="Next">&rsaquo;</button>
+    <div class="lightbox-content"><img id="lightbox-img" src="" alt="" /></div>
+    <div class="lightbox-footer">
+      <div id="lightbox-caption" class="lightbox-caption"></div>
+      <div id="lightbox-counter" class="lightbox-counter"></div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+
+  <script type="module">
+    const SUPABASE_URL = "https://ekpssonwtztubqfihlqm.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVrcHNzb253dHp0dWJxZmlobHFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM1Njg2MjAsImV4cCI6MjA3OTE0NDYyMH0.R1_-ctf-6NsVUJEApf4N591lA9TPRCJQFzhrDVRbr_4";
+    const MANAGE_LISTS_URL = `${SUPABASE_URL}/functions/v1/manage-lists`;
+    const MANAGE_PLACES_URL = `${SUPABASE_URL}/functions/v1/manage-places`;
+    const STORAGE_URL = `${SUPABASE_URL}/storage/v1/object/public/place-photos`;
+
+    const LS_API_KEY = "fw_api_key";
+    const LS_API_KEY_LEGACY = "api_key";
+    function getApiKey() {
+      return localStorage.getItem(LS_API_KEY) || localStorage.getItem(LS_API_KEY_LEGACY);
+    }
+
+    const params = new URLSearchParams(location.search);
+    const listId = params.get("id");
+    if (!listId) {
+      document.getElementById("ldTitle").textContent = "No list specified";
+    }
+
+    function escapeHtml(str) {
+      if (str == null) return "";
+      return String(str).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");
+    }
+
+    function getPhotoUrl(path) {
+      return path ? `${STORAGE_URL}/${path}` : "";
+    }
+
+    // ---- Category icons ----
+    const CATEGORY_EMOJI = {
+      Dining: "🍽️", Lodging: "🛏️", Attraction: "✨",
+      Recreation: "🎯", Shopping: "🛍️", Other: "📍",
+    };
+    function categoryEmoji(cat) { return CATEGORY_EMOJI[cat] || "📍"; }
+
+    function makeCategoryIcon(category) {
+      const emoji = categoryEmoji(category);
+      return L.divIcon({
+        className: "",
+        html: `<div style="font-size:1.5rem;line-height:1;filter:drop-shadow(0 1px 2px rgba(0,0,0,.4))">${emoji}</div>`,
+        iconSize: [32, 32], iconAnchor: [16, 32], popupAnchor: [0, -32],
+      });
+    }
+
+    // ---- Map ----
+    const map = L.map("ldMap", { zoomControl: true }).setView([20, 0], 2);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: "© OpenStreetMap contributors", maxZoom: 19,
+    }).addTo(map);
+    const markerCluster = L.markerClusterGroup();
+    map.addLayer(markerCluster);
+
+    // ---- Sheet ----
+    const placeSheet = document.getElementById("placeSheet");
+    const placeSheetTitle = document.getElementById("placeSheetTitle");
+    const placeSheetSubtitle = document.getElementById("placeSheetSubtitle");
+    const placeSheetContent = document.getElementById("placeSheetContent");
+    const closePlaceSheetBtn = document.getElementById("closePlaceSheetBtn");
+    let currentSheetPlace = null;
+
+    const SHEET_STATES = ["fw-sheet--hidden","fw-sheet--peek","fw-sheet--half","fw-sheet--full"];
+    function setSheetState(state) {
+      SHEET_STATES.forEach(s => placeSheet.classList.remove(s));
+      placeSheet.classList.add(state);
+      placeSheet.setAttribute("aria-hidden", state === "fw-sheet--hidden" ? "true" : "false");
+    }
+    function openPlaceSheet() { setSheetState("fw-sheet--half"); }
+    function closePlaceSheet() { setSheetState("fw-sheet--hidden"); currentSheetPlace = null; }
+
+    closePlaceSheetBtn.addEventListener("click", closePlaceSheet);
+
+    // Swipe to dismiss sheet
+    let sheetTouchStartY = null;
+    const sheetHandle = document.getElementById("placeSheetHandle");
+    sheetHandle.addEventListener("touchstart", e => { sheetTouchStartY = e.touches[0].clientY; });
+    sheetHandle.addEventListener("touchend", e => {
+      if (sheetTouchStartY == null) return;
+      const dy = e.changedTouches[0].clientY - sheetTouchStartY;
+      if (dy > 60) closePlaceSheet();
+      sheetTouchStartY = null;
+    });
+
+    // ---- Place share handler ----
+    const placeSheetShareBtn = document.getElementById("placeSheetShareBtn");
+    placeSheetShareBtn.addEventListener("click", async () => {
+      if (!currentSheetPlace) return;
+      const { id, title, category, city, state } = currentSheetPlace;
+      const shareUrl = `${location.origin}${location.pathname.replace("list-detail.html","view.html")}?place=${id}`;
+      const shareText = `${title}${category ? ` — ${category}` : ""}${city ? ` · ${city}` : ""}${state ? `, ${state}` : ""}`;
+      if (navigator.share) {
+        try { await navigator.share({ title, text: shareText, url: shareUrl }); } catch {}
+      } else {
+        await navigator.clipboard.writeText(shareUrl).catch(() => {});
+        placeSheetSubtitle.textContent = "Link copied!";
+        setTimeout(() => { placeSheetSubtitle.textContent = currentSheetPlace.category || ""; }, 2000);
+      }
+    });
+
+    // ---- Build place sheet content ----
+    const SVG = {
+      directions: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>`,
+      phone: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 014.07 9.77 19.79 19.79 0 011.07 4.18 2 2 0 013.05 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L7.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>`,
+      website: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>`,
+    };
+
+    function buildAddress(place) {
+      const parts = [place.street_line1, place.city, place.state, place.country].filter(Boolean);
+      return parts.join(", ");
+    }
+
+    function buildMapsUrl(lat, lon, address) {
+      const q = address ? encodeURIComponent(address) : `${lat},${lon}`;
+      return `maps://?q=${q}&ll=${lat},${lon}`;
+    }
+    function buildGoogleMapsUrl(lat, lon, address) {
+      const q = address ? encodeURIComponent(address) : `${lat},${lon}`;
+      return `https://www.google.com/maps/search/?api=1&query=${q}`;
+    }
+
+    function buildPlaceHtml(place) {
+      const address = buildAddress(place);
+      const lat = place.latitude, lon = place.longitude;
+      const appleMapsUrl = buildMapsUrl(lat, lon, address);
+      const googleMapsUrl = buildGoogleMapsUrl(lat, lon, address);
+
+      const actionBtns = [
+        `<a href="${escapeHtml(appleMapsUrl)}" class="place-action-btn place-action-btn--primary" target="_blank" rel="noopener">${SVG.directions}<span>Maps</span></a>`,
+        `<a href="${escapeHtml(googleMapsUrl)}" class="place-action-btn place-action-btn--primary" target="_blank" rel="noopener">${SVG.directions}<span>Google</span></a>`,
+        place.phone ? `<a href="tel:${escapeHtml(place.phone)}" class="place-action-btn place-action-btn--secondary">${SVG.phone}<span>Call</span></a>` : "",
+        place.website ? `<a href="${escapeHtml(place.website)}" target="_blank" rel="noopener" class="place-action-btn place-action-btn--secondary">${SVG.website}<span>Website</span></a>` : "",
+      ].filter(Boolean).join("");
+
+      const infoRows = [
+        address ? `<div class="place-info-row"><div class="place-info-text">${escapeHtml(address)}</div></div>` : "",
+        place.phone ? `<div class="place-info-row"><div class="place-info-text"><a href="tel:${escapeHtml(place.phone)}" class="place-info-link">${escapeHtml(place.phone)}</a></div></div>` : "",
+        place.website ? `<div class="place-info-row"><div class="place-info-text"><a href="${escapeHtml(place.website)}" target="_blank" rel="noopener" class="place-info-link">${escapeHtml(place.website)}</a></div></div>` : "",
+      ].filter(Boolean).join("");
+
+      const photoStrip = (place.photos && place.photos.length > 0)
+        ? `<div class="place-photo-strip">${place.photos.map((ph, i) =>
+            `<div class="place-photo-strip-thumb" data-place-id="${place.id}" data-photo-index="${i}"><img src="${getPhotoUrl(ph.thumbnail_path || ph.storage_path)}" alt="${escapeHtml(ph.description||'')}" loading="lazy"/></div>`
+          ).join("")}</div>`
+        : "";
+
+      const notesHtml = place.notes
+        ? `<div class="place-notes-section"><h4>Why it's a Wonder</h4><div class="place-notes-body">${escapeHtml(place.notes)}</div></div>`
+        : "";
+
+      return `
+        <div class="place-action-row">${actionBtns}</div>
+        ${infoRows ? `<div class="place-info-section">${infoRows}</div>` : ""}
+        ${photoStrip}
+        ${notesHtml}
+        <div style="height:32px;"></div>
+      `;
+    }
+
+    // ---- Lightbox ----
+    const lightbox = document.getElementById("lightbox");
+    const lightboxImg = document.getElementById("lightbox-img");
+    const lightboxCaption = document.getElementById("lightbox-caption");
+    const lightboxCounter = document.getElementById("lightbox-counter");
+    let lightboxPhotos = [], lightboxIndex = 0;
+
+    function openLightbox(photos, index) {
+      lightboxPhotos = photos;
+      lightboxIndex = index;
+      showLightboxPhoto();
+      lightbox.classList.remove("lightbox--hidden");
+      lightbox.setAttribute("aria-hidden", "false");
+    }
+    function closeLightbox() {
+      lightbox.classList.add("lightbox--hidden");
+      lightbox.setAttribute("aria-hidden", "true");
+    }
+    function showLightboxPhoto() {
+      const ph = lightboxPhotos[lightboxIndex];
+      lightboxImg.src = getPhotoUrl(ph.storage_path || ph.thumbnail_path);
+      lightboxCaption.textContent = ph.description || "";
+      lightboxCounter.textContent = `${lightboxIndex + 1} / ${lightboxPhotos.length}`;
+    }
+    lightbox.querySelector(".lightbox-close").addEventListener("click", closeLightbox);
+    lightbox.querySelector(".lightbox-prev").addEventListener("click", () => {
+      lightboxIndex = (lightboxIndex - 1 + lightboxPhotos.length) % lightboxPhotos.length;
+      showLightboxPhoto();
+    });
+    lightbox.querySelector(".lightbox-next").addEventListener("click", () => {
+      lightboxIndex = (lightboxIndex + 1) % lightboxPhotos.length;
+      showLightboxPhoto();
+    });
+
+    // Delegated photo click
+    document.addEventListener("click", e => {
+      const thumb = e.target.closest(".place-photo-strip-thumb");
+      if (!thumb) return;
+      const idx = parseInt(thumb.dataset.photoIndex, 10) || 0;
+      if (currentSheetPlace?.photos) openLightbox(currentSheetPlace.photos, idx);
+    });
+
+    // ---- Open a place in the sheet ----
+    async function openPlace(place) {
+      currentSheetPlace = place;
+      placeSheetTitle.textContent = place.title;
+      placeSheetSubtitle.textContent = place.category || "";
+
+      // If we only have summary info, fetch full place details
+      let fullPlace = place;
+      if (!place.notes && !place.photos) {
+        const apiKey = getApiKey();
+        if (apiKey) {
+          const res = await fetch(MANAGE_PLACES_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "get_place", place_id: place.id, user_token: apiKey }),
+          }).then(r => r.json()).catch(() => ({}));
+          if (res.place) { fullPlace = res.place; currentSheetPlace = fullPlace; }
+        } else {
+          const res = await fetch(MANAGE_PLACES_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "get_public", user_token: "public", place_id: place.id }),
+          }).then(r => r.json()).catch(() => ({}));
+          if (res.place) { fullPlace = res.place; currentSheetPlace = fullPlace; }
+        }
+      }
+
+      placeSheetContent.innerHTML = buildPlaceHtml(fullPlace);
+      openPlaceSheet();
+    }
+
+    // ---- Toggle map / list ----
+    let showingMap = true;
+    const ldMapPane = document.getElementById("ldMapPane");
+    const ldListPane = document.getElementById("ldListPane");
+    const ldToggleBtn = document.getElementById("ldToggleBtn");
+    const ldToggleLabel = document.getElementById("ldToggleLabel");
+    const ldToggleIcon = document.getElementById("ldToggleIcon");
+
+    const LIST_ICON_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>`;
+    const MAP_ICON_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>`;
+
+    ldToggleBtn.addEventListener("click", () => {
+      showingMap = !showingMap;
+      if (showingMap) {
+        ldMapPane.classList.remove("ld-pane--hidden");
+        ldListPane.classList.add("ld-pane--hidden");
+        ldToggleIcon.innerHTML = LIST_ICON_SVG.replace(/<svg[^>]*>|<\/svg>/g, "");
+        ldToggleIcon.setAttribute("viewBox", "0 0 24 24");
+        ldToggleLabel.textContent = "List";
+        map.invalidateSize();
+      } else {
+        ldMapPane.classList.add("ld-pane--hidden");
+        ldListPane.classList.remove("ld-pane--hidden");
+        ldToggleIcon.innerHTML = MAP_ICON_SVG.replace(/<svg[^>]*>|<\/svg>/g, "");
+        ldToggleIcon.setAttribute("viewBox", "0 0 24 24");
+        ldToggleLabel.textContent = "Map";
+      }
+    });
+
+    // ---- Render list body ----
+    let listPlaces = [];
+
+    function renderListView() {
+      const body = document.getElementById("ldListBody");
+      if (listPlaces.length === 0) {
+        body.innerHTML = `<div class="ld-empty">No places in this list yet.</div>`;
+        return;
+      }
+      body.innerHTML = listPlaces.map(p => `
+        <div class="ld-place-item" data-place-id="${p.id}">
+          <div class="ld-place-icon">${categoryEmoji(p.category)}</div>
+          <div class="ld-place-info">
+            <div class="ld-place-name">${escapeHtml(p.title)}</div>
+            <div class="ld-place-sub">${[p.category, p.city, p.state].filter(Boolean).join(" · ")}</div>
+          </div>
+          <div class="ld-place-chevron">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="16" height="16"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+        </div>
+      `).join("");
+    }
+
+    // Delegated list item click
+    document.getElementById("ldListBody").addEventListener("click", e => {
+      const item = e.target.closest(".ld-place-item");
+      if (!item) return;
+      const placeId = item.dataset.placeId;
+      const place = listPlaces.find(p => p.id === placeId);
+      if (place) openPlace(place);
+    });
+
+    // ---- Render map pins ----
+    function renderMapPins() {
+      markerCluster.clearLayers();
+      listPlaces.forEach(place => {
+        if (!place.latitude || !place.longitude) return;
+        const marker = L.marker([place.latitude, place.longitude], { icon: makeCategoryIcon(place.category) });
+        marker.on("click", () => openPlace(place));
+        markerCluster.addLayer(marker);
+      });
+      if (listPlaces.length > 0) {
+        map.fitBounds(markerCluster.getBounds().pad(0.2));
+      }
+    }
+
+    // ---- Share list ----
+    const ldShareBtn = document.getElementById("ldShareBtn");
+    let listMeta = null;
+
+    ldShareBtn.addEventListener("click", async () => {
+      if (!listMeta) return;
+      const shareUrl = `${location.origin}${location.pathname}?id=${listMeta.id}`;
+      const shareText = `${listMeta.title}${listMeta.description ? ` — ${listMeta.description}` : ""} · Five Wonders`;
+      if (navigator.share) {
+        try { await navigator.share({ title: listMeta.title, text: shareText, url: shareUrl }); } catch {}
+      } else {
+        await navigator.clipboard.writeText(shareUrl).catch(() => {});
+        const origText = ldShareBtn.querySelector("span") || ldShareBtn;
+        ldShareBtn.title = "Link copied!";
+      }
+    });
+
+    // ---- Load list ----
+    async function loadList() {
+      if (!listId) return;
+
+      const apiKey = getApiKey();
+      let list = null;
+      let places = [];
+
+      if (apiKey) {
+        // Authenticated: can see private lists they own
+        const res = await fetch(MANAGE_LISTS_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "get_list_places", list_id: listId, user_token: apiKey }),
+        }).then(r => r.json()).catch(() => ({}));
+
+        if (res.error) {
+          // May not be owner — try public
+          const pub = await fetch(MANAGE_LISTS_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "get_public_list", list_id: listId }),
+          }).then(r => r.json()).catch(() => ({}));
+
+          if (pub.list) { list = pub.list; places = pub.list.places || []; }
+          else { showError(pub.error || res.error); return; }
+        } else {
+          places = res.places || [];
+          // Fetch list meta separately for name/description
+          const metaRes = await fetch(MANAGE_LISTS_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "list_lists", user_token: apiKey }),
+          }).then(r => r.json()).catch(() => ({}));
+          list = (metaRes.lists || []).find(l => l.id === listId) || { id: listId, title: "My List" };
+        }
+      } else {
+        // Guest: public lists only
+        const pub = await fetch(MANAGE_LISTS_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "get_public_list", list_id: listId }),
+        }).then(r => r.json()).catch(() => ({}));
+
+        if (pub.list) { list = pub.list; places = pub.list.places || []; }
+        else { showError(pub.error === "private" ? "This list is private." : "List not found."); return; }
+      }
+
+      listMeta = list;
+      document.title = `${list.title} · Five Wonders`;
+      document.getElementById("ldTitle").textContent = list.title;
+      document.getElementById("ldDesc").textContent = list.description || "";
+
+      // Show share button only for public lists
+      if (!list.is_private) ldShareBtn.style.display = "flex";
+
+      listPlaces = places;
+      renderListView();
+      renderMapPins();
+    }
+
+    function showError(msg) {
+      document.getElementById("ldTitle").textContent = "Error";
+      document.getElementById("ldListBody").innerHTML = `<div class="ld-error">${escapeHtml(msg)}</div>`;
+    }
+
+    // Fix toggle button SVG inner content
+    ldToggleIcon.innerHTML = `<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>`;
+
+    loadList();
+  </script>
+</body>
+</html>

@@ -767,6 +767,43 @@ button{
   word-break: break-word;
 }
 
+/* ---- In your lists section ---- */
+.place-in-lists{
+  padding: 14px 16px 0;
+  border-top: 1px solid var(--fw-border,#e5e7eb);
+  margin-bottom: 16px;
+}
+.place-in-lists-label{
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--fw-text-muted,#6b7280);
+  margin-bottom: 8px;
+}
+.place-in-lists-chip{
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--fw-surface2,#f3f4f6);
+  color: var(--fw-accent,#2563eb);
+  border-radius: 20px;
+  padding: 5px 12px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  text-decoration: none;
+  margin: 0 6px 6px 0;
+  transition: background 0.15s;
+}
+.place-in-lists-chip:hover{ background: var(--fw-surface3,#e5e7eb); }
+.place-in-lists-private{
+  font-size: 0.7rem;
+  background: var(--fw-surface3,#e5e7eb);
+  color: var(--fw-text-muted,#6b7280);
+  border-radius: 10px;
+  padding: 1px 6px;
+}
+
 /* ---- Meta row ---- */
 .place-meta-row{
   padding: 0 16px 8px;

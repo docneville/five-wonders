@@ -90,6 +90,8 @@
       flex: 1;
       padding: 7px 0;
       border-radius: 8px;
+      text-align: center;
+      text-decoration: none;
       border: 1px solid var(--fw-border, #e5e7eb);
       background: none;
       font-size: 0.82rem;
@@ -394,7 +396,8 @@
             </div>
             ${l.description ? `<div class="list-card-desc">${escHtml(l.description)}</div>` : ""}
             <div class="list-card-actions">
-              <button class="list-action-btn" data-action="edit" data-id="${l.id}">✏️ Edit</button>
+              <a href="list-detail.html?id=${l.id}" class="list-action-btn">View</a>
+              <button class="list-action-btn" data-action="edit" data-id="${l.id}">Edit</button>
               <button class="list-action-btn list-action-btn--danger" data-action="delete" data-id="${l.id}">Delete</button>
             </div>
           </div>`;
