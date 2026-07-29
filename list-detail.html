@@ -275,19 +275,28 @@
       return path ? `${STORAGE_URL}/${path}` : "";
     }
 
-    // ---- Category icons ----
-    const CATEGORY_EMOJI = {
-      Dining: "🍽️", Lodging: "🛏️", Attraction: "✨",
-      Recreation: "🎯", Shopping: "🛍️", Other: "📍",
+    // ---- Category icons (same teardrop SVG pins as view.html) ----
+    const categoryIcons = {
+      Dining: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 002-2V2"/><path d="M7 2v20"/><path d="M21 15V2v0a5 5 0 00-5 5v6c0 1.1.9 2 2 2h3zm0 0v7"/></svg>`,
+      Lodging: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4v16"/><path d="M2 8h18a2 2 0 012 2v10"/><path d="M2 17h20"/><path d="M6 8v9"/></svg>`,
+      Attraction: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`,
+      Recreation: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22v-7l-2-2"/><path d="M17 8v.8A6 6 0 0113.5 20v0a6 6 0 01-6.5-6V8a3 3 0 116 0v4.5a1 1 0 01-1 1H11"/><path d="M12 2v4"/></svg>`,
+      Shopping: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>`,
+      Other: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`,
     };
-    function categoryEmoji(cat) { return CATEGORY_EMOJI[cat] || "📍"; }
+
+    function categoryEmoji(cat) {
+      const map = { Dining:"🍽️", Lodging:"🛏️", Attraction:"✨", Recreation:"🎯", Shopping:"🛍️", Other:"📍" };
+      return map[cat] || "📍";
+    }
 
     function makeCategoryIcon(category) {
-      const emoji = categoryEmoji(category);
+      const cat = category || "Other";
+      const icon = categoryIcons[cat] || categoryIcons.Other;
       return L.divIcon({
         className: "",
-        html: `<div style="font-size:1.5rem;line-height:1;filter:drop-shadow(0 1px 2px rgba(0,0,0,.4))">${emoji}</div>`,
-        iconSize: [32, 32], iconAnchor: [16, 32], popupAnchor: [0, -32],
+        html: `<div class="fw-category-pin fw-category-pin--${cat.toLowerCase()}">${icon}</div>`,
+        iconSize: [28, 28], iconAnchor: [14, 28], popupAnchor: [0, -28],
       });
     }
 
