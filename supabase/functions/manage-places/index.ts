@@ -147,6 +147,23 @@ serve(async (req: Request): Promise<Response> => {
     );
   }
 
+  // ---- ACTION: get_place (authenticated — own places + public places) ----
+  if (action === "get_place") {
+    const { place_id } = payload ?? {};
+    if (!place_id) return new Response(JSON.stringify({ error: "missing place_id" }), { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } });
+
+    const { data, error } = await supabaseAdmin
+      .from("places_with_profiles")
+      .select(`id, user_id, title, raw_text, notes, latitude, longitude, created_at, updated_at, street_line1, street_line2, city, state, postal_code, country, phone, website, category, links, photos, is_private, first_name, last_name, username`)
+      .eq("id", place_id)
+      .single();
+
+    if (error || !data) return new Response(JSON.stringify({ error: "not_found" }), { status: 404, headers: { "Content-Type": "application/json", ...corsHeaders } });
+    if (data.is_private && data.user_id !== userId) return new Response(JSON.stringify({ error: "forbidden" }), { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } });
+
+    return new Response(JSON.stringify({ status: "ok", place: data }), { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } });
+  }
+
   // ---- ACTION: update ----
   if (action === "update") {
     const {

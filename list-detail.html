@@ -333,7 +333,12 @@
     const placeSheetShareBtn = document.getElementById("placeSheetShareBtn");
     placeSheetShareBtn.addEventListener("click", async () => {
       if (!currentSheetPlace) return;
-      const { id, title, category, city, state } = currentSheetPlace;
+      const { id, title, category, city, state, is_private } = currentSheetPlace;
+      if (is_private) {
+        placeSheetSubtitle.textContent = "This place is private and cannot be shared.";
+        setTimeout(() => { placeSheetSubtitle.textContent = currentSheetPlace.category || ""; }, 3000);
+        return;
+      }
       const shareUrl = `${location.origin}${location.pathname.replace("list-detail.html","view.html")}?place=${id}`;
       const shareText = `${title}${category ? ` — ${category}` : ""}${city ? ` · ${city}` : ""}${state ? `, ${state}` : ""}`;
       if (navigator.share) {
