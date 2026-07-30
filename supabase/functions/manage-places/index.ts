@@ -125,7 +125,8 @@ serve(async (req: Request): Promise<Response> => {
         photos,
         created_at,
         updated_at,
-        is_private
+        is_private,
+        is_wonder
       `)
       .eq("user_id", userId)
       .order("created_at", { ascending: false });
@@ -181,6 +182,7 @@ serve(async (req: Request): Promise<Response> => {
       category,
       links,
       is_private,
+      is_wonder,
     } = payload ?? {};
 
     if (!place_id) {
@@ -257,6 +259,10 @@ serve(async (req: Request): Promise<Response> => {
 
     if (is_private !== undefined) {
       updatePayload.is_private = Boolean(is_private);
+    }
+
+    if (is_wonder !== undefined) {
+      updatePayload.is_wonder = Boolean(is_wonder);
     }
 
     const { error: updateError } = await supabaseAdmin
