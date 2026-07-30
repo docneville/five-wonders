@@ -157,6 +157,17 @@
             <option value="Personal">Personal</option>
           </select>
 
+          <!-- Wonder toggle -->
+          <label class="wonder-toggle" id="wonder-toggle-label" for="edit-is-wonder">
+            <input type="checkbox" class="wonder-toggle__checkbox" id="edit-is-wonder" />
+            <span class="wonder-toggle__icon">⭐</span>
+            <span class="wonder-toggle__text">
+              <span class="wonder-toggle__label">Wonder</span>
+              <span class="wonder-toggle__desc">Show on the shared map for friends to discover.</span>
+            </span>
+            <span class="wonder-toggle__switch"></span>
+          </label>
+
           <!-- Private toggle -->
           <div style="display:flex; align-items:center; gap:10px; margin:12px 0;">
             <input type="checkbox" id="edit-private" style="width:18px; height:18px; cursor:pointer;" />
@@ -268,6 +279,17 @@
               <option value="Shopping">Shopping</option>
               <option value="Personal">Personal</option>
             </select>
+
+            <!-- Wonder toggle (Mobile) -->
+            <label class="wonder-toggle" id="m-wonder-toggle-label" for="m-edit-is-wonder">
+              <input type="checkbox" class="wonder-toggle__checkbox" id="m-edit-is-wonder" />
+              <span class="wonder-toggle__icon">⭐</span>
+              <span class="wonder-toggle__text">
+                <span class="wonder-toggle__label">Wonder</span>
+                <span class="wonder-toggle__desc">Show on the shared map for friends to discover.</span>
+              </span>
+              <span class="wonder-toggle__switch"></span>
+            </label>
 
             <!-- Private toggle (Mobile) -->
             <div style="display:flex; align-items:center; gap:10px; margin:12px 0;">
@@ -528,6 +550,11 @@
     const editWebsiteInput = document.getElementById("edit-website");
     const editCategorySelect = document.getElementById("edit-category");
     const editPrivateCheckbox = document.getElementById("edit-private");
+    const editIsWonderCheckbox = document.getElementById("edit-is-wonder");
+    const wonderToggleLabel = document.getElementById("wonder-toggle-label");
+    editIsWonderCheckbox?.addEventListener("change", () => {
+      wonderToggleLabel.classList.toggle("wonder-toggle--on", editIsWonderCheckbox.checked);
+    });
 
     const saveChangesBtn = document.getElementById("save-changes-btn");
     const deleteBtn = document.getElementById("delete-btn");
@@ -555,6 +582,11 @@
     const mEditWebsiteInput = document.getElementById("m-edit-website");
     const mEditCategorySelect = document.getElementById("m-edit-category");
     const mEditPrivateCheckbox = document.getElementById("m-edit-private");
+    const mEditIsWonderCheckbox = document.getElementById("m-edit-is-wonder");
+    const mWonderToggleLabel = document.getElementById("m-wonder-toggle-label");
+    mEditIsWonderCheckbox?.addEventListener("change", () => {
+      mWonderToggleLabel.classList.toggle("wonder-toggle--on", mEditIsWonderCheckbox.checked);
+    });
 
     const mSaveBtn = document.getElementById("m-save-changes-btn");
     const mDeleteBtn = document.getElementById("m-delete-btn");
@@ -1080,6 +1112,8 @@
         editNoteInput.value = place.notes ?? "";
         editCategorySelect.value = place.category ?? "Other";
         editPrivateCheckbox.checked = place.is_private ?? false;
+        editIsWonderCheckbox.checked = place.is_wonder ?? false;
+        wonderToggleLabel.classList.toggle("wonder-toggle--on", place.is_wonder ?? false);
 
         // Build metadata text
         let metaHtml = "";
@@ -1117,6 +1151,8 @@
         mEditNoteInput.value = place.notes ?? "";
         mEditCategorySelect.value = place.category ?? "Other";
         mEditPrivateCheckbox.checked = place.is_private ?? false;
+        mEditIsWonderCheckbox.checked = place.is_wonder ?? false;
+        mWonderToggleLabel.classList.toggle("wonder-toggle--on", place.is_wonder ?? false);
 
         // Build metadata text (mobile)
         let mMetaHtml = "";
@@ -1290,6 +1326,7 @@
       category,
       links,
       is_private,
+      is_wonder,
       statusEl,
     }) {
       if (!activePlaceId) return;
@@ -1324,6 +1361,7 @@
             category,
             links,
             is_private,
+            is_wonder,
           }),
         });
 
@@ -1475,6 +1513,7 @@
         category: editCategorySelect.value || "Other",
         links: collectLinksFromUI(linksContainer),
         is_private: editPrivateCheckbox.checked,
+        is_wonder: editIsWonderCheckbox.checked,
         statusEl: editStatusEl,
       }).catch((err) => {
         console.error("Unexpected save error:", err);
@@ -1507,6 +1546,7 @@
         category: mEditCategorySelect.value || "Other",
         links: collectLinksFromUI(mLinksContainer),
         is_private: mEditPrivateCheckbox.checked,
+        is_wonder: mEditIsWonderCheckbox.checked,
         statusEl: mEditStatusEl,
       }).catch((err) => {
         console.error("Unexpected save error:", err);

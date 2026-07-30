@@ -257,6 +257,17 @@
           <option value="Personal">Personal</option>
         </select>
 
+        <!-- Wonder toggle -->
+        <label class="wonder-toggle" id="wonder-toggle-label" for="place-is-wonder">
+          <input type="checkbox" class="wonder-toggle__checkbox" id="place-is-wonder" />
+          <span class="wonder-toggle__icon">⭐</span>
+          <span class="wonder-toggle__text">
+            <span class="wonder-toggle__label">Wonder</span>
+            <span class="wonder-toggle__desc">Show this place on the shared map for friends to discover.</span>
+          </span>
+          <span class="wonder-toggle__switch"></span>
+        </label>
+
         <!-- Photos Section -->
         <div class="photos-section">
           <label>Photos (up to 5)</label>
@@ -550,6 +561,12 @@
     const placeAddressInput = document.getElementById("place-address");
     const userNoteInput = document.getElementById("user-note");
     const placeCategorySelect = document.getElementById("place-category");
+    const placeIsWonderCheckbox = document.getElementById("place-is-wonder");
+    const wonderToggleLabel = document.getElementById("wonder-toggle-label");
+
+    placeIsWonderCheckbox?.addEventListener("change", () => {
+      wonderToggleLabel.classList.toggle("wonder-toggle--on", placeIsWonderCheckbox.checked);
+    });
 
     const saveBtn = document.getElementById("save-btn");
 
@@ -781,6 +798,8 @@
       placeAddressInput.value = "";
       userNoteInput.value = "";
       placeCategorySelect.value = "Other";
+      placeIsWonderCheckbox.checked = false;
+      wonderToggleLabel.classList.remove("wonder-toggle--on");
       selectedLatLng = null;
       selectedAddress = null;
       selectedExtratags = null;
@@ -1204,7 +1223,8 @@
         longitude: selectedLatLng.lon,
         user_note,
         category,
-        user_token: apiKey, // unchanged field name, now holds api_key
+        is_wonder: placeIsWonderCheckbox.checked,
+        user_token: apiKey,
         osm_address: selectedAddress,
         osm_extratags: selectedExtratags,
       };

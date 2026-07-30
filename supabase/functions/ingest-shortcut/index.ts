@@ -118,6 +118,7 @@ serve(async (req: Request): Promise<Response> => {
     osm_address,
     osm_extratags,
     category,
+    is_wonder,
   } = payload ?? {};
 
   if (!user_token) {
@@ -160,6 +161,7 @@ serve(async (req: Request): Promise<Response> => {
     raw_text: place_address || null,
     notes: user_note || null,
     category: category || "Other",
+    is_wonder: is_wonder === true,
 
     // OSM raw blobs
     osm_address: osm_address ?? null,
