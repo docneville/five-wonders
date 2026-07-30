@@ -1777,7 +1777,8 @@ a:hover{ text-decoration: underline; }
 .fw-category-pin--attraction{ background: #ec4899; color: #fff; }
 .fw-category-pin--recreation{ background: #10b981; color: #fff; }
 .fw-category-pin--shopping{ background: #8b5cf6; color: #fff; }
-.fw-category-pin--other{ background: #6b7280; color: #fff; }
+.fw-category-pin--other{ background: #0d9488; color: #fff; }
+.fw-category-pin--personal{ background: #e11d48; color: #fff; }
 
 @media (max-width: 768px){
   .fw-category-pin{
