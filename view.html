@@ -1127,11 +1127,15 @@
       const params = new URLSearchParams(window.location.search);
       const sharedPlaceId = params.get("place");
 
-      if (sharedPlaceId && !currentUserId) {
-        // Guest opening a share link — skip loadPlaces (requires auth) and go straight
-        // to get_public which uses the service role and needs no registration.
-        await openPlaceById(sharedPlaceId);
-        showGuestBanner();
+      if (!currentUserId) {
+        if (sharedPlaceId) {
+          // Guest opening a share link — skip loadPlaces and go straight to get_public.
+          await openPlaceById(sharedPlaceId);
+          showGuestBanner();
+        } else {
+          // No auth, no share link — send to sign-in.
+          window.location.replace("index.html");
+        }
         return;
       }
 
