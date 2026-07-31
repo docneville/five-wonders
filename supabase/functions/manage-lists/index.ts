@@ -65,12 +65,12 @@ serve(async (req: Request): Promise<Response> => {
 
     const { data: listPlaces } = await supabaseAdmin
       .from("list_places")
-      .select(`place_id, places ( id, title, latitude, longitude, category, city, state, country, is_private )`)
+      .select(`place_id, places ( id, title, latitude, longitude, category, city, state, country )`)
       .eq("list_id", list_id);
 
     const places = (listPlaces ?? [])
       .map((r: any) => r.places)
-      .filter((p: any) => p && !p.is_private);
+      .filter(Boolean);
 
     return json({ status: "ok", list: { ...list, places } });
   }
@@ -163,7 +163,7 @@ serve(async (req: Request): Promise<Response> => {
 
     const { data, error } = await supabaseAdmin
       .from("list_places")
-      .select(`place_id, added_at, places ( id, title, category, city, state, country, latitude, longitude, is_private )`)
+      .select(`place_id, added_at, places ( id, title, category, city, state, country, latitude, longitude )`)
       .eq("list_id", list_id)
       .order("added_at", { ascending: false });
 

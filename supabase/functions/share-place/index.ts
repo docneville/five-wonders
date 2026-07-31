@@ -45,13 +45,13 @@ serve(async (req: Request): Promise<Response> => {
   const { data, error } = await supabaseAdmin
     .from("places_with_profiles")
     .select(
-      "id, title, category, city, state, country, notes, is_private, photos"
+      "id, title, category, city, state, country, notes, photos"
     )
     .eq("id", placeId)
     .single();
 
-  // Private or not found → redirect straight to the app (which handles the error state)
-  if (error || !data || data.is_private) {
+  // Not found → redirect straight to the app
+  if (error || !data) {
     return Response.redirect(viewUrl, 302);
   }
 

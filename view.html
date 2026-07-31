@@ -270,11 +270,6 @@
     let currentSheetPlace = null;
     async function handleShareClick() {
       if (!currentSheetPlace) return;
-      if (currentSheetPlace.isPrivate) {
-        placeSheetSubtitleEl.textContent = "This place is private and cannot be shared.";
-        setTimeout(() => { placeSheetSubtitleEl.textContent = currentSheetPlace.category || ""; }, 3000);
-        return;
-      }
 
       const { placeId, title, category, city, state } = currentSheetPlace;
 
@@ -471,7 +466,7 @@
     }
 
     // Shared body content — used in both popup and sheet
-    function buildPlaceContentHtml({ title, notes, savedBy, createdAt, category, street_line1, city, state, country, phone, website, links, photos, placeId, latitude, longitude, userId, isPrivate }) {
+    function buildPlaceContentHtml({ title, notes, savedBy, createdAt, category, street_line1, city, state, country, phone, website, links, photos, placeId, latitude, longitude, userId }) {
       const address = buildAddress({ street_line1, city, state, country });
       const isOwner = currentUserId && userId && currentUserId === userId;
       const appleMapsUrl = buildMapsUrl(latitude, longitude, address);
@@ -563,7 +558,7 @@
 
     // Desktop popup card (includes title + category in body)
     function buildPopupHtml(placeData) {
-      const { title, category, placeId, isPrivate } = placeData;
+      const { title, category, placeId } = placeData;
       return `
         <div class="place-popup-card">
           <div class="place-popup-header">
@@ -571,7 +566,7 @@
               <div class="place-popup-title">${escapeHtml(title)}</div>
               ${category ? `<div class="place-popup-subtitle">${escapeHtml(category)}</div>` : ""}
             </div>
-            <button class="place-share-btn ps-share-btn--popup" data-place-id="${placeId}" data-is-private="${isPrivate}" aria-label="Share">${SVG.share}</button>
+            <button class="place-share-btn ps-share-btn--popup" data-place-id="${placeId}" aria-label="Share">${SVG.share}</button>
           </div>
           ${buildPlaceContentHtml(placeData)}
         </div>
@@ -741,7 +736,7 @@
           website,
           links,
           photos,
-          is_private
+          is_wonder
         `
         )
         .not("latitude", "is", null)
@@ -811,7 +806,7 @@
           latitude: lat,
           longitude: lon,
           userId: place.user_id,
-          isPrivate: place.is_private ?? false,
+          isWonder: place.is_wonder ?? false,
         };
 
         allPlacesData.push(placeData);
@@ -985,13 +980,7 @@
       if (!btn) return;
 
       const placeId = btn.dataset.placeId;
-      const isPrivate = btn.dataset.isPrivate === "true";
       const feedback = document.querySelector(`.place-share-feedback[data-place-id="${placeId}"]`);
-
-      if (isPrivate) {
-        if (feedback) { feedback.textContent = "This place is private and cannot be shared."; }
-        return;
-      }
 
       const base = window.location.origin + window.location.pathname;
       const url = `${base}?place=${placeId}`;
