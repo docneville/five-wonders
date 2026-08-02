@@ -149,6 +149,8 @@
       document.getElementById("rejectedSignOutBtn").addEventListener("click", signOut);
 
       // Check session on load (handles OAuth callback too)
+      // Show sign-in immediately so the page never looks stuck
+      showState("SignIn");
       const { data: { session } } = await sb.auth.getSession();
       await handleSession(session);
 
