@@ -348,48 +348,17 @@
   <!-- Leaflet MarkerCluster JS -->
   <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 
+  <script src="fw-auth.js"></script>
   <script type="module">
     // ====== CONFIG ======
     const SUPABASE_URL = "https://ekpssonwtztubqfihlqm.supabase.co";
-    const SUPABASE_ANON_KEY =
-      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVrcHNzb253dHp0dWJxZmlobHFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM1Njg2MjAsImV4cCI6MjA3OTE0NDYyMH0.R1_-ctf-6NsVUJEApf4N591lA9TPRCJQFzhrDVRbr_4";
-
-    const SUPABASE_FUNCTION_URL =
-      "https://ekpssonwtztubqfihlqm.supabase.co/functions/v1/ingest-shortcut";
-
-    const MANAGE_PLACES_URL =
-      "https://ekpssonwtztubqfihlqm.supabase.co/functions/v1/manage-places";
-
-    // Storage keys (new + legacy)
-    const LS_ID = "fw_profile_id";
-    const LS_KEY = "fw_api_key";
-    const LS_ID_LEGACY = "profile_id";
-    const LS_KEY_LEGACY = "api_key";
+    const SUPABASE_FUNCTION_URL = `${SUPABASE_URL}/functions/v1/ingest-shortcut`;
+    const MANAGE_PLACES_URL = `${SUPABASE_URL}/functions/v1/manage-places`;
 
     // ====== Helpers ======
     function getQueryParam(name) {
       const params = new URLSearchParams(window.location.search);
       return params.get(name);
-    }
-
-    function getStoredApiKey() {
-      return (
-        localStorage.getItem(LS_KEY) || localStorage.getItem(LS_KEY_LEGACY)
-      );
-    }
-
-    function persistKeys(id, apiKey) {
-      localStorage.setItem(LS_ID, id);
-      localStorage.setItem(LS_KEY, apiKey);
-      localStorage.setItem(LS_ID_LEGACY, id);
-      localStorage.setItem(LS_KEY_LEGACY, apiKey);
-    }
-
-    function resetAccess() {
-      localStorage.removeItem(LS_ID);
-      localStorage.removeItem(LS_KEY);
-      localStorage.removeItem(LS_ID_LEGACY);
-      localStorage.removeItem(LS_KEY_LEGACY);
     }
 
     function escapeHtml(str) {
@@ -401,152 +370,9 @@
         .replace(/'/g, "&#039;");
     }
 
-    // ====== Supabase Client ======
-    if (!window.supabase) {
-      alert("Supabase failed to load. Please refresh.");
-      throw new Error("Supabase library not loaded.");
-    }
-    const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    window._sb = sb;
+    const sb = fwAuth.sb;
 
-    // ====== Access Gate UI ======
-    async function renderTokenSection() {
-      const container = document.getElementById("token-section");
-      const accessStatusEl = document.getElementById("access-status");
-      container.innerHTML = "";
-      if (accessStatusEl) accessStatusEl.innerHTML = "";
-
-      const apiKey = getStoredApiKey();
-
-      // If we have a key, verify it
-      if (apiKey) {
-        try {
-          const { data, error } = await sb.rpc("validate_api_key", {
-            p_key: apiKey,
-          });
-          if (!error && data && data.length > 0) {
-            // normalize storage (ensure both legacy + new keys are present)
-            persistKeys(data[0].id, apiKey);
-
-            if (accessStatusEl) {
-              accessStatusEl.innerHTML = `
-                Access is set on this device.
-                <a href="#" id="resetAccessLink" style="margin-left:8px;">Reset</a>
-              `;
-              const resetLink = document.getElementById("resetAccessLink");
-              if (resetLink) {
-                resetLink.onclick = (e) => {
-                  e.preventDefault();
-                  resetAccess();
-                  // Clear existing place markers from cluster group
-                  existingPlacesCluster.clearLayers();
-                  existingPlacesMarkers = [];
-                  userPlaces = [];
-                  renderTokenSection();
-                };
-              }
-            }
-            return;
-          }
-        } catch (_) {}
-
-        // Stored key invalid -> reset
-        resetAccess();
-      }
-
-      // No key (or invalid)
-      const div = document.createElement("div");
-      div.className = "token-warning";
-      div.innerHTML = `
-        <strong>Invite code required</strong><br/>
-        Enter your 8-character invite code once. It will be remembered on this device.
-        <div style="margin-top:6px;">
-          <input
-            type="text"
-            id="invite-input"
-            placeholder="AJWRRHFN"
-            style="width:100%;margin-top:4px;text-transform:uppercase;letter-spacing:0.12em;"
-          />
-          <button
-            id="invite-save-btn"
-            class="btn-primary"
-            style="margin-top:6px;"
-          >
-            Save invite code
-          </button>
-        </div>
-      `;
-      container.appendChild(div);
-
-      document.getElementById("invite-save-btn").onclick = async () => {
-        const value = (document.getElementById("invite-input").value || "")
-          .trim()
-          .toUpperCase()
-          .replace(/[\s-]/g, "");
-
-        if (!value) {
-          alert("Please enter the invite code you were given.");
-          return;
-        }
-
-        try {
-          const { data, error } = await sb.rpc("validate_invite", {
-            p_code: value,
-          });
-          if (error) throw error;
-
-          if (!data || data.length === 0) {
-            alert("Invalid invite code.");
-            return;
-          }
-
-          const row = data[0];
-          persistKeys(row.id, row.api_key);
-          await renderTokenSection();
-          // Load existing places after entering invite code (map is now ready)
-          if (typeof map !== "undefined") loadExistingPlaces();
-        } catch (e) {
-          console.error("validate_invite failed:", e);
-          alert(
-            "Could not validate invite code. Check network / RLS / function grants."
-          );
-        }
-      };
-    }
-
-    // Bootstrap from URL (?code=, ?invite=, ?token=, ?t=)
-    (async function bootstrapFromQuery() {
-      const q = (
-        getQueryParam("code") ||
-        getQueryParam("invite") ||
-        getQueryParam("token") ||
-        getQueryParam("t") ||
-        ""
-      )
-        .trim()
-        .toUpperCase()
-        .replace(/[\s-]/g, "");
-
-      if (!q) return;
-      if (getStoredApiKey()) return; // already have access
-
-      try {
-        const { data, error } = await sb.rpc("validate_invite", {
-          p_code: q,
-        });
-        if (!error && data && data.length > 0) {
-          persistKeys(data[0].id, data[0].api_key);
-          // Optional: clean the URL
-          const url = new URL(window.location.href);
-          ["code", "invite", "token", "t"].forEach((k) =>
-            url.searchParams.delete(k)
-          );
-          window.history.replaceState({}, "", url.toString());
-        }
-      } catch (_) {}
-    })();
-
-    await renderTokenSection();
+    await fwAuth.requireAuth();
 
     // ====== DOM ELEMENTS ======
     const searchInput = document.getElementById("search-input");
@@ -720,12 +546,9 @@
     }
 
     async function loadExistingPlaces() {
-      const apiKey = getStoredApiKey();
-      if (!apiKey) return;
-
-      // Get user_id for filtering and coloring
-      const storedId = localStorage.getItem(LS_ID) || localStorage.getItem(LS_ID_LEGACY);
-      if (!storedId) return;
+      const session = await fwAuth.getSession();
+      if (!session) return;
+      const storedId = session.user.id;
 
       try {
         // Query Supabase directly to get places with coordinates (like view.html)
@@ -943,17 +766,16 @@
     }
 
     async function uploadPendingPhotos(placeId) {
-      const apiKey = getStoredApiKey();
-      if (!apiKey || !placeId || pendingPhotos.length === 0) return;
+      const jwt = await fwAuth.getJWT();
+      if (!jwt || !placeId || pendingPhotos.length === 0) return;
 
       for (const photo of pendingPhotos) {
         try {
           await fetch(MANAGE_PLACES_URL, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${jwt}` },
             body: JSON.stringify({
               action: "upload_photo",
-              user_token: apiKey,
               place_id: placeId,
               file_base64: photo.base64,
               file_name: photo.fileName,
@@ -1190,11 +1012,8 @@
 
     // ====== SAVE TO SUPABASE (via Edge Function) ======
     async function savePlace() {
-      const apiKey = getStoredApiKey();
-      if (!apiKey) {
-        alert("You need to enter your invite code before saving a place.");
-        return;
-      }
+      const jwt = await fwAuth.getJWT();
+      if (!jwt) { window.location.replace("index.html"); return; }
 
       if (!selectedLatLng) {
         alert("Please select a location on the map (via search or map click).");
@@ -1224,7 +1043,6 @@
         user_note,
         category,
         is_wonder: placeIsWonderCheckbox.checked,
-        user_token: apiKey,
         osm_address: selectedAddress,
         osm_extratags: selectedExtratags,
       };
@@ -1238,6 +1056,7 @@
       try {
         res = await fetch(SUPABASE_FUNCTION_URL, {
           method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${jwt}` },
           body: JSON.stringify(payload),
         });
       } catch (err) {
@@ -1477,9 +1296,7 @@
     })();
 
     // Load existing places on map (now that map is initialized)
-    if (getStoredApiKey()) {
-      loadExistingPlaces();
-    }
+    loadExistingPlaces();
 
     // ===== User Location =====
     let userLocationMarker = null;

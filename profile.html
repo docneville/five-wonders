@@ -171,6 +171,7 @@
   </style>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="fw-auth.js"></script>
 </head>
 
 <body class="fw-about">
@@ -291,47 +292,9 @@
 
   <script type="module">
     const SUPABASE_URL = "https://ekpssonwtztubqfihlqm.supabase.co";
-    const SUPABASE_ANON_KEY =
-      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVrcHNzb253dHp0dWJxZmlobHFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM1Njg2MjAsImV4cCI6MjA3OTE0NDYyMH0.R1_-ctf-6NsVUJEApf4N591lA9TPRCJQFzhrDVRbr_4";
-
-    const MANAGE_PLACES_URL =
-      "https://ekpssonwtztubqfihlqm.supabase.co/functions/v1/manage-places";
-
+    const MANAGE_PLACES_URL = `${SUPABASE_URL}/functions/v1/manage-places`;
     const STORAGE_URL = `${SUPABASE_URL}/storage/v1/object/public/place-photos`;
-
-    const LS_ID = "fw_profile_id";
-    const LS_KEY = "fw_api_key";
-    const LS_ID_LEGACY = "profile_id";
-    const LS_KEY_LEGACY = "api_key";
-
-    if (!window.supabase) {
-      alert("Supabase failed to load. Please refresh.");
-      throw new Error("Supabase library not loaded.");
-    }
-
-    const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-    function getStoredApiKey() {
-      return localStorage.getItem(LS_KEY) || localStorage.getItem(LS_KEY_LEGACY);
-    }
-
-    function getStoredProfileId() {
-      return localStorage.getItem(LS_ID) || localStorage.getItem(LS_ID_LEGACY);
-    }
-
-    function persistKeys(id, apiKey) {
-      localStorage.setItem(LS_ID, id);
-      localStorage.setItem(LS_KEY, apiKey);
-      localStorage.setItem(LS_ID_LEGACY, id);
-      localStorage.setItem(LS_KEY_LEGACY, apiKey);
-    }
-
-    function resetAccess() {
-      localStorage.removeItem(LS_ID);
-      localStorage.removeItem(LS_KEY);
-      localStorage.removeItem(LS_ID_LEGACY);
-      localStorage.removeItem(LS_KEY_LEGACY);
-    }
+    const sb = fwAuth.sb;
 
     // DOM elements
     const loadingState = document.getElementById("loadingState");
@@ -372,28 +335,11 @@
     }
 
     async function loadProfile() {
-      const apiKey = getStoredApiKey();
-      const profileId = getStoredProfileId();
-
-      if (!apiKey || !profileId) {
-        showState("noAccess");
-        return;
-      }
+      const session = await fwAuth.requireAuth();
+      if (!session) return;
+      const validatedProfileId = session.user.id;
 
       try {
-        // Validate API key and get profile data in one call
-        const { data: validationData, error: validationError } = await sb.rpc("validate_api_key", {
-          p_key: apiKey,
-        });
-
-        if (validationError || !validationData || validationData.length === 0) {
-          resetAccess();
-          showState("noAccess");
-          return;
-        }
-
-        // Use the validation data - it returns the profile id
-        const validatedProfileId = validationData[0].id;
 
         // Load profile data - try with profile_photo_path, fall back without it
         let profileData = null;
@@ -489,10 +435,8 @@
     }
 
     async function uploadProfilePhoto(file) {
-      const apiKey = getStoredApiKey();
-      const profileId = getStoredProfileId();
-
-      if (!apiKey || !profileId || !file) return;
+      const jwt = await fwAuth.getJWT();
+      if (!jwt || !file) return;
 
       // Check file size (max 5MB)
       const maxSize = 5 * 1024 * 1024;
@@ -516,10 +460,9 @@
         // Upload via edge function
         const res = await fetch(MANAGE_PLACES_URL, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${jwt}` },
           body: JSON.stringify({
             action: "upload_profile_photo",
-            user_token: apiKey,
             file_base64: base64,
             file_name: file.name,
             file_type: file.type,
@@ -564,43 +507,13 @@
       }
     });
 
-    resetAccessBtn.addEventListener("click", () => {
-      if (confirm("Sign out and reset access on this device?")) {
-        resetAccess();
-        showState("noAccess");
+    resetAccessBtn?.addEventListener("click", async () => {
+      if (confirm("Sign out?")) {
+        await fwAuth.signOut();
       }
     });
 
-    inviteSaveBtn.addEventListener("click", async () => {
-      const value = (inviteInput.value || "")
-        .trim()
-        .toUpperCase()
-        .replace(/[\s-]/g, "");
-
-      if (!value) {
-        alert("Please enter the invite code you were given.");
-        return;
-      }
-
-      try {
-        const { data, error } = await sb.rpc("validate_invite", {
-          p_code: value,
-        });
-        if (error) throw error;
-        if (!data || data.length === 0) {
-          alert("Invalid invite code.");
-          return;
-        }
-
-        const row = data[0];
-        persistKeys(row.id, row.api_key);
-
-        await loadProfile();
-      } catch (e) {
-        console.error("validate_invite failed:", e);
-        alert("Could not validate invite code.");
-      }
-    });
+    inviteSaveBtn?.addEventListener("click", () => {});
 
     // Initialize
     loadProfile();

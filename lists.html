@@ -226,6 +226,7 @@
     .no-places-msg { color: var(--fw-text-secondary, #888); font-size: 0.9rem; padding: 8px 0; }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="fw-auth.js"></script>
 </head>
 <body class="fw-about">
   <header class="fw-header">
@@ -298,33 +299,26 @@
 
   <script type="module">
     const SUPABASE_URL = "https://ekpssonwtztubqfihlqm.supabase.co";
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVrcHNzb253dHp0dWJxZmlobHFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM1Njg2MjAsImV4cCI6MjA3OTE0NDYyMH0.R1_-ctf-6NsVUJEApf4N591lA9TPRCJQFzhrDVRbr_4";
     const MANAGE_LISTS_URL = `${SUPABASE_URL}/functions/v1/manage-lists`;
     const MANAGE_PLACES_URL = `${SUPABASE_URL}/functions/v1/manage-places`;
 
-    const LS_KEY = "fw_api_key";
-    const LS_KEY_LEGACY = "api_key";
-
-    function getApiKey() {
-      return localStorage.getItem(LS_KEY) || localStorage.getItem(LS_KEY_LEGACY);
-    }
-
     async function callLists(body) {
+      const jwt = await fwAuth.getJWT();
       const res = await fetch(MANAGE_LISTS_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...body, user_token: getApiKey() }),
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${jwt}` },
+        body: JSON.stringify(body),
       });
       const text = await res.text();
-      console.log("manage-lists", body.action, "→", res.status, text);
       try { return JSON.parse(text); } catch { return {}; }
     }
 
     async function callPlaces(body) {
+      const jwt = await fwAuth.getJWT();
       const res = await fetch(MANAGE_PLACES_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...body, user_token: getApiKey() }),
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${jwt}` },
+        body: JSON.stringify(body),
       });
       return res.json().catch(() => ({}));
     }
@@ -352,10 +346,8 @@
     const listSheetSave = document.getElementById("listSheetSave");
 
     // ---- Init ----
-    const apiKey = getApiKey();
-    if (!apiKey) {
-      noAccessMsg.style.display = "block";
-    } else {
+    const _session = await fwAuth.requireAuth();
+    if (_session) {
       listsMain.style.display = "block";
       loadAll();
     }

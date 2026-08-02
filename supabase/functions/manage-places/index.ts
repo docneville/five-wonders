@@ -17,25 +17,19 @@ const supabaseAdmin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
   auth: { persistSession: false },
 });
 
-// Look up profile from invite-code / user_token
-async function getProfileFromToken(userToken: string) {
-  const { data, error } = await supabaseAdmin
+async function getUserIdFromJWT(req: Request): Promise<string | null> {
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader?.startsWith("Bearer ")) return null;
+  const jwt = authHeader.slice(7);
+  const { data: { user }, error } = await supabaseAdmin.auth.getUser(jwt);
+  if (error || !user) return null;
+  const { data: profile } = await supabaseAdmin
     .from("profiles")
-    .select("id, is_active")
-    .eq("api_key", userToken)
+    .select("approval_status")
+    .eq("id", user.id)
     .single();
-
-  if (error || !data) {
-    console.error("Profile lookup error:", error);
-    return null;
-  }
-
-  if (data.is_active === false) {
-    console.warn("Profile is inactive for token");
-    return null;
-  }
-
-  return data;
+  if (!profile || profile.approval_status !== "approved") return null;
+  return user.id;
 }
 
 serve(async (req: Request): Promise<Response> => {
@@ -62,8 +56,8 @@ serve(async (req: Request): Promise<Response> => {
     });
   }
 
-  const { action, user_token } = payload ?? {};
-  console.log("manage-places action:", action, "has_token:", !!user_token);
+  const { action } = payload ?? {};
+  console.log("manage-places action:", action);
 
   // ---- ACTION: get_public (no auth required) ----
   if (action === "get_public") {
@@ -82,22 +76,10 @@ serve(async (req: Request): Promise<Response> => {
     return new Response(JSON.stringify({ status: "ok", place: data }), { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } });
   }
 
-  if (!user_token) {
-    return new Response("Missing user_token", {
-      status: 401,
-      headers: corsHeaders,
-    });
+  const userId = await getUserIdFromJWT(req);
+  if (!userId) {
+    return new Response("Unauthorized", { status: 401, headers: corsHeaders });
   }
-
-  const profile = await getProfileFromToken(user_token);
-  if (!profile) {
-    return new Response("Invalid or inactive user_token", {
-      status: 401,
-      headers: corsHeaders,
-    });
-  }
-
-  const userId = profile.id as string;
 
   // ---- ACTION: list ----
   if (action === "list") {

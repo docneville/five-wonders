@@ -114,34 +114,29 @@ serve(async (req: Request): Promise<Response> => {
     latitude,
     longitude,
     user_note,
-    user_token,
     osm_address,
     osm_extratags,
     category,
     is_wonder,
   } = payload ?? {};
 
-  if (!user_token) {
-    console.warn("Missing user_token in payload");
-    return new Response("Missing user_token", {
-      status: 401,
-      headers: corsHeaders,
-    });
+  // Verify JWT from Authorization header
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader?.startsWith("Bearer ")) {
+    return new Response("Unauthorized", { status: 401, headers: corsHeaders });
   }
-
-  // Look up the user profile by api_key (your invite token)
-  const { data: profile, error: profileError } = await supabaseAdmin
+  const jwt = authHeader.slice(7);
+  const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(jwt);
+  if (authError || !user) {
+    return new Response("Unauthorized", { status: 401, headers: corsHeaders });
+  }
+  const { data: profile } = await supabaseAdmin
     .from("profiles")
-    .select("id, first_name, last_name, is_active")
-    .eq("api_key", user_token)
+    .select("approval_status")
+    .eq("id", user.id)
     .single();
-
-  if (profileError || !profile || profile.is_active === false) {
-    console.error("Profile lookup failed or inactive:", profileError);
-    return new Response("Invalid or inactive user_token", {
-      status: 401,
-      headers: corsHeaders,
-    });
+  if (!profile || profile.approval_status !== "approved") {
+    return new Response("Forbidden", { status: 403, headers: corsHeaders });
   }
 
   // Parse latitude / longitude
@@ -156,7 +151,7 @@ serve(async (req: Request): Promise<Response> => {
 
   // Build insert payload
   const insertPayload: Record<string, unknown> = {
-    user_id: profile.id,
+    user_id: user.id,
     title: place_name || null,
     raw_text: place_address || null,
     notes: user_note || null,

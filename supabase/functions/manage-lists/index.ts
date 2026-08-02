@@ -29,14 +29,19 @@ function err(msg: string, status = 400) {
   });
 }
 
-async function getUserId(userToken: string): Promise<string | null> {
-  const { data, error } = await supabaseAdmin
+async function getUserIdFromJWT(req: Request): Promise<string | null> {
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader?.startsWith("Bearer ")) return null;
+  const jwt = authHeader.slice(7);
+  const { data: { user }, error } = await supabaseAdmin.auth.getUser(jwt);
+  if (error || !user) return null;
+  const { data: profile } = await supabaseAdmin
     .from("profiles")
-    .select("id, is_active")
-    .eq("api_key", userToken)
+    .select("approval_status")
+    .eq("id", user.id)
     .single();
-  if (error || !data || data.is_active === false) return null;
-  return data.id as string;
+  if (!profile || profile.approval_status !== "approved") return null;
+  return user.id;
 }
 
 serve(async (req: Request): Promise<Response> => {
@@ -47,7 +52,7 @@ serve(async (req: Request): Promise<Response> => {
   try { payload = await req.json(); }
   catch { return err("Invalid JSON body"); }
 
-  const { action, user_token } = payload ?? {};
+  const { action } = payload ?? {};
 
   // ---- ACTION: get_public_list (no auth) ----
   if (action === "get_public_list") {
@@ -75,9 +80,8 @@ serve(async (req: Request): Promise<Response> => {
     return json({ status: "ok", list: { ...list, places } });
   }
 
-  if (!user_token) return err("Missing user_token", 401);
-  const userId = await getUserId(user_token);
-  if (!userId) return err("Invalid or inactive user_token", 401);
+  const userId = await getUserIdFromJWT(req);
+  if (!userId) return err("Unauthorized", 401);
 
   // ---- ACTION: list_lists ----
   if (action === "list_lists") {

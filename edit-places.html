@@ -62,6 +62,7 @@
 
   <!-- Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="fw-auth.js"></script>
 </head>
 
 <body>
@@ -339,44 +340,11 @@
   </div>
 
   <script type="module">
-    // ===== Supabase + access model =====
-    const SUPABASE_URL = "https://ekpssonwtztubqfihlqm.supabase.co";
-    const SUPABASE_ANON_KEY =
-      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVrcHNzb253dHp0dWJxZmlobHFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM1Njg2MjAsImV4cCI6MjA3OTE0NDYyMH0.R1_-ctf-6NsVUJEApf4N591lA9TPRCJQFzhrDVRbr_4";
-
-    const LS_ID = "fw_profile_id";
-    const LS_KEY = "fw_api_key";
-    const LS_ID_LEGACY = "profile_id";
-    const LS_KEY_LEGACY = "api_key";
+    // ===== Auth =====
+    const sb = fwAuth.sb;
 
     const MANAGE_PLACES_URL =
       "https://ekpssonwtztubqfihlqm.supabase.co/functions/v1/manage-places";
-
-    if (!window.supabase) {
-      alert("Supabase failed to load. Please refresh.");
-      throw new Error("Supabase library not loaded.");
-    }
-
-    const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    window._sb = sb;
-
-    function getStoredApiKey() {
-      return localStorage.getItem(LS_KEY) || localStorage.getItem(LS_KEY_LEGACY);
-    }
-
-    function persistKeys(id, apiKey) {
-      localStorage.setItem(LS_ID, id);
-      localStorage.setItem(LS_KEY, apiKey);
-      localStorage.setItem(LS_ID_LEGACY, id);
-      localStorage.setItem(LS_KEY_LEGACY, apiKey);
-    }
-
-    function resetAccess() {
-      localStorage.removeItem(LS_ID);
-      localStorage.removeItem(LS_KEY);
-      localStorage.removeItem(LS_ID_LEGACY);
-      localStorage.removeItem(LS_KEY_LEGACY);
-    }
 
     function escapeHtml(str) {
       return String(str)
@@ -413,106 +381,6 @@
       return p.raw_text || "";
     }
 
-    // ===== Token section UI (now at bottom) =====
-    async function renderTokenSection() {
-      const container = document.getElementById("token-section");
-      container.innerHTML = "";
-
-      const apiKey = getStoredApiKey();
-
-      if (apiKey) {
-        try {
-          const { data, error } = await sb.rpc("validate_api_key", {
-            p_key: apiKey,
-          });
-          if (!error && data && data.length > 0) {
-            persistKeys(data[0].id, apiKey);
-
-            // Access line at the BOTTOM
-            const div = document.createElement("div");
-            div.className = "small-help";
-            div.style.marginTop = "12px";
-            div.innerHTML = `
-              Access is set on this device.
-              <a href="#" id="resetAccessLink" style="margin-left:8px;">Reset</a>
-            `;
-            container.appendChild(div);
-
-            document.getElementById("resetAccessLink").onclick = (e) => {
-              e.preventDefault();
-              resetAccess();
-              clearEditor();
-              userPlaces = [];
-              renderPlaceList();
-              document.getElementById("sidebar-status").textContent =
-                "Set invite code to load places.";
-              renderTokenSection();
-            };
-
-            return true;
-          }
-        } catch (_) {}
-        resetAccess();
-      }
-
-      // No key
-      const div = document.createElement("div");
-      div.className = "token-warning";
-      div.innerHTML = `
-        <strong>Invite code required</strong><br/>
-        Enter your 8-character invite code once. It will be remembered on this device.
-        <div style="margin-top:10px;">
-          <input
-            type="text"
-            id="invite-input"
-            placeholder="AJWRRHFN"
-            style="width:100%;margin-top:6px;text-transform:uppercase;letter-spacing:0.12em;"
-          />
-          <button
-            id="invite-save-btn"
-            class="btn-primary"
-            style="margin-top:10px;"
-          >
-            Save invite code
-          </button>
-        </div>
-      `;
-      container.appendChild(div);
-
-      document.getElementById("invite-save-btn").onclick = async () => {
-        const value = (document.getElementById("invite-input").value || "")
-          .trim()
-          .toUpperCase()
-          .replace(/[\s-]/g, "");
-
-        if (!value) {
-          alert("Please enter the invite code you were given.");
-          return;
-        }
-
-        try {
-          const { data, error } = await sb.rpc("validate_invite", {
-            p_code: value,
-          });
-          if (error) throw error;
-          if (!data || data.length === 0) {
-            alert("Invalid invite code.");
-            return;
-          }
-
-          const row = data[0];
-          persistKeys(row.id, row.api_key);
-
-          await renderTokenSection();
-          await loadUserPlaces();
-        } catch (e) {
-          console.error("validate_invite failed:", e);
-          alert("Could not validate invite code.");
-        }
-      };
-
-      return false;
-    }
 
     // ===== Edit logic =====
     let userPlaces = [];
@@ -785,8 +653,8 @@
     }
 
     async function uploadPhoto(file, placeId, isMobileView = false) {
-      const apiKey = getStoredApiKey();
-      if (!apiKey || !placeId) return null;
+      const jwt = await fwAuth.getJWT();
+      if (!jwt || !placeId) return null;
 
       const progressEl = isMobileView ? mUploadProgress : uploadProgress;
 
@@ -817,10 +685,9 @@
 
         const res = await fetch(MANAGE_PLACES_URL, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${jwt}` },
           body: JSON.stringify({
             action: "upload_photo",
-            user_token: apiKey,
             place_id: placeId,
             file_base64: fileBase64,
             file_name: file.name,
@@ -852,16 +719,15 @@
     }
 
     async function deletePhoto(photoId, placeId, isMobileView = false) {
-      const apiKey = getStoredApiKey();
-      if (!apiKey || !photoId || !placeId) return;
+      const jwt = await fwAuth.getJWT();
+      if (!jwt || !photoId || !placeId) return;
 
       try {
         const res = await fetch(MANAGE_PLACES_URL, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${jwt}` },
           body: JSON.stringify({
             action: "delete_photo",
-            user_token: apiKey,
             photo_id: photoId,
             place_id: placeId,
           }),
@@ -886,16 +752,15 @@
     }
 
     async function updatePhotoDescription(photoId, placeId, description, isMobileView = false) {
-      const apiKey = getStoredApiKey();
-      if (!apiKey || !photoId || !placeId) return;
+      const jwt = await fwAuth.getJWT();
+      if (!jwt || !photoId || !placeId) return;
 
       try {
         const res = await fetch(MANAGE_PLACES_URL, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${jwt}` },
           body: JSON.stringify({
             action: "update_photo",
-            user_token: apiKey,
             photo_id: photoId,
             place_id: placeId,
             description,
@@ -1242,19 +1107,16 @@
     mCancelBtn?.addEventListener("click", closeSheet);
 
     async function loadUserPlaces() {
-      const apiKey = getStoredApiKey();
-      if (!apiKey) {
-        sidebarStatusEl.textContent = "Set your invite code to load places.";
-        return;
-      }
+      const jwt = await fwAuth.getJWT();
+      if (!jwt) { window.location.replace("index.html"); return; }
 
       sidebarStatusEl.textContent = "Loading places…";
 
       try {
         const res = await fetch(MANAGE_PLACES_URL, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "list", user_token: apiKey }),
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${jwt}` },
+          body: JSON.stringify({ action: "list" }),
         });
 
         const text = await res.text();
@@ -1312,11 +1174,8 @@
     }) {
       if (!activePlaceId) return;
 
-      const apiKey = getStoredApiKey();
-      if (!apiKey) {
-        alert("Missing invite code.");
-        return;
-      }
+      const jwt = await fwAuth.getJWT();
+      if (!jwt) { window.location.replace("index.html"); return; }
 
       statusEl.textContent = "";
       showSavingOverlay();
@@ -1324,10 +1183,9 @@
       try {
         const res = await fetch(MANAGE_PLACES_URL, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${jwt}` },
           body: JSON.stringify({
             action: "update",
-            user_token: apiKey,
             place_id: activePlaceId,
             title,
             notes,
@@ -1409,11 +1267,8 @@
     }) {
       if (!activePlaceId) return;
 
-      const apiKey = getStoredApiKey();
-      if (!apiKey) {
-        alert("Missing invite code.");
-        return;
-      }
+      const jwt = await fwAuth.getJWT();
+      if (!jwt) { window.location.replace("index.html"); return; }
 
       if (!confirm("Delete this place? This cannot be undone.")) return;
 
@@ -1422,10 +1277,9 @@
       try {
         const res = await fetch(MANAGE_PLACES_URL, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${jwt}` },
           body: JSON.stringify({
             action: "delete",
-            user_token: apiKey,
             place_id: activePlaceId,
           }),
         });
@@ -1568,14 +1422,8 @@
     }
 
     // ===== Init =====
-    const hasAccess = await renderTokenSection();
-    if (hasAccess) {
-      loadUserPlacesAndSelect();
-    } else {
-      sidebarStatusEl.textContent = "Set invite code to load places.";
-      renderPlaceList();
-      clearEditor();
-    }
+    await fwAuth.requireAuth();
+    loadUserPlacesAndSelect();
 
     window.addEventListener("resize", () => {
       if (!isMobile()) closeSheet();

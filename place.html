@@ -201,7 +201,7 @@
       const res = await fetch(MANAGE_PLACES_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "get_public", user_token: "public", place_id: placeId }),
+        body: JSON.stringify({ action: "get_public", place_id: placeId }),
       });
 
       const json = await res.json().catch(() => ({}));
