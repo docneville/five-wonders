@@ -685,7 +685,7 @@
 
         const res = await fetch(MANAGE_PLACES_URL, {
           method: "POST",
-          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${jwt}` },
+          headers: { "Content-Type": "application/json", ...await fwAuth.authHeaders() },
           body: JSON.stringify({
             action: "upload_photo",
             place_id: placeId,
@@ -725,7 +725,7 @@
       try {
         const res = await fetch(MANAGE_PLACES_URL, {
           method: "POST",
-          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${jwt}` },
+          headers: { "Content-Type": "application/json", ...await fwAuth.authHeaders() },
           body: JSON.stringify({
             action: "delete_photo",
             photo_id: photoId,
@@ -758,7 +758,7 @@
       try {
         const res = await fetch(MANAGE_PLACES_URL, {
           method: "POST",
-          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${jwt}` },
+          headers: { "Content-Type": "application/json", ...await fwAuth.authHeaders() },
           body: JSON.stringify({
             action: "update_photo",
             photo_id: photoId,
@@ -1115,7 +1115,7 @@
       try {
         const res = await fetch(MANAGE_PLACES_URL, {
           method: "POST",
-          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${jwt}` },
+          headers: { "Content-Type": "application/json", ...await fwAuth.authHeaders() },
           body: JSON.stringify({ action: "list" }),
         });
 
@@ -1183,7 +1183,7 @@
       try {
         const res = await fetch(MANAGE_PLACES_URL, {
           method: "POST",
-          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${jwt}` },
+          headers: { "Content-Type": "application/json", ...await fwAuth.authHeaders() },
           body: JSON.stringify({
             action: "update",
             place_id: activePlaceId,
@@ -1277,7 +1277,7 @@
       try {
         const res = await fetch(MANAGE_PLACES_URL, {
           method: "POST",
-          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${jwt}` },
+          headers: { "Content-Type": "application/json", ...await fwAuth.authHeaders() },
           body: JSON.stringify({
             action: "delete",
             place_id: activePlaceId,
