@@ -87,11 +87,25 @@
       if (!session) { showState("SignIn"); return; }
 
       const userId = session.user.id;
-      const { data: profile } = await sb
+      const meta = session.user.user_metadata ?? {};
+
+      let { data: profile } = await sb
         .from("profiles")
         .select("first_name, approval_status")
         .eq("id", userId)
         .maybeSingle();
+
+      // First-time Google sign-in: create profile row
+      if (!profile) {
+        await sb.from("profiles").insert({
+          id: userId,
+          first_name: meta.given_name ?? "",
+          last_name: meta.family_name ?? "",
+          approval_status: "pending",
+          is_admin: false,
+        });
+        profile = { first_name: meta.given_name ?? "", approval_status: "pending" };
+      }
 
       const status = profile?.approval_status ?? "pending";
 
