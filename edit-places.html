@@ -1421,15 +1421,7 @@
       }
     }
 
-    // ===== Init =====
-    await fwAuth.requireAuth();
-    loadUserPlacesAndSelect();
-
-    window.addEventListener("resize", () => {
-      if (!isMobile()) closeSheet();
-    });
-
-    // Mobile hamburger menu toggle
+    // Mobile hamburger menu toggle — set up immediately, before any async work
     const hamburgerBtn = document.getElementById('hamburgerBtn');
     const headerNav = document.getElementById('headerNav');
 
@@ -1440,7 +1432,6 @@
         hamburgerBtn.setAttribute('aria-expanded', isOpen);
       });
 
-      // Close menu when clicking a link
       headerNav.querySelectorAll('a').forEach(link => {
         link.addEventListener('click', () => {
           headerNav.classList.remove('open');
@@ -1449,7 +1440,6 @@
         });
       });
 
-      // Close menu when clicking outside
       document.addEventListener('click', (e) => {
         if (!hamburgerBtn.contains(e.target) && !headerNav.contains(e.target)) {
           headerNav.classList.remove('open');
@@ -1458,6 +1448,14 @@
         }
       });
     }
+
+    window.addEventListener("resize", () => {
+      if (!isMobile()) closeSheet();
+    });
+
+    // ===== Init =====
+    await fwAuth.requireAuth();
+    loadUserPlacesAndSelect();
   </script>
 </body>
 </html>

@@ -303,24 +303,15 @@
     const MANAGE_PLACES_URL = `${SUPABASE_URL}/functions/v1/manage-places`;
 
     async function callLists(body) {
-      const jwt = await fwAuth.getJWT();
-      const res = await fetch(MANAGE_LISTS_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${jwt}` },
-        body: JSON.stringify(body),
-      });
-      const text = await res.text();
-      try { return JSON.parse(text); } catch { return {}; }
+      const { data, error } = await fwAuth.sb.functions.invoke("manage-lists", { body });
+      if (error) { console.error("callLists error:", error); return {}; }
+      return data ?? {};
     }
 
     async function callPlaces(body) {
-      const jwt = await fwAuth.getJWT();
-      const res = await fetch(MANAGE_PLACES_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${jwt}` },
-        body: JSON.stringify(body),
-      });
-      return res.json().catch(() => ({}));
+      const { data, error } = await fwAuth.sb.functions.invoke("manage-places", { body });
+      if (error) { console.error("callPlaces error:", error); return {}; }
+      return data ?? {};
     }
 
     // ---- State ----

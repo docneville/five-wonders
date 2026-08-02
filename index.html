@@ -54,6 +54,20 @@
           </div>
         </div>
 
+        <!-- Logged-in state -->
+        <div id="stateLoggedIn" class="fw-auth-state" style="display:none;">
+          <div id="loggedInGreeting" class="fw-greeting"></div>
+          <div class="fw-subtitle" style="margin-top:8px;">You're signed in.</div>
+          <div class="fw-btn-group-primary" style="margin-top:24px;display:flex;flex-direction:column;gap:10px;">
+            <a href="view.html" class="fw-btn fw-btn-primary fw-btn-large">View Map</a>
+            <a href="lists.html" class="fw-btn fw-btn-secondary fw-btn-large">My Lists</a>
+            <a href="add-place.html" class="fw-btn fw-btn-secondary fw-btn-large">Add a Place</a>
+          </div>
+          <div class="fw-btn-group-primary" style="margin-top:16px;">
+            <button id="loggedInSignOutBtn" class="fw-btn fw-btn-ghost">Sign out</button>
+          </div>
+        </div>
+
         <!-- Rejected/suspended state -->
         <div id="stateRejected" class="fw-auth-state" style="display:none;">
           <div class="fw-subtitle" style="color:#dc2626;">Access denied.</div>
@@ -78,8 +92,10 @@
     const statePending   = document.getElementById("statePending");
     const stateRejected  = document.getElementById("stateRejected");
 
+    const stateLoggedIn  = document.getElementById("stateLoggedIn");
+
     function showState(name) {
-      [stateLoading, stateSignIn, statePending, stateRejected].forEach(el => el.style.display = "none");
+      [stateLoading, stateSignIn, statePending, stateRejected, stateLoggedIn].forEach(el => el.style.display = "none");
       document.getElementById("state" + name).style.display = "block";
     }
 
@@ -110,7 +126,11 @@
       const status = profile?.approval_status ?? "pending";
 
       if (status === "approved") {
-        window.location.replace("view.html");
+        const name = (profile?.first_name || "").trim();
+        const greetingEl = document.getElementById("loggedInGreeting");
+        greetingEl.textContent = name ? `Hi, ${name}!` : "";
+        greetingEl.style.display = name ? "block" : "none";
+        showState("LoggedIn");
         return;
       }
 
@@ -147,6 +167,7 @@
       }
       document.getElementById("pendingSignOutBtn").addEventListener("click", signOut);
       document.getElementById("rejectedSignOutBtn").addEventListener("click", signOut);
+      document.getElementById("loggedInSignOutBtn").addEventListener("click", signOut);
 
       // Check session on load (handles OAuth callback too)
       // Show sign-in immediately so the page never looks stuck
