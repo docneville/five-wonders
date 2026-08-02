@@ -14,10 +14,39 @@ const corsHeaders: Record<string, string> = {
 // -------- Supabase admin client --------
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const JWT_SECRET = Deno.env.get("SUPABASE_JWT_SECRET")!;
 
 const supabaseAdmin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
   auth: { persistSession: false },
 });
+
+async function verifyJWT(token: string): Promise<string | null> {
+  try {
+    const parts = token.split(".");
+    if (parts.length !== 3) return null;
+    const key = await crypto.subtle.importKey(
+      "raw",
+      new TextEncoder().encode(JWT_SECRET),
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["verify"],
+    );
+    const msgBuf = new TextEncoder().encode(`${parts[0]}.${parts[1]}`);
+    const sigBuf = Uint8Array.from(
+      atob(parts[2].replace(/-/g, "+").replace(/_/g, "/")),
+      (c) => c.charCodeAt(0),
+    );
+    const valid = await crypto.subtle.verify("HMAC", key, sigBuf, msgBuf);
+    if (!valid) return null;
+    const payload = JSON.parse(
+      atob(parts[1].replace(/-/g, "+").replace(/_/g, "/")),
+    );
+    if (!payload?.sub || (payload.exp && payload.exp < Math.floor(Date.now() / 1000))) return null;
+    return payload.sub as string;
+  } catch {
+    return null;
+  }
+}
 
 // -------- Helper: normalize OSM address into columns --------
 function extractAddressParts(address: any = {}) {
@@ -125,15 +154,14 @@ serve(async (req: Request): Promise<Response> => {
   if (!authHeader?.startsWith("Bearer ")) {
     return new Response("Unauthorized", { status: 401, headers: corsHeaders });
   }
-  const jwt = authHeader.slice(7);
-  const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(jwt);
-  if (authError || !user) {
+  const userId = await verifyJWT(authHeader.slice(7));
+  if (!userId) {
     return new Response("Unauthorized", { status: 401, headers: corsHeaders });
   }
   const { data: profile } = await supabaseAdmin
     .from("profiles")
     .select("approval_status")
-    .eq("id", user.id)
+    .eq("id", userId)
     .single();
   if (!profile || profile.approval_status !== "approved") {
     return new Response("Forbidden", { status: 403, headers: corsHeaders });
@@ -151,7 +179,7 @@ serve(async (req: Request): Promise<Response> => {
 
   // Build insert payload
   const insertPayload: Record<string, unknown> = {
-    user_id: user.id,
+    user_id: userId,
     title: place_name || null,
     raw_text: place_address || null,
     notes: user_note || null,

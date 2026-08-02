@@ -10,6 +10,7 @@ const corsHeaders: Record<string, string> = {
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const JWT_SECRET = Deno.env.get("SUPABASE_JWT_SECRET")!;
 
 const supabaseAdmin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
   auth: { persistSession: false },
@@ -29,19 +30,46 @@ function err(msg: string, status = 400) {
   });
 }
 
+async function verifyJWT(token: string): Promise<string | null> {
+  try {
+    const parts = token.split(".");
+    if (parts.length !== 3) return null;
+    const key = await crypto.subtle.importKey(
+      "raw",
+      new TextEncoder().encode(JWT_SECRET),
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["verify"],
+    );
+    const msgBuf = new TextEncoder().encode(`${parts[0]}.${parts[1]}`);
+    const sigBuf = Uint8Array.from(
+      atob(parts[2].replace(/-/g, "+").replace(/_/g, "/")),
+      (c) => c.charCodeAt(0),
+    );
+    const valid = await crypto.subtle.verify("HMAC", key, sigBuf, msgBuf);
+    if (!valid) return null;
+    const payload = JSON.parse(
+      atob(parts[1].replace(/-/g, "+").replace(/_/g, "/")),
+    );
+    if (!payload?.sub || (payload.exp && payload.exp < Math.floor(Date.now() / 1000))) return null;
+    return payload.sub as string;
+  } catch {
+    return null;
+  }
+}
+
 async function getUserIdFromJWT(req: Request): Promise<string | null> {
   const authHeader = req.headers.get("Authorization");
   if (!authHeader?.startsWith("Bearer ")) return null;
-  const jwt = authHeader.slice(7);
-  const { data: { user }, error } = await supabaseAdmin.auth.getUser(jwt);
-  if (error || !user) return null;
+  const userId = await verifyJWT(authHeader.slice(7));
+  if (!userId) return null;
   const { data: profile } = await supabaseAdmin
     .from("profiles")
     .select("approval_status")
-    .eq("id", user.id)
+    .eq("id", userId)
     .single();
   if (!profile || profile.approval_status !== "approved") return null;
-  return user.id;
+  return userId;
 }
 
 serve(async (req: Request): Promise<Response> => {
