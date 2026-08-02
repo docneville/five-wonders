@@ -1772,6 +1772,23 @@ a:hover{ text-decoration: underline; }
   box-shadow: 0 10px 25px rgba(34, 197, 94, 0.35);
 }
 
+.fw-btn-google{
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  color: #3c4043;
+  border: 1px solid #dadce0;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+  font-weight: 500;
+}
+.fw-btn-google:hover{
+  background: #f8f9fa;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.18);
+}
+
+.fw-auth-state{ width: 100%; }
+
 /* ---------- Footer Links ---------- */
 .fw-footer-links{
   margin-top: 16px;

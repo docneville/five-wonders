@@ -4,34 +4,13 @@
   <meta charset="UTF-8" />
   <title>Five Wonders</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-
-  <!-- Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-  <!-- Shared stylesheet -->
   <link rel="stylesheet" href="fw.css" />
 </head>
 
 <body class="fw-home fw-bg">
   <header class="fw-header">
     <a href="index.html" class="fw-header-title">Five Wonders</a>
-    <button class="fw-hamburger" id="hamburgerBtn" aria-label="Menu" aria-expanded="false">
-      <div class="fw-hamburger-icon">
-        <span></span>
-        <span></span>
-        <span></span>
-      </div>
-    </button>
-    <nav class="fw-header-nav" id="headerNav" aria-label="Primary navigation">
-      <a href="index.html">Home</a>
-      <a href="add-place.html">Add</a>
-      <a href="edit-places.html">Edit</a>
-      <a href="view.html">View</a>
-      <a href="lists.html">Lists</a>
-      <a href="about.html">About</a>
-      <a href="faq.html">FAQ</a>
-      <a href="profile.html">Profile</a>
-    </nav>
   </header>
 
   <div id="app">
@@ -41,292 +20,129 @@
           <img src="five-wonders-logo.png" alt="Five Wonders logo" class="fw-logo-img" />
         </div>
 
-        <div id="greeting" class="fw-greeting"></div>
-
-        <div class="fw-subtitle">
-          Share the places your friends will love.
+        <!-- Loading state -->
+        <div id="stateLoading" class="fw-auth-state">
+          <p class="fw-subtitle">Checking sign-in…</p>
         </div>
 
-        <div class="fw-btn-group-primary">
-          <a href="view.html" class="fw-btn fw-btn-green fw-btn-large">View All Wonders</a>
+        <!-- Sign-in state -->
+        <div id="stateSignIn" class="fw-auth-state" style="display:none;">
+          <div class="fw-subtitle">Share the places your friends will love.</div>
+          <div class="fw-btn-group-primary" style="margin-top:24px;">
+            <button id="googleSignInBtn" class="fw-btn fw-btn-google fw-btn-large">
+              <svg width="20" height="20" viewBox="0 0 48 48" style="margin-right:10px;flex-shrink:0;">
+                <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+                <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+                <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+                <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+              </svg>
+              Sign in with Google
+            </button>
+          </div>
+          <div class="fw-footer" style="margin-top:24px;">Invite-only beta · Curated by friends</div>
         </div>
 
-        <div class="fw-btn-group-secondary">
-          <a href="add-place.html" class="fw-btn fw-btn-secondary">Add</a>
-          <a href="edit-places.html" class="fw-btn fw-btn-secondary">Edit</a>
+        <!-- Pending state -->
+        <div id="statePending" class="fw-auth-state" style="display:none;">
+          <div id="pendingGreeting" class="fw-greeting"></div>
+          <div class="fw-subtitle" style="margin-top:8px;">Your account is pending approval.</div>
+          <p style="color:var(--fw-text-muted);font-size:0.9rem;margin-top:8px;text-align:center;">
+            You'll receive access once an admin approves your request.
+          </p>
+          <div class="fw-btn-group-primary" style="margin-top:24px;">
+            <button id="pendingSignOutBtn" class="fw-btn fw-btn-secondary">Sign out</button>
+          </div>
         </div>
 
-        <div class="fw-footer">
-          Invite-only beta · Curated by friends
+        <!-- Rejected/suspended state -->
+        <div id="stateRejected" class="fw-auth-state" style="display:none;">
+          <div class="fw-subtitle" style="color:#dc2626;">Access denied.</div>
+          <p id="rejectedMsg" style="color:var(--fw-text-muted);font-size:0.9rem;margin-top:8px;text-align:center;"></p>
+          <div class="fw-btn-group-primary" style="margin-top:24px;">
+            <button id="rejectedSignOutBtn" class="fw-btn fw-btn-secondary">Sign out</button>
+          </div>
         </div>
 
-        <div class="fw-footer-links">
-          <a href="lists.html">Lists</a>
-      <a href="about.html">About</a>
-          <a href="faq.html">FAQ</a>
-        </div>
-
-        <!-- Visible only when authenticated -->
-        <div id="accessLine" class="fw-access-line">
-          Access is set on this device.
-          <a href="#" id="resetHomeAccessLink">Reset</a>
-        </div>
       </div>
     </main>
   </div>
 
-  <!-- Invite Gate -->
-  <div id="inviteGate" role="dialog" aria-modal="true">
-    <div class="panel">
-      <h2>Invite code required</h2>
-      <p>Enter your 8-character invite code to continue.</p>
-
-      <form id="inviteForm">
-        <div class="row">
-          <input id="inviteCodeInput" placeholder="AJWRRHFN" maxlength="12" autocomplete="one-time-code" />
-          <button id="inviteBtn" type="submit">Unlock</button>
-        </div>
-        <div id="inviteError" class="error"></div>
-
-        <div class="meta">
-          <span id="gateStatus">Checking access…</span>
-          <a href="#" id="resetAccessLink">Reset access</a>
-        </div>
-      </form>
-    </div>
-  </div>
-
   <script>
-    // --- Supabase config ---
     const SUPABASE_URL = "https://ekpssonwtztubqfihlqm.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVrcHNzb253dHp0dWJxZmlobHFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM1Njg2MjAsImV4cCI6MjA3OTE0NDYyMH0.R1_-ctf-6NsVUJEApf4N591lA9TPRCJQFzhrDVRbr_4";
 
-    // Storage keys (new + legacy)
-    const LS_ID = "fw_profile_id";
-    const LS_KEY = "fw_api_key";
-    const LS_ID_LEGACY = "profile_id";
-    const LS_KEY_LEGACY = "api_key";
+    const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    const gate = document.getElementById("inviteGate");
-    const form = document.getElementById("inviteForm");
-    const input = document.getElementById("inviteCodeInput");
-    const btn = document.getElementById("inviteBtn");
-    const errorBox = document.getElementById("inviteError");
-    const statusEl = document.getElementById("gateStatus");
-    const resetLink = document.getElementById("resetAccessLink");
+    const stateLoading   = document.getElementById("stateLoading");
+    const stateSignIn    = document.getElementById("stateSignIn");
+    const statePending   = document.getElementById("statePending");
+    const stateRejected  = document.getElementById("stateRejected");
 
-    const accessLine = document.getElementById("accessLine");
-    const resetHomeAccessLink = document.getElementById("resetHomeAccessLink");
-    const greetingEl = document.getElementById("greeting");
-
-    function setStatus(msg) { statusEl.textContent = msg; }
-    function showError(msg) { errorBox.textContent = msg; errorBox.style.display = "block"; }
-    function clearError() { errorBox.textContent = ""; errorBox.style.display = "none"; }
-
-    function getStoredApiKey() {
-      // We intentionally store as UUID string; RPC param type is uuid
-      return localStorage.getItem(LS_KEY) || localStorage.getItem(LS_KEY_LEGACY);
+    function showState(name) {
+      [stateLoading, stateSignIn, statePending, stateRejected].forEach(el => el.style.display = "none");
+      document.getElementById("state" + name).style.display = "block";
     }
 
-    function persistKeys(id, apiKey) {
-      if (id) {
-        localStorage.setItem(LS_ID, id);
-        localStorage.setItem(LS_ID_LEGACY, id);
-      }
-      if (apiKey) {
-        localStorage.setItem(LS_KEY, apiKey);
-        localStorage.setItem(LS_KEY_LEGACY, apiKey);
-      }
-    }
+    async function handleSession(session) {
+      if (!session) { showState("SignIn"); return; }
 
-    function resetAccess() {
-      localStorage.removeItem(LS_ID);
-      localStorage.removeItem(LS_KEY);
-      localStorage.removeItem(LS_ID_LEGACY);
-      localStorage.removeItem(LS_KEY_LEGACY);
-    }
+      const userId = session.user.id;
+      const { data: profile } = await sb
+        .from("profiles")
+        .select("first_name, approval_status")
+        .eq("id", userId)
+        .maybeSingle();
 
-    function lock() {
-      document.body.classList.add("fw-locked");
-      // show gate ONLY when locked
-      gate.style.display = "flex";
-      setStatus("Enter invite code");
-      setTimeout(() => input.focus(), 0);
+      const status = profile?.approval_status ?? "pending";
 
-      // hide authenticated-only UI
-      accessLine.style.display = "none";
-      greetingEl.style.display = "none";
-    }
-
-    function unlock() {
-      document.body.classList.remove("fw-locked");
-      // hide gate when unlocked
-      gate.style.display = "none";
-      // show footer reset line
-      accessLine.style.display = "block";
-    }
-
-    function setGreeting(firstName) {
-      const name = (firstName || "").trim();
-      if (!name) {
-        greetingEl.style.display = "none";
-        greetingEl.textContent = "";
+      if (status === "approved") {
+        window.location.replace("view.html");
         return;
       }
-      greetingEl.textContent = `Hello, ${name}!`;
-      greetingEl.style.display = "block";
-    }
 
-    function wireResetHandlers() {
-      const doReset = (e) => {
-        e.preventDefault();
-        resetAccess();
-        clearError();
-        setGreeting("");
-        lock();
-      };
-
-      resetLink.addEventListener("click", doReset);
-      resetHomeAccessLink.addEventListener("click", doReset);
-    }
-
-    // ---- Profile fetch (for greeting) ----
-    // Uses anon key + RLS. If RLS blocks, greeting just won't show.
-    async function tryLoadFirstName(sb, profileId) {
-      if (!profileId) return "";
-
-      try {
-        const { data, error } = await sb
-          .from("profiles")
-          .select("first_name")
-          .eq("id", profileId)
-          .maybeSingle();
-
-        if (error) return "";
-        return (data && data.first_name) ? data.first_name : "";
-      } catch {
-        return "";
+      if (status === "pending") {
+        const name = (profile?.first_name || "").trim();
+        document.getElementById("pendingGreeting").textContent = name ? `Hi, ${name}!` : "";
+        document.getElementById("pendingGreeting").style.display = name ? "block" : "none";
+        showState("Pending");
+        return;
       }
+
+      // rejected or suspended
+      const msgs = {
+        rejected: "Your access request was not approved.",
+        suspended: "Your account has been suspended. Contact support for help.",
+      };
+      document.getElementById("rejectedMsg").textContent = msgs[status] ?? "Access denied.";
+      showState("Rejected");
     }
 
     document.addEventListener("DOMContentLoaded", async () => {
-      wireResetHandlers();
-
-      if (!window.supabase) {
-        setStatus("Error: Supabase library failed to load.");
-        showError("Please refresh. If this persists, check your network/adblocker.");
-        lock();
-        return;
-      }
-
-      const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-      window._sb = sb;
-
-      // IMPORTANT: do NOT show the gate on load.
-      // We only call lock() if we determine you're not authenticated.
-      const storedApiKey = getStoredApiKey();
-
-      if (storedApiKey) {
-        try {
-          // Silent validate first; no modal flash.
-          const { data, error } = await sb.rpc("validate_api_key", { p_key: storedApiKey });
-
-          if (!error && data && data.length > 0 && data[0].id) {
-            // Normalize storage (keep existing api_key; validate_api_key doesn't return api_key)
-            persistKeys(data[0].id, storedApiKey);
-
-            // Greeting: fetch first_name from profiles
-            const firstName = await tryLoadFirstName(sb, data[0].id);
-            setGreeting(firstName);
-
-            unlock();
-          } else {
-            resetAccess();
-            lock();
-          }
-        } catch (e) {
-          console.error("[FW] validate_api_key failed", e);
-          resetAccess();
-          lock();
-        }
-      } else {
-        lock();
-      }
-
-      // Invite code submit
-      form.addEventListener("submit", async (e) => {
-        e.preventDefault();
-        clearError();
-
-        const code = input.value.trim().toUpperCase().replace(/[\s-]/g, "");
-        if (!code) {
-          showError("Please enter your invite code.");
-          return;
-        }
-
-        btn.disabled = true;
-        btn.textContent = "Checking…";
-        setStatus("Validating…");
-
-        try {
-          const { data, error } = await sb.rpc("validate_invite", { p_code: code });
-          console.log("[FW] validate_invite result", { data, error });
-
-          if (error) throw error;
-          if (!data || data.length === 0) {
-            showError("Invalid invite code.");
-            setStatus("Enter invite code");
-            return;
-          }
-
-          const row = data[0]; // {id, api_key}
-          persistKeys(row.id, row.api_key);
-
-          // Greeting: fetch first_name from profiles
-          const firstName = await tryLoadFirstName(sb, row.id);
-          setGreeting(firstName);
-
-          unlock();
-        } catch (ex) {
-          console.error("[FW] validate_invite failed", ex);
-          showError("Could not validate the code.");
-          setStatus("Enter invite code");
-        } finally {
-          btn.disabled = false;
-          btn.textContent = "Unlock";
-        }
-      });
-    });
-
-    // Mobile hamburger menu toggle
-    const hamburgerBtn = document.getElementById('hamburgerBtn');
-    const headerNav = document.getElementById('headerNav');
-
-    if (hamburgerBtn && headerNav) {
-      hamburgerBtn.addEventListener('click', () => {
-        const isOpen = headerNav.classList.toggle('open');
-        hamburgerBtn.classList.toggle('open', isOpen);
-        hamburgerBtn.setAttribute('aria-expanded', isOpen);
-      });
-
-      // Close menu when clicking a link
-      headerNav.querySelectorAll('a').forEach(link => {
-        link.addEventListener('click', () => {
-          headerNav.classList.remove('open');
-          hamburgerBtn.classList.remove('open');
-          hamburgerBtn.setAttribute('aria-expanded', 'false');
+      // Google sign-in
+      document.getElementById("googleSignInBtn").addEventListener("click", async () => {
+        await sb.auth.signInWithOAuth({
+          provider: "google",
+          options: { redirectTo: "https://fivewonders.app/index.html" },
         });
       });
 
-      // Close menu when clicking outside
-      document.addEventListener('click', (e) => {
-        if (!hamburgerBtn.contains(e.target) && !headerNav.contains(e.target)) {
-          headerNav.classList.remove('open');
-          hamburgerBtn.classList.remove('open');
-          hamburgerBtn.setAttribute('aria-expanded', 'false');
-        }
+      // Sign-out buttons
+      async function signOut() {
+        await sb.auth.signOut();
+        showState("SignIn");
+      }
+      document.getElementById("pendingSignOutBtn").addEventListener("click", signOut);
+      document.getElementById("rejectedSignOutBtn").addEventListener("click", signOut);
+
+      // Check session on load (handles OAuth callback too)
+      const { data: { session } } = await sb.auth.getSession();
+      await handleSession(session);
+
+      // Also listen for auth state changes (fires after OAuth redirect)
+      sb.auth.onAuthStateChange(async (_event, session) => {
+        await handleSession(session);
       });
-    }
+    });
   </script>
 </body>
 </html>
