@@ -459,7 +459,7 @@
         if (jwt) {
           const res = await fetch(MANAGE_PLACES_URL, {
             method: "POST",
-            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${jwt}` },
+            headers: { "Content-Type": "application/json", ...await fwAuth.authHeaders() },
             body: JSON.stringify({ action: "get_place", place_id: place.id }),
           }).then(r => r.json()).catch(() => ({}));
           if (res.place) { fullPlace = res.place; currentSheetPlace = fullPlace; }
@@ -584,7 +584,7 @@
         // Authenticated: can see private lists they own
         const res = await fetch(MANAGE_LISTS_URL, {
           method: "POST",
-          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${jwt}` },
+          headers: { "Content-Type": "application/json", ...await fwAuth.authHeaders() },
           body: JSON.stringify({ action: "get_list_places", list_id: listId }),
         }).then(r => r.json()).catch(() => ({}));
 
@@ -603,7 +603,7 @@
           // Fetch list meta separately for name/description
           const metaRes = await fetch(MANAGE_LISTS_URL, {
             method: "POST",
-            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${jwt}` },
+            headers: { "Content-Type": "application/json", ...await fwAuth.authHeaders() },
             body: JSON.stringify({ action: "list_lists" }),
           }).then(r => r.json()).catch(() => ({}));
           list = (metaRes.lists || []).find(l => l.id === listId) || { id: listId, title: "My List" };

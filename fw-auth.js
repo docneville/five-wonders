@@ -11,6 +11,7 @@ const _fwSb = window.supabase.createClient(FW_SUPABASE_URL, FW_SUPABASE_ANON_KEY
 let _session = null;
 let _ready = false;
 let _waiters = [];
+let _awaitingRefresh = false;
 
 function _settle(session) {
   _session = session;
@@ -21,13 +22,25 @@ function _settle(session) {
   }
 }
 
+function _isExpired(session) {
+  if (!session?.expires_at) return false;
+  return session.expires_at < Math.floor(Date.now() / 1000) + 10;
+}
+
 _fwSb.auth.onAuthStateChange((_event, session) => {
-  _session = session; // keep current after background refreshes
-  _settle(session);   // no-op once already settled
+  _session = session;
+  if (_event === 'INITIAL_SESSION' && _isExpired(session)) {
+    // Access token is expired; Supabase will auto-refresh — wait for TOKEN_REFRESHED.
+    // The 4 s fallback below handles the case where the refresh network call fails.
+    _awaitingRefresh = true;
+    return;
+  }
+  _awaitingRefresh = false;
+  _settle(session);
 });
 
-// Safety: if the client never fires (e.g. script load race), unblock after 4 s.
-setTimeout(() => _settle(null), 4000);
+// Safety fallback: unblock waiters if refresh never arrives.
+setTimeout(() => _settle(_session), 4000);
 
 function _get() {
   if (_ready) return Promise.resolve(_session);

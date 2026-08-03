@@ -343,8 +343,8 @@
     // ===== Auth =====
     const sb = fwAuth.sb;
 
-    const MANAGE_PLACES_URL =
-      "https://ekpssonwtztubqfihlqm.supabase.co/functions/v1/manage-places";
+    const SUPABASE_URL = "https://ekpssonwtztubqfihlqm.supabase.co";
+    const MANAGE_PLACES_URL = `${SUPABASE_URL}/functions/v1/manage-places`;
 
     function escapeHtml(str) {
       return String(str)
