@@ -122,15 +122,6 @@
     integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
     crossorigin=""
   />
-  <!-- Leaflet MarkerCluster CSS -->
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"
-  />
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"
-  />
   <style>
     /* Custom cluster styles */
     .marker-cluster-small {
@@ -345,8 +336,6 @@
     integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
     crossorigin=""
   ></script>
-  <!-- Leaflet MarkerCluster JS -->
-  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 
   <script src="fw-auth.js"></script>
   <script type="module">
@@ -483,14 +472,7 @@
       });
     }
 
-    // Create marker cluster group for existing places
-    const existingPlacesCluster = L.markerClusterGroup({
-      showCoverageOnHover: false,
-      maxClusterRadius: 50,
-      spiderfyOnMaxZoom: true,
-      disableClusteringAtZoom: 16
-    });
-    map.addLayer(existingPlacesCluster);
+    const existingPlacesCluster = L.layerGroup().addTo(map);
 
     function buildAddress({ street_line1, city, state, country }) {
       const parts = [];
