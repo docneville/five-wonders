@@ -1085,7 +1085,6 @@
       showSavedOverlay();
 
       // Add newly saved place to map as existing place marker
-      const storedId = localStorage.getItem(LS_ID) || localStorage.getItem(LS_ID_LEGACY);
       const newPlace = {
         title: place_name,
         notes: user_note,
@@ -1100,7 +1099,7 @@
         website: contact.website || "",
         created_at: new Date().toISOString(),
       };
-      const newMarker = addExistingPlaceMarker(newPlace, storedId);
+      const newMarker = addExistingPlaceMarker(newPlace, null);
       if (newMarker) existingPlacesMarkers.push(newMarker);
 
       // Clear the form so user doesn't accidentally save again
