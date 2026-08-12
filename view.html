@@ -458,7 +458,7 @@
     }
 
     // Shared body content — used in both popup and sheet
-    function buildPlaceContentHtml({ title, notes, savedBy, createdAt, category, street_line1, city, state, country, phone, website, links, photos, placeId, latitude, longitude, userId }) {
+    function buildPlaceContentHtml({ title, notes, wonder_reason, is_wonder, savedBy, createdAt, category, street_line1, city, state, country, phone, website, links, photos, placeId, latitude, longitude, userId }) {
       const address = buildAddress({ street_line1, city, state, country });
       const isOwner = currentUserId && userId && currentUserId === userId;
       const appleMapsUrl = buildMapsUrl(latitude, longitude, address);
@@ -490,9 +490,12 @@
         ? `<div class="place-photo-strip">${photos.map((ph, i) => `<div class="place-photo-strip-thumb" data-place-id="${placeId}" data-photo-index="${i}"><img src="${getPhotoUrl(ph.thumbnail_path || ph.storage_path)}" alt="${escapeHtml(ph.description || '')}" loading="lazy"/></div>`).join("")}</div>`
         : "";
 
-      // Notes
+      // Description and Wonder reason
       const notesHtml = notes
-        ? `<div class="place-notes-section"><h4>Why it's a Wonder</h4><div class="place-notes-body">${escapeHtml(notes)}</div></div>`
+        ? `<div class="place-notes-section"><h4>Description</h4><div class="place-notes-body">${escapeHtml(notes)}</div></div>`
+        : "";
+      const wonderReasonHtml = (is_wonder && wonder_reason)
+        ? `<div class="place-notes-section"><h4>Why it's a Wonder</h4><div class="place-notes-body">${escapeHtml(wonder_reason)}</div></div>`
         : "";
 
       // Meta
@@ -507,6 +510,7 @@
         ${(infoRows || linkRows) ? `<div class="place-info-section">${infoRows}${linkRows}</div>` : ""}
         ${photoStrip}
         ${notesHtml}
+        ${wonderReasonHtml}
         <div class="place-lists-section" id="place-lists-${placeId}"></div>
         ${metaHtml}
         <div style="height:32px;"></div>
@@ -708,6 +712,7 @@
           title,
           raw_text,
           notes,
+          wonder_reason,
           latitude,
           longitude,
           created_at,
@@ -755,6 +760,7 @@
 
         const title = place.title || "(Untitled place)";
         const notes = place.notes || "";
+        const wonder_reason = place.wonder_reason || "";
         const createdAt = place.created_at
           ? new Date(place.created_at).toLocaleString()
           : "";
@@ -778,6 +784,8 @@
         const placeData = {
           title,
           notes,
+          wonder_reason,
+          is_wonder: place.is_wonder ?? false,
           createdAt,
           savedBy,
           category,
@@ -793,7 +801,6 @@
           latitude: lat,
           longitude: lon,
           userId: place.user_id,
-          isWonder: place.is_wonder ?? false,
         };
 
         allPlacesData.push(placeData);
@@ -1016,6 +1023,8 @@
           placeData = {
             title: p.title || "(Untitled place)",
             notes: p.notes || "",
+            wonder_reason: p.wonder_reason || "",
+            is_wonder: p.is_wonder ?? false,
             createdAt: p.created_at ? new Date(p.created_at).toLocaleString() : "",
             savedBy,
             category: p.category || "",

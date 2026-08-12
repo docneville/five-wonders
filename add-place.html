@@ -231,11 +231,19 @@
           style="display:none;"
         ></textarea>
 
-        <label for="user-note">Why is this a Wonder?</label>
+        <label for="user-note">Description</label>
         <textarea
           id="user-note"
-          placeholder="Tell why you recommend this place. Any insider tips, favorites, or must-tries?"
+          placeholder="Any insider tips, favorites, or must-tries?"
         ></textarea>
+
+        <div id="wonder-reason-section" style="display:none;">
+          <label for="wonder-reason">Why it's a Wonder</label>
+          <textarea
+            id="wonder-reason"
+            placeholder="What makes this place one of your Wonders?"
+          ></textarea>
+        </div>
 
         <label for="place-category">Category</label>
         <select id="place-category">
@@ -375,12 +383,15 @@
     const placeNameInput = document.getElementById("place-name");
     const placeAddressInput = document.getElementById("place-address");
     const userNoteInput = document.getElementById("user-note");
+    const wonderReasonInput = document.getElementById("wonder-reason");
+    const wonderReasonSection = document.getElementById("wonder-reason-section");
     const placeCategorySelect = document.getElementById("place-category");
     const placeIsWonderCheckbox = document.getElementById("place-is-wonder");
     const wonderToggleLabel = document.getElementById("wonder-toggle-label");
 
     placeIsWonderCheckbox?.addEventListener("change", () => {
       wonderToggleLabel.classList.toggle("wonder-toggle--on", placeIsWonderCheckbox.checked);
+      wonderReasonSection.style.display = placeIsWonderCheckbox.checked ? "block" : "none";
     });
 
     const saveBtn = document.getElementById("save-btn");
@@ -492,7 +503,7 @@
           ${address ? `<div class="place-address">${escapeHtml(address)}</div>` : ""}
           ${phone ? `<div class="place-phone">📞 ${escapeHtml(phone)}</div>` : ""}
           ${website ? `<div class="place-website"><a href="${escapeHtml(website)}" target="_blank" rel="noopener">${escapeHtml(website)}</a></div>` : ""}
-          ${notes ? `<div class="place-notes-header">Why ${escapeHtml(title)} is a Wonder:</div><div class="place-notes">${escapeHtml(notes)}</div>` : ""}
+          ${notes ? `<div class="place-notes-header">Description:</div><div class="place-notes">${escapeHtml(notes)}</div>` : ""}
           ${createdAt ? `<div class="place-meta">Saved: ${escapeHtml(createdAt)}</div>` : ""}
         </div>
       `;
@@ -605,6 +616,8 @@
       placeCategorySelect.value = "Other";
       placeIsWonderCheckbox.checked = false;
       wonderToggleLabel.classList.remove("wonder-toggle--on");
+      if (wonderReasonInput) wonderReasonInput.value = "";
+      if (wonderReasonSection) wonderReasonSection.style.display = "none";
       selectedLatLng = null;
       selectedAddress = null;
       selectedExtratags = null;
@@ -1005,6 +1018,7 @@
       const place_name = (placeNameInput.value || "").trim();
       const place_address = (placeAddressInput.value || "").trim();
       const user_note = (userNoteInput.value || "").trim();
+      const wonder_reason = (wonderReasonInput?.value || "").trim();
       const category = placeCategorySelect.value || "Other";
 
       if (!place_name) {
@@ -1023,6 +1037,7 @@
         latitude: selectedLatLng.lat,
         longitude: selectedLatLng.lon,
         user_note,
+        wonder_reason,
         category,
         is_wonder: placeIsWonderCheckbox.checked,
         osm_address: selectedAddress,

@@ -84,7 +84,7 @@ serve(async (req: Request): Promise<Response> => {
     }
     const { data, error } = await supabaseAdmin
       .from("places_with_profiles")
-      .select(`id, user_id, title, raw_text, notes, latitude, longitude, created_at, updated_at, street_line1, street_line2, city, state, postal_code, country, phone, website, category, links, photos, is_wonder, first_name, last_name, username`)
+      .select(`id, user_id, title, raw_text, notes, wonder_reason, latitude, longitude, created_at, updated_at, street_line1, street_line2, city, state, postal_code, country, phone, website, category, links, photos, is_wonder, first_name, last_name, username`)
       .eq("id", place_id)
       .single();
     if (error || !data) {
@@ -107,6 +107,7 @@ serve(async (req: Request): Promise<Response> => {
         id,
         title,
         notes,
+        wonder_reason,
         raw_text,
         street_line1,
         street_line2,
@@ -150,7 +151,7 @@ serve(async (req: Request): Promise<Response> => {
 
     const { data, error } = await supabaseAdmin
       .from("places_with_profiles")
-      .select(`id, user_id, title, raw_text, notes, latitude, longitude, created_at, updated_at, street_line1, street_line2, city, state, postal_code, country, phone, website, category, links, photos, is_wonder, first_name, last_name, username`)
+      .select(`id, user_id, title, raw_text, notes, wonder_reason, latitude, longitude, created_at, updated_at, street_line1, street_line2, city, state, postal_code, country, phone, website, category, links, photos, is_wonder, first_name, last_name, username`)
       .eq("id", place_id)
       .single();
 
@@ -165,6 +166,7 @@ serve(async (req: Request): Promise<Response> => {
       place_id,
       title,
       notes,
+      wonder_reason,
       street_line1,
       street_line2,
       city,
@@ -235,6 +237,7 @@ serve(async (req: Request): Promise<Response> => {
     const updatePayload: Record<string, any> = {
       title: title ?? null,
       notes: notes ?? null,
+      wonder_reason: wonder_reason ?? null,
       street_line1: street_line1 ?? null,
       street_line2: street_line2 ?? null,
       city: city ?? null,

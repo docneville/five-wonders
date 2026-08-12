@@ -392,7 +392,10 @@
         : "";
 
       const notesHtml = place.notes
-        ? `<div class="place-notes-section"><h4>Why it's a Wonder</h4><div class="place-notes-body">${escapeHtml(place.notes)}</div></div>`
+        ? `<div class="place-notes-section"><h4>Description</h4><div class="place-notes-body">${escapeHtml(place.notes)}</div></div>`
+        : "";
+      const wonderReasonHtml = (place.is_wonder && place.wonder_reason)
+        ? `<div class="place-notes-section"><h4>Why it's a Wonder</h4><div class="place-notes-body">${escapeHtml(place.wonder_reason)}</div></div>`
         : "";
 
       return `
@@ -400,6 +403,7 @@
         ${infoRows ? `<div class="place-info-section">${infoRows}</div>` : ""}
         ${photoStrip}
         ${notesHtml}
+        ${wonderReasonHtml}
         <div style="height:32px;"></div>
       `;
     }

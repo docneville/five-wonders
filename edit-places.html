@@ -144,8 +144,13 @@
           <label for="edit-website">Website</label>
           <input type="text" id="edit-website" />
 
-          <label for="edit-note">Why is this a Wonder?</label>
+          <label for="edit-note">Description</label>
           <textarea id="edit-note"></textarea>
+
+          <div id="wonder-reason-section" style="display:none;">
+            <label for="edit-wonder-reason">Why it's a Wonder</label>
+            <textarea id="edit-wonder-reason"></textarea>
+          </div>
 
           <label for="edit-category">Category</label>
           <select id="edit-category">
@@ -261,8 +266,13 @@
             <label for="m-edit-website">Website</label>
             <input type="text" id="m-edit-website" />
 
-            <label for="m-edit-note">Why is this a Wonder?</label>
+            <label for="m-edit-note">Description</label>
             <textarea id="m-edit-note"></textarea>
+
+            <div id="m-wonder-reason-section" style="display:none;">
+              <label for="m-edit-wonder-reason">Why it's a Wonder</label>
+              <textarea id="m-edit-wonder-reason"></textarea>
+            </div>
 
             <label for="m-edit-category">Category</label>
             <select id="m-edit-category">
@@ -393,6 +403,8 @@
     const editFormEl = document.getElementById("edit-form");
     const editTitleInput = document.getElementById("edit-title");
     const editNoteInput = document.getElementById("edit-note");
+    const editWonderReasonInput = document.getElementById("edit-wonder-reason");
+    const editWonderReasonSection = document.getElementById("wonder-reason-section");
     const editMetaEl = document.getElementById("edit-meta");
     const editStatusEl = document.getElementById("edit-status");
 
@@ -409,6 +421,7 @@
     const wonderToggleLabel = document.getElementById("wonder-toggle-label");
     editIsWonderCheckbox?.addEventListener("change", () => {
       wonderToggleLabel.classList.toggle("wonder-toggle--on", editIsWonderCheckbox.checked);
+      if (editWonderReasonSection) editWonderReasonSection.style.display = editIsWonderCheckbox.checked ? "block" : "none";
     });
 
     const saveChangesBtn = document.getElementById("save-changes-btn");
@@ -424,6 +437,8 @@
     const mEditFormEl = document.getElementById("mobile-edit-form");
     const mEditTitleInput = document.getElementById("m-edit-title");
     const mEditNoteInput = document.getElementById("m-edit-note");
+    const mEditWonderReasonInput = document.getElementById("m-edit-wonder-reason");
+    const mEditWonderReasonSection = document.getElementById("m-wonder-reason-section");
     const mEditMetaEl = document.getElementById("m-edit-meta");
     const mEditStatusEl = document.getElementById("m-edit-status");
 
@@ -440,6 +455,7 @@
     const mWonderToggleLabel = document.getElementById("m-wonder-toggle-label");
     mEditIsWonderCheckbox?.addEventListener("change", () => {
       mWonderToggleLabel.classList.toggle("wonder-toggle--on", mEditIsWonderCheckbox.checked);
+      if (mEditWonderReasonSection) mEditWonderReasonSection.style.display = mEditIsWonderCheckbox.checked ? "block" : "none";
     });
 
     const mSaveBtn = document.getElementById("m-save-changes-btn");
@@ -961,6 +977,8 @@
         editPhoneInput.value = place.phone ?? "";
         editWebsiteInput.value = place.website ?? "";
         editNoteInput.value = place.notes ?? "";
+        editWonderReasonInput.value = place.wonder_reason ?? "";
+        if (editWonderReasonSection) editWonderReasonSection.style.display = (place.is_wonder ?? false) ? "block" : "none";
         editCategorySelect.value = place.category ?? "Other";
         editIsWonderCheckbox.checked = place.is_wonder ?? false;
         wonderToggleLabel.classList.toggle("wonder-toggle--on", place.is_wonder ?? false);
@@ -999,6 +1017,8 @@
         mEditPhoneInput.value = place.phone ?? "";
         mEditWebsiteInput.value = place.website ?? "";
         mEditNoteInput.value = place.notes ?? "";
+        mEditWonderReasonInput.value = place.wonder_reason ?? "";
+        if (mEditWonderReasonSection) mEditWonderReasonSection.style.display = (place.is_wonder ?? false) ? "block" : "none";
         mEditCategorySelect.value = place.category ?? "Other";
         mEditIsWonderCheckbox.checked = place.is_wonder ?? false;
         mWonderToggleLabel.classList.toggle("wonder-toggle--on", place.is_wonder ?? false);
@@ -1159,6 +1179,7 @@
     async function saveChangesCommon({
       title,
       notes,
+      wonder_reason,
       phone,
       website,
       street_line1,
@@ -1189,6 +1210,7 @@
             place_id: activePlaceId,
             title,
             notes,
+            wonder_reason,
             phone,
             website,
             street_line1,
@@ -1233,6 +1255,7 @@
               ...userPlaces[idx],
               title,
               notes,
+              wonder_reason,
               phone,
               website,
               street_line1,
@@ -1335,6 +1358,7 @@
       saveChangesCommon({
         title: (editTitleInput.value || "").trim(),
         notes: (editNoteInput.value || "").trim(),
+        wonder_reason: (editWonderReasonInput?.value || "").trim(),
         phone: (editPhoneInput.value || "").trim(),
         website: (editWebsiteInput.value || "").trim(),
         street_line1: (editStreet1Input.value || "").trim(),
@@ -1367,6 +1391,7 @@
       saveChangesCommon({
         title: (mEditTitleInput.value || "").trim(),
         notes: (mEditNoteInput.value || "").trim(),
+        wonder_reason: (mEditWonderReasonInput?.value || "").trim(),
         phone: (mEditPhoneInput.value || "").trim(),
         website: (mEditWebsiteInput.value || "").trim(),
         street_line1: (mEditStreet1Input.value || "").trim(),

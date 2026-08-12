@@ -131,6 +131,7 @@ serve(async (req: Request): Promise<Response> => {
     latitude,
     longitude,
     user_note,
+    wonder_reason,
     osm_address,
     osm_extratags,
     category,
@@ -172,6 +173,7 @@ serve(async (req: Request): Promise<Response> => {
     title: place_name || null,
     raw_text: place_address || null,
     notes: user_note || null,
+    wonder_reason: wonder_reason || null,
     category: category || "Other",
     is_wonder: is_wonder === true,
 
