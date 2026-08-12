@@ -466,8 +466,8 @@
 
       // Action buttons row
       const actionBtns = [
-        appleMapsUrl ? `<a href="${appleMapsUrl}" target="_blank" rel="noopener" class="place-action-btn place-action-btn--primary">${SVG.directions}<span>Apple Maps</span></a>` : "",
-        googleMapsUrl ? `<a href="${googleMapsUrl}" target="_blank" rel="noopener" class="place-action-btn place-action-btn--primary">${SVG.directions}<span>Google Maps</span></a>` : "",
+        appleMapsUrl ? `<a href="${appleMapsUrl}" target="_blank" rel="noopener" class="place-action-btn place-action-btn--primary">${SVG.directions}<span>Maps</span></a>` : "",
+        googleMapsUrl ? `<a href="${googleMapsUrl}" target="_blank" rel="noopener" class="place-action-btn place-action-btn--primary">${SVG.directions}<span>Google</span></a>` : "",
         phone ? `<a href="tel:${escapeHtml(phone)}" class="place-action-btn place-action-btn--secondary">${SVG.call}<span>Call</span></a>` : "",
         website ? `<a href="${escapeHtml(website)}" target="_blank" rel="noopener" class="place-action-btn place-action-btn--secondary">${SVG.website}<span>Website</span></a>` : "",
         isOwner ? `<a href="edit-places.html?place=${placeId}" class="place-action-btn place-action-btn--secondary">${SVG.edit}<span>Edit</span></a>` : "",
