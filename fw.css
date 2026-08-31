@@ -1867,9 +1867,30 @@ a:hover{ text-decoration: underline; }
 .fw-category-pin--other{ background: #0d9488; color: #fff; }
 .fw-category-pin--personal{ background: #e11d48; color: #fff; }
 .fw-category-pin--wonder{
-  border: 2.5px solid #fbbf24;
-  box-shadow: 0 0 0 2px #f59e0b, 0 3px 8px rgba(0,0,0,0.4);
-  transform: rotate(-45deg) scale(1.15);
+  position: relative;
+  background: #f59e0b !important;
+  color: #fff !important;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 2.5px #f59e0b, 0 0 10px 3px rgba(251,191,36,0.65), 0 3px 8px rgba(0,0,0,0.4);
+  transform: rotate(-45deg) scale(1.22);
+  animation: wonder-pulse 2.2s ease-in-out infinite;
+}
+.fw-category-pin--wonder::after{
+  content: "★";
+  position: absolute;
+  top: -9px;
+  left: 50%;
+  transform: rotate(45deg) translateX(-50%);
+  transform-origin: center;
+  font-size: 11px;
+  line-height: 1;
+  color: #fbbf24;
+  text-shadow: 0 0 4px rgba(0,0,0,0.6);
+  pointer-events: none;
+}
+@keyframes wonder-pulse{
+  0%,100%{ box-shadow: 0 0 0 2.5px #f59e0b, 0 0 10px 3px rgba(251,191,36,0.65), 0 3px 8px rgba(0,0,0,0.4); }
+  50%{     box-shadow: 0 0 0 2.5px #f59e0b, 0 0 18px 6px rgba(251,191,36,0.85), 0 3px 8px rgba(0,0,0,0.4); }
 }
 
 @media (max-width: 768px){
