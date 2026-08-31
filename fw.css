@@ -1859,7 +1859,7 @@ a:hover{ text-decoration: underline; }
   transform: rotate(45deg);
 }
 
-.fw-category-pin--dining{ background: #f59e0b; color: #fff; }
+.fw-category-pin--dining{ background: #ea580c; color: #fff; }
 .fw-category-pin--lodging{ background: #3b82f6; color: #fff; }
 .fw-category-pin--attraction{ background: #ec4899; color: #fff; }
 .fw-category-pin--recreation{ background: #10b981; color: #fff; }

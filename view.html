@@ -633,29 +633,19 @@
       }
 
       return allPlacesData.filter(place => {
-        // Check "mine" filter
-        if (activeFilters.has('mine')) {
-          if (place.userId === currentUserId) return true;
-        }
-
-        // Check category filters
         const categoryFilters = Array.from(activeFilters).filter(f => f !== 'mine');
+        const mineActive = activeFilters.has('mine');
+
+        // "My Wonders" = places owned by me that are marked as Wonders
+        if (mineActive && !(place.userId === currentUserId && place.is_wonder)) return false;
+
+        // Category filter: place must match one of the selected categories
         if (categoryFilters.length > 0) {
           const placeCategory = place.category || 'Other';
-          if (categoryFilters.includes(placeCategory)) return true;
+          if (!categoryFilters.includes(placeCategory)) return false;
         }
 
-        // If only category filters active (no "mine"), check just category
-        if (!activeFilters.has('mine') && categoryFilters.length > 0) {
-          return false;
-        }
-
-        // If only "mine" filter, already handled above
-        if (activeFilters.has('mine') && categoryFilters.length === 0) {
-          return place.userId === currentUserId;
-        }
-
-        return false;
+        return true;
       });
     }
 
