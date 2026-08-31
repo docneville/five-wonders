@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Admin — Five Wonders</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="fw.css" />
+  <style>
+    .admin-wrap { max-width: 720px; margin: 0 auto; padding: 24px 16px 64px; }
+    .admin-section { margin-bottom: 40px; }
+    .admin-section h2 {
+      font-size: 1rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .06em; color: var(--fw-text-secondary, #666);
+      margin: 0 0 12px;
+    }
+    .admin-section h2 span {
+      display: inline-flex; align-items: center; justify-content: center;
+      background: var(--fw-accent, #0071e3); color: #fff;
+      border-radius: 999px; font-size: .7rem; padding: 1px 7px;
+      margin-left: 8px; font-weight: 700; letter-spacing: 0;
+    }
+    .admin-empty { color: var(--fw-text-secondary, #888); font-size: .9rem; padding: 12px 0; }
+    .user-card {
+      display: flex; align-items: center; gap: 14px;
+      padding: 14px 16px; border-radius: 14px;
+      background: var(--fw-card-bg, #fff);
+      border: 1px solid var(--fw-border, #e5e5ea);
+      margin-bottom: 10px;
+    }
+    .user-avatar {
+      width: 44px; height: 44px; border-radius: 50%;
+      object-fit: cover; flex-shrink: 0;
+      background: var(--fw-border, #e5e5ea);
+    }
+    .user-avatar-placeholder {
+      width: 44px; height: 44px; border-radius: 50%; flex-shrink: 0;
+      background: var(--fw-border, #e5e5ea);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem; font-weight: 600; color: var(--fw-text-secondary, #888);
+    }
+    .user-info { flex: 1; min-width: 0; }
+    .user-name { font-weight: 600; font-size: .95rem; }
+    .user-email { font-size: .82rem; color: var(--fw-text-secondary, #666); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .user-date { font-size: .78rem; color: var(--fw-text-secondary, #999); margin-top: 2px; }
+    .user-actions { display: flex; gap: 8px; flex-shrink: 0; }
+    .btn-approve {
+      padding: 6px 14px; border-radius: 8px; border: none; cursor: pointer;
+      font-size: .82rem; font-weight: 600;
+      background: #16a34a; color: #fff;
+    }
+    .btn-reject {
+      padding: 6px 14px; border-radius: 8px; border: none; cursor: pointer;
+      font-size: .82rem; font-weight: 600;
+      background: var(--fw-border, #e5e5ea); color: var(--fw-text, #222);
+    }
+    .btn-suspend {
+      padding: 6px 14px; border-radius: 8px; border: none; cursor: pointer;
+      font-size: .82rem; font-weight: 600;
+      background: #dc2626; color: #fff;
+    }
+    .btn-reinstate {
+      padding: 6px 14px; border-radius: 8px; border: none; cursor: pointer;
+      font-size: .82rem; font-weight: 600;
+      background: var(--fw-accent, #0071e3); color: #fff;
+    }
+    .btn-approve:disabled, .btn-reject:disabled, .btn-suspend:disabled, .btn-reinstate:disabled {
+      opacity: .45; cursor: default;
+    }
+    #loadingMsg { text-align: center; padding: 48px 0; color: var(--fw-text-secondary, #888); }
+    #errorMsg { text-align: center; padding: 48px 0; color: #dc2626; }
+    .admin-badge {
+      display: inline-block; font-size: .7rem; font-weight: 700;
+      background: #7c3aed; color: #fff; border-radius: 4px; padding: 1px 6px;
+      margin-left: 6px; vertical-align: middle;
+    }
+  </style>
+</head>
+
+<body>
+  <header class="fw-header">
+    <a href="index.html" class="fw-header-title">Five Wonders</a>
+    <button class="fw-hamburger" id="hamburgerBtn" aria-label="Menu" aria-expanded="false">
+      <div class="fw-hamburger-icon"><span></span><span></span><span></span></div>
+    </button>
+    <nav class="fw-header-nav" id="headerNav" aria-label="Primary navigation">
+      <a href="index.html">Home</a>
+      <a href="add-place.html">Add</a>
+      <a href="edit-places.html">Edit</a>
+      <a href="view.html">View</a>
+      <a href="lists.html">Lists</a>
+      <a href="about.html">About</a>
+      <a href="faq.html">FAQ</a>
+      <a href="profile.html">Profile</a>
+    </nav>
+  </header>
+
+  <div class="admin-wrap">
+    <h1 style="margin:0 0 24px; font-size:1.5rem;">User Approvals</h1>
+    <div id="loadingMsg">Loading…</div>
+    <div id="errorMsg" style="display:none;"></div>
+
+    <div id="adminContent" style="display:none;">
+      <div class="admin-section">
+        <h2>Pending <span id="pendingCount">0</span></h2>
+        <div id="pendingList"></div>
+      </div>
+      <div class="admin-section">
+        <h2>Approved <span id="approvedCount" style="background:#16a34a;">0</span></h2>
+        <div id="approvedList"></div>
+      </div>
+      <div class="admin-section">
+        <h2>Suspended / Rejected <span id="suspendedCount" style="background:#dc2626;">0</span></h2>
+        <div id="suspendedList"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="fw-auth.js"></script>
+  <script type="module">
+    const SUPABASE_URL = "https://ekpssonwtztubqfihlqm.supabase.co";
+    const ADMIN_URL = `${SUPABASE_URL}/functions/v1/admin-users`;
+
+    // ---- Auth guard ----
+    let users = [];
+
+    async function init() {
+      await fwAuth.ready();
+      const jwt = await fwAuth.getJWT();
+      if (!jwt) { window.location.replace("index.html"); return; }
+
+      const headers = await fwAuth.authHeaders();
+      const res = await fetch(ADMIN_URL, {
+        method: "POST",
+        headers: { ...headers, "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "list" }),
+      });
+
+      document.getElementById("loadingMsg").style.display = "none";
+
+      if (res.status === 403) {
+        document.getElementById("errorMsg").textContent = "Access denied — admin only.";
+        document.getElementById("errorMsg").style.display = "block";
+        return;
+      }
+      if (!res.ok) {
+        document.getElementById("errorMsg").textContent = "Failed to load users.";
+        document.getElementById("errorMsg").style.display = "block";
+        return;
+      }
+
+      const data = await res.json();
+      users = data.users || [];
+      render();
+      document.getElementById("adminContent").style.display = "block";
+    }
+
+    function fmt(iso) {
+      return new Date(iso).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+    }
+
+    function avatarEl(u) {
+      if (u.avatar_url) {
+        return `<img class="user-avatar" src="${escHtml(u.avatar_url)}" alt="" />`;
+      }
+      const initials = [(u.first_name || "")[0], (u.last_name || "")[0]].filter(Boolean).join("").toUpperCase() || "?";
+      return `<div class="user-avatar-placeholder">${initials}</div>`;
+    }
+
+    function escHtml(s) {
+      return String(s ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+    }
+
+    function buildCard(u, actions) {
+      const name = [u.first_name, u.last_name].filter(Boolean).join(" ") || "(no name)";
+      const adminBadge = u.is_admin ? `<span class="admin-badge">admin</span>` : "";
+      return `
+        <div class="user-card" id="card-${u.id}">
+          ${avatarEl(u)}
+          <div class="user-info">
+            <div class="user-name">${escHtml(name)}${adminBadge}</div>
+            <div class="user-email">${escHtml(u.email || "")}</div>
+            <div class="user-date">Joined ${fmt(u.created_at)}</div>
+          </div>
+          <div class="user-actions">${actions}</div>
+        </div>`;
+    }
+
+    function render() {
+      const pending   = users.filter(u => u.approval_status === "pending");
+      const approved  = users.filter(u => u.approval_status === "approved");
+      const suspended = users.filter(u => u.approval_status === "suspended" || u.approval_status === "rejected");
+
+      document.getElementById("pendingCount").textContent  = pending.length;
+      document.getElementById("approvedCount").textContent = approved.length;
+      document.getElementById("suspendedCount").textContent = suspended.length;
+
+      document.getElementById("pendingList").innerHTML = pending.length
+        ? pending.map(u => buildCard(u,
+            `<button class="btn-approve" onclick="updateStatus('${u.id}','approved',this)">Approve</button>
+             <button class="btn-reject"  onclick="updateStatus('${u.id}','rejected',this)">Reject</button>`
+          )).join("")
+        : `<div class="admin-empty">No pending requests</div>`;
+
+      document.getElementById("approvedList").innerHTML = approved.length
+        ? approved.map(u => buildCard(u,
+            u.is_admin
+              ? `<span style="font-size:.8rem;color:var(--fw-text-secondary,#999)">admin</span>`
+              : `<button class="btn-suspend" onclick="updateStatus('${u.id}','suspended',this)">Suspend</button>`
+          )).join("")
+        : `<div class="admin-empty">No approved users</div>`;
+
+      document.getElementById("suspendedList").innerHTML = suspended.length
+        ? suspended.map(u => buildCard(u,
+            `<button class="btn-reinstate" onclick="updateStatus('${u.id}','approved',this)">Reinstate</button>`
+          )).join("")
+        : `<div class="admin-empty">None</div>`;
+    }
+
+    window.updateStatus = async function(userId, status, btn) {
+      btn.disabled = true;
+      const sibling = btn.parentElement.querySelector("button:not(:disabled)");
+      if (sibling) sibling.disabled = true;
+
+      const headers = await fwAuth.authHeaders();
+      const res = await fetch(ADMIN_URL, {
+        method: "POST",
+        headers: { ...headers, "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "update_status", user_id: userId, status }),
+      });
+
+      if (!res.ok) {
+        alert("Update failed — try again.");
+        btn.disabled = false;
+        if (sibling) sibling.disabled = false;
+        return;
+      }
+
+      // Update local data and re-render
+      const u = users.find(x => x.id === userId);
+      if (u) u.approval_status = status;
+      render();
+    };
+
+    // ---- Hamburger ----
+    const hamburgerBtn = document.getElementById("hamburgerBtn");
+    const headerNav    = document.getElementById("headerNav");
+    hamburgerBtn?.addEventListener("click", () => {
+      const open = hamburgerBtn.getAttribute("aria-expanded") === "true";
+      hamburgerBtn.setAttribute("aria-expanded", String(!open));
+      headerNav.classList.toggle("open", !open);
+    });
+
+    init();
+  </script>
+</body>
+</html>
