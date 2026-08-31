@@ -282,12 +282,13 @@
       return map[cat] || "📍";
     }
 
-    function makeCategoryIcon(category) {
+    function makeCategoryIcon(category, isWonder) {
       const cat = category || "Other";
       const icon = categoryIcons[cat] || categoryIcons.Other;
+      const wonderClass = isWonder ? " fw-category-pin--wonder" : "";
       return L.divIcon({
         className: "",
-        html: `<div class="fw-category-pin fw-category-pin--${cat.toLowerCase()}">${icon}</div>`,
+        html: `<div class="fw-category-pin fw-category-pin--${cat.toLowerCase()}${wonderClass}">${icon}</div>`,
         iconSize: [28, 28], iconAnchor: [14, 28], popupAnchor: [0, -28],
       });
     }
@@ -548,7 +549,7 @@
       markerCluster.clearLayers();
       listPlaces.forEach(place => {
         if (!place.latitude || !place.longitude) return;
-        const marker = L.marker([place.latitude, place.longitude], { icon: makeCategoryIcon(place.category) });
+        const marker = L.marker([place.latitude, place.longitude], { icon: makeCategoryIcon(place.category, place.is_wonder) });
         marker.on("click", () => openPlace(place));
         markerCluster.addLayer(marker);
       });

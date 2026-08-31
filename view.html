@@ -317,10 +317,11 @@
       Personal: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>`,
     };
 
-    function makeCategoryIcon(category) {
+    function makeCategoryIcon(category, isWonder) {
       const cat = category || "Other";
       const icon = categoryIcons[cat] || categoryIcons.Other;
-      const className = `fw-category-pin fw-category-pin--${cat.toLowerCase()}`;
+      const wonderClass = isWonder ? " fw-category-pin--wonder" : "";
+      const className = `fw-category-pin fw-category-pin--${cat.toLowerCase()}${wonderClass}`;
       return L.divIcon({
         className: "",
         html: `<div class="${className}">${icon}</div>`,
@@ -666,11 +667,11 @@
       markerClusterGroup.clearLayers();
 
       filteredPlaces.forEach((placeData) => {
-        const { title, latitude: lat, longitude: lon, category } = placeData;
+        const { title, latitude: lat, longitude: lon, category, is_wonder } = placeData;
 
         const popupHtml = buildPopupHtml(placeData);
         const bodyHtml = buildPlaceBodyHtml(placeData);
-        const icon = makeCategoryIcon(category);
+        const icon = makeCategoryIcon(category, is_wonder);
         const marker = L.marker([lat, lon], { icon });
 
         if (isMobile()) {
@@ -1044,7 +1045,7 @@
           };
 
           // Add a temporary marker for this place
-          const icon = makeCategoryIcon(placeData.category);
+          const icon = makeCategoryIcon(placeData.category, placeData.is_wonder);
           const marker = L.marker([placeData.latitude, placeData.longitude], { icon });
           const popupHtml = buildPopupHtml(placeData);
           const bodyHtml = buildPlaceBodyHtml(placeData);

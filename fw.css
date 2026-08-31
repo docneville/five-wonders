@@ -1866,6 +1866,11 @@ a:hover{ text-decoration: underline; }
 .fw-category-pin--shopping{ background: #8b5cf6; color: #fff; }
 .fw-category-pin--other{ background: #0d9488; color: #fff; }
 .fw-category-pin--personal{ background: #e11d48; color: #fff; }
+.fw-category-pin--wonder{
+  border: 2.5px solid #fbbf24;
+  box-shadow: 0 0 0 2px #f59e0b, 0 3px 8px rgba(0,0,0,0.4);
+  transform: rotate(-45deg) scale(1.15);
+}
 
 @media (max-width: 768px){
   .fw-category-pin{
