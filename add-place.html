@@ -1069,7 +1069,11 @@
       if (!res.ok) {
         console.error("Error from ingest-shortcut:", res.status, text);
         hideSavingOverlay();
-        alert("Error saving place – see console for details.");
+        if (res.status === 403) {
+          alert("Your account is pending admin approval. You'll be able to add places once approved.");
+        } else {
+          alert("Error saving place – see console for details.");
+        }
         return;
       }
 
