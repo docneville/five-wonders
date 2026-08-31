@@ -86,18 +86,43 @@
       <span>Filters</span>
       <span id="filterCount" class="fw-filter-count" style="display: none;">0</span>
     </button>
-    <div id="filterChips" class="fw-filter-chips" style="display: none;">
-      <button class="fw-filter-chip" data-filter="mine" type="button">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-        Mine
-      </button>
-      <button class="fw-filter-chip" data-filter="Dining" type="button">Dining</button>
-      <button class="fw-filter-chip" data-filter="Lodging" type="button">Lodging</button>
-      <button class="fw-filter-chip" data-filter="Attraction" type="button">Attraction</button>
-      <button class="fw-filter-chip" data-filter="Recreation" type="button">Recreation</button>
-      <button class="fw-filter-chip" data-filter="Shopping" type="button">Shopping</button>
-      <button class="fw-filter-chip" data-filter="Other" type="button">Other</button>
-      <button class="fw-filter-chip" data-filter="Personal" type="button">Personal</button>
+    <div id="filterPanel" class="fw-filter-panel" style="display: none;">
+
+      <!-- Row 1: Type (Wonders / All Places) -->
+      <div class="fw-filter-row">
+        <span class="fw-filter-label">Show</span>
+        <div class="fw-filter-segment">
+          <button class="fw-filter-seg-btn active" data-type="wonders" type="button">★ Wonders</button>
+          <button class="fw-filter-seg-btn" data-type="all" type="button">All Places</button>
+        </div>
+      </div>
+
+      <!-- Row 2: Scope -->
+      <div class="fw-filter-row">
+        <span class="fw-filter-label">Who</span>
+        <div class="fw-filter-chips-row">
+          <button class="fw-filter-chip" data-scope="mine" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            Mine
+          </button>
+          <button class="fw-filter-chip fw-filter-chip--soon" data-scope="friends" type="button" disabled title="Coming soon">Friends</button>
+        </div>
+      </div>
+
+      <!-- Row 3: Category -->
+      <div class="fw-filter-row">
+        <span class="fw-filter-label">Category</span>
+        <div class="fw-filter-chips-row">
+          <button class="fw-filter-chip" data-cat="Dining" type="button">Dining</button>
+          <button class="fw-filter-chip" data-cat="Lodging" type="button">Lodging</button>
+          <button class="fw-filter-chip" data-cat="Attraction" type="button">Attraction</button>
+          <button class="fw-filter-chip" data-cat="Recreation" type="button">Recreation</button>
+          <button class="fw-filter-chip" data-cat="Shopping" type="button">Shopping</button>
+          <button class="fw-filter-chip" data-cat="Other" type="button">Other</button>
+          <button class="fw-filter-chip" data-cat="Personal" type="button">Personal</button>
+        </div>
+      </div>
+
       <button id="clearFilters" class="fw-filter-clear" type="button" style="display: none;">Clear all</button>
     </div>
   </div>
@@ -160,22 +185,22 @@
     let currentUserId = null;
 
     // ===== Filter state =====
-    let allPlacesData = []; // Store all places for filtering
-    const activeFilters = new Set(); // Active filter values
+    let allPlacesData = [];
 
-    // Check URL for filter parameters
+    // Three independent dimensions
+    const filterState = { type: 'wonders', mine: false, categories: new Set() };
+
+    // Restore from URL
     const urlParams = new URLSearchParams(window.location.search);
-    const urlFilters = urlParams.get('filter');
-    if (urlFilters) {
-      urlFilters.split(',').forEach(f => activeFilters.add(f.trim()));
-    }
+    if (urlParams.get('type') === 'all') filterState.type = 'all';
+    if (urlParams.get('mine') === '1') filterState.mine = true;
+    (urlParams.get('cat') || '').split(',').filter(Boolean).forEach(c => filterState.categories.add(c));
 
     // Filter UI elements
     const filterToggle = document.getElementById('filterToggle');
-    const filterChips = document.getElementById('filterChips');
-    const filterCount = document.getElementById('filterCount');
+    const filterPanel  = document.getElementById('filterPanel');
+    const filterCount  = document.getElementById('filterCount');
     const clearFiltersBtn = document.getElementById('clearFilters');
-    const chipButtons = document.querySelectorAll('.fw-filter-chip');
 
     // State variables (declared early to avoid temporal dead zone)
     let placesDataMap = new Map();
@@ -583,68 +608,54 @@
 
     // ===== Filter Functions =====
     function updateFilterUI() {
-      // Update chip active states
-      chipButtons.forEach(chip => {
-        const filterValue = chip.dataset.filter;
-        chip.classList.toggle('active', activeFilters.has(filterValue));
+      // Segment buttons
+      document.querySelectorAll('.fw-filter-seg-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.type === filterState.type);
       });
 
-      // Update filter count badge
-      const count = activeFilters.size;
+      // Scope chips
+      document.querySelectorAll('[data-scope]').forEach(btn => {
+        btn.classList.toggle('active', filterState.mine && btn.dataset.scope === 'mine');
+      });
+
+      // Category chips
+      document.querySelectorAll('[data-cat]').forEach(btn => {
+        btn.classList.toggle('active', filterState.categories.has(btn.dataset.cat));
+      });
+
+      // Badge: count non-default active filters
+      const nonDefault = (filterState.type !== 'wonders' ? 1 : 0)
+        + (filterState.mine ? 1 : 0)
+        + filterState.categories.size;
       if (filterCount) {
-        filterCount.textContent = count;
-        filterCount.style.display = count > 0 ? 'inline-flex' : 'none';
+        filterCount.textContent = nonDefault;
+        filterCount.style.display = nonDefault > 0 ? 'inline-flex' : 'none';
       }
-
-      // Show/hide clear button
       if (clearFiltersBtn) {
-        clearFiltersBtn.style.display = count > 0 ? 'inline-flex' : 'none';
+        clearFiltersBtn.style.display = nonDefault > 0 ? 'inline-flex' : 'none';
       }
 
-      // Update URL with current filters
+      // Persist to URL
       const url = new URL(window.location);
-      if (count > 0) {
-        url.searchParams.set('filter', Array.from(activeFilters).join(','));
-      } else {
-        url.searchParams.delete('filter');
-      }
+      filterState.type !== 'wonders' ? url.searchParams.set('type', filterState.type) : url.searchParams.delete('type');
+      filterState.mine ? url.searchParams.set('mine', '1') : url.searchParams.delete('mine');
+      filterState.categories.size > 0 ? url.searchParams.set('cat', [...filterState.categories].join(',')) : url.searchParams.delete('cat');
       window.history.replaceState({}, '', url);
     }
 
-    function toggleFilter(filterValue) {
-      if (activeFilters.has(filterValue)) {
-        activeFilters.delete(filterValue);
-      } else {
-        activeFilters.add(filterValue);
-      }
-      updateFilterUI();
-      renderFilteredMarkers();
-    }
-
     function clearAllFilters() {
-      activeFilters.clear();
+      filterState.type = 'wonders';
+      filterState.mine = false;
+      filterState.categories.clear();
       updateFilterUI();
       renderFilteredMarkers();
     }
 
     function getFilteredPlaces() {
-      if (activeFilters.size === 0) {
-        return allPlacesData;
-      }
-
       return allPlacesData.filter(place => {
-        const categoryFilters = Array.from(activeFilters).filter(f => f !== 'mine');
-        const mineActive = activeFilters.has('mine');
-
-        // "Mine" = my places (all shown places are already Wonders)
-        if (mineActive && place.userId !== currentUserId) return false;
-
-        // Category filter: place must match one of the selected categories
-        if (categoryFilters.length > 0) {
-          const placeCategory = place.category || 'Other';
-          if (!categoryFilters.includes(placeCategory)) return false;
-        }
-
+        if (filterState.type === 'wonders' && !place.is_wonder) return false;
+        if (filterState.mine && place.userId !== currentUserId) return false;
+        if (filterState.categories.size > 0 && !filterState.categories.has(place.category || 'Other')) return false;
         return true;
       });
     }
@@ -689,7 +700,8 @@
 
       // Only fit bounds when explicitly filtering (not on initial load)
       // Initial load zoom is handled by user location or loadPlaces
-      if (bounds.isValid() && activeFilters.size > 0) {
+      const hasNonDefault = filterState.type !== 'wonders' || filterState.mine || filterState.categories.size > 0;
+      if (bounds.isValid() && hasNonDefault) {
         map.fitBounds(bounds.pad(0.1));
       }
     }
@@ -723,7 +735,6 @@
           is_wonder
         `
         )
-        .eq("is_wonder", true)
         .not("latitude", "is", null)
         .not("longitude", "is", null)
         .order("created_at", { ascending: false });
@@ -1259,26 +1270,49 @@
     }
 
     // ===== Filter Event Handlers =====
-    // Toggle filter panel visibility
     filterToggle?.addEventListener('click', () => {
-      const isExpanded = filterChips.style.display !== 'none';
-      filterChips.style.display = isExpanded ? 'none' : 'flex';
-      filterToggle.setAttribute('aria-expanded', !isExpanded);
+      const isExpanded = filterPanel.style.display !== 'none';
+      filterPanel.style.display = isExpanded ? 'none' : 'block';
+      filterToggle.setAttribute('aria-expanded', String(!isExpanded));
     });
 
-    // Handle filter chip clicks
-    chipButtons.forEach(chip => {
-      chip.addEventListener('click', () => {
-        toggleFilter(chip.dataset.filter);
+    // Type segment buttons
+    document.querySelectorAll('.fw-filter-seg-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        filterState.type = btn.dataset.type;
+        updateFilterUI();
+        renderFilteredMarkers();
       });
     });
 
-    // Handle clear all filters
+    // Scope chips
+    document.querySelectorAll('[data-scope]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (btn.dataset.scope === 'mine') {
+          filterState.mine = !filterState.mine;
+          updateFilterUI();
+          renderFilteredMarkers();
+        }
+      });
+    });
+
+    // Category chips
+    document.querySelectorAll('[data-cat]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const cat = btn.dataset.cat;
+        filterState.categories.has(cat) ? filterState.categories.delete(cat) : filterState.categories.add(cat);
+        updateFilterUI();
+        renderFilteredMarkers();
+      });
+    });
+
+    // Clear all
     clearFiltersBtn?.addEventListener('click', clearAllFilters);
 
-    // Initialize filter UI on page load (for URL params)
-    if (activeFilters.size > 0) {
-      filterChips.style.display = 'flex';
+    // Initialize from URL params
+    const hasUrlFilters = filterState.type !== 'wonders' || filterState.mine || filterState.categories.size > 0;
+    if (hasUrlFilters) {
+      filterPanel.style.display = 'block';
       filterToggle?.setAttribute('aria-expanded', 'true');
       updateFilterUI();
     }

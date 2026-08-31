@@ -2083,6 +2083,74 @@ a:hover{ text-decoration: underline; }
   border: 1px solid rgba(0,0,0,0.08);
 }
 
+/* ---- New structured filter panel ---- */
+.fw-filter-panel{
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.16);
+  border: 1px solid rgba(0,0,0,0.08);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 260px;
+}
+
+.fw-filter-row{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.fw-filter-label{
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--fw-muted, #999);
+  width: 52px;
+  flex-shrink: 0;
+}
+
+.fw-filter-chips-row{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* Segmented control */
+.fw-filter-segment{
+  display: inline-flex;
+  border: 1px solid var(--fw-border, #e5e5ea);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.fw-filter-seg-btn{
+  padding: 5px 13px;
+  background: transparent;
+  border: none;
+  font-size: 0.83rem;
+  font-weight: 500;
+  color: var(--fw-text, #222);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.fw-filter-seg-btn + .fw-filter-seg-btn{
+  border-left: 1px solid var(--fw-border, #e5e5ea);
+}
+
+.fw-filter-seg-btn.active{
+  background: var(--fw-accent, #0071e3);
+  color: #fff;
+}
+
+.fw-filter-chip--soon{
+  opacity: 0.4;
+  cursor: default !important;
+}
+
 .fw-filter-chip{
   display: inline-flex;
   align-items: center;
@@ -2137,9 +2205,8 @@ a:hover{ text-decoration: underline; }
     top: calc(var(--fw-header-h) + 8px);
   }
 
-  .fw-filter-chips{
-    padding: 10px;
-  }
+  .fw-filter-chips{ padding: 10px; }
+  .fw-filter-panel{ padding: 10px 12px; min-width: unset; }
 
   .fw-filter-chip{
     padding: 8px 12px;
