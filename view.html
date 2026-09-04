@@ -105,7 +105,7 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
             Mine
           </button>
-          <button class="fw-filter-chip fw-filter-chip--soon" data-scope="friends" type="button" disabled title="Coming soon">Friends</button>
+          <button class="fw-filter-chip" data-scope="friends" type="button">Friends</button>
         </div>
       </div>
 
@@ -183,17 +183,19 @@
     const supabase = fwAuth.sb;
 
     let currentUserId = null;
+    let friendIds = new Set(); // accepted friend user IDs
 
     // ===== Filter state =====
     let allPlacesData = [];
 
     // Three independent dimensions
-    const filterState = { type: 'wonders', mine: false, categories: new Set() };
+    const filterState = { type: 'wonders', mine: false, friends: false, categories: new Set() };
 
     // Restore from URL
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('type') === 'all') filterState.type = 'all';
     if (urlParams.get('mine') === '1') filterState.mine = true;
+    if (urlParams.get('friends') === '1') filterState.friends = true;
     (urlParams.get('cat') || '').split(',').filter(Boolean).forEach(c => filterState.categories.add(c));
 
     // Filter UI elements
@@ -615,7 +617,8 @@
 
       // Scope chips
       document.querySelectorAll('[data-scope]').forEach(btn => {
-        btn.classList.toggle('active', filterState.mine && btn.dataset.scope === 'mine');
+        if (btn.dataset.scope === 'mine') btn.classList.toggle('active', filterState.mine);
+        if (btn.dataset.scope === 'friends') btn.classList.toggle('active', filterState.friends);
       });
 
       // Category chips
@@ -626,6 +629,7 @@
       // Badge: count non-default active filters
       const nonDefault = (filterState.type !== 'wonders' ? 1 : 0)
         + (filterState.mine ? 1 : 0)
+        + (filterState.friends ? 1 : 0)
         + filterState.categories.size;
       if (filterCount) {
         filterCount.textContent = nonDefault;
@@ -639,6 +643,7 @@
       const url = new URL(window.location);
       filterState.type !== 'wonders' ? url.searchParams.set('type', filterState.type) : url.searchParams.delete('type');
       filterState.mine ? url.searchParams.set('mine', '1') : url.searchParams.delete('mine');
+      filterState.friends ? url.searchParams.set('friends', '1') : url.searchParams.delete('friends');
       filterState.categories.size > 0 ? url.searchParams.set('cat', [...filterState.categories].join(',')) : url.searchParams.delete('cat');
       window.history.replaceState({}, '', url);
     }
@@ -646,6 +651,7 @@
     function clearAllFilters() {
       filterState.type = 'wonders';
       filterState.mine = false;
+      filterState.friends = false;
       filterState.categories.clear();
       updateFilterUI();
       renderFilteredMarkers();
@@ -654,7 +660,17 @@
     function getFilteredPlaces() {
       return allPlacesData.filter(place => {
         if (filterState.type === 'wonders' && !place.is_wonder) return false;
-        if (filterState.mine && place.userId !== currentUserId) return false;
+
+        // Scope: if Mine or Friends active, place must match at least one active scope
+        const scopeActive = filterState.mine || filterState.friends;
+        if (scopeActive) {
+          const isMine = place.userId === currentUserId;
+          const isFriend = friendIds.has(place.userId);
+          if (filterState.mine && filterState.friends && !isMine && !isFriend) return false;
+          if (filterState.mine && !filterState.friends && !isMine) return false;
+          if (filterState.friends && !filterState.mine && !isFriend) return false;
+        }
+
         if (filterState.categories.size > 0 && !filterState.categories.has(place.category || 'Other')) return false;
         return true;
       });
@@ -700,7 +716,7 @@
 
       // Only fit bounds when explicitly filtering (not on initial load)
       // Initial load zoom is handled by user location or loadPlaces
-      const hasNonDefault = filterState.type !== 'wonders' || filterState.mine || filterState.categories.size > 0;
+      const hasNonDefault = filterState.type !== 'wonders' || filterState.mine || filterState.friends || filterState.categories.size > 0;
       if (bounds.isValid() && hasNonDefault) {
         map.fitBounds(bounds.pad(0.1));
       }
@@ -1133,6 +1149,13 @@
         return;
       }
 
+      // Load friend IDs for scope filtering
+      const { data: friendRows } = await supabase
+        .from('friendships')
+        .select('friend_id')
+        .eq('status', 'accepted');
+      friendIds = new Set((friendRows || []).map(r => r.friend_id));
+
       await loadPlaces();
       if (sharedPlaceId) {
         await openPlaceById(sharedPlaceId);
@@ -1288,11 +1311,10 @@
     // Scope chips
     document.querySelectorAll('[data-scope]').forEach(btn => {
       btn.addEventListener('click', () => {
-        if (btn.dataset.scope === 'mine') {
-          filterState.mine = !filterState.mine;
-          updateFilterUI();
-          renderFilteredMarkers();
-        }
+        if (btn.dataset.scope === 'mine') filterState.mine = !filterState.mine;
+        if (btn.dataset.scope === 'friends') filterState.friends = !filterState.friends;
+        updateFilterUI();
+        renderFilteredMarkers();
       });
     });
 
