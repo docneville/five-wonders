@@ -130,18 +130,11 @@
       document.getElementById("errorMsg").style.display = "block";
     }
 
-    function setLoading(msg) {
-      document.getElementById("loadingMsg").textContent = msg;
-    }
-
     async function init() {
       try {
-        setLoading("Step 1: waiting for auth…");
         const jwt = await fwAuth.getJWT();
-        setLoading("Step 2: got JWT — " + (jwt ? "yes" : "none"));
         if (!jwt) { window.location.replace("index.html"); return; }
 
-        setLoading("Step 3: calling admin API…");
         const headers = await fwAuth.authHeaders();
         const ctrl = new AbortController();
         const timer = setTimeout(() => ctrl.abort(), 10000);
@@ -152,7 +145,6 @@
           signal: ctrl.signal,
         });
         clearTimeout(timer);
-        setLoading("Step 4: got response " + res.status);
 
         document.getElementById("loadingMsg").style.display = "none";
 
