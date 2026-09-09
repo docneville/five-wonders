@@ -115,6 +115,7 @@
     </div>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="fw-auth.js"></script>
   <script type="module">
     const SUPABASE_URL = "https://ekpssonwtztubqfihlqm.supabase.co";
@@ -123,35 +124,49 @@
     // ---- Auth guard ----
     let users = [];
 
-    async function init() {
-      await fwAuth.ready();
-      const jwt = await fwAuth.getJWT();
-      if (!jwt) { window.location.replace("index.html"); return; }
-
-      const headers = await fwAuth.authHeaders();
-      const res = await fetch(ADMIN_URL, {
-        method: "POST",
-        headers: { ...headers, "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "list" }),
-      });
-
+    function showError(msg) {
       document.getElementById("loadingMsg").style.display = "none";
+      document.getElementById("errorMsg").textContent = msg;
+      document.getElementById("errorMsg").style.display = "block";
+    }
 
-      if (res.status === 403) {
-        document.getElementById("errorMsg").textContent = "Access denied — admin only.";
-        document.getElementById("errorMsg").style.display = "block";
-        return;
-      }
-      if (!res.ok) {
-        document.getElementById("errorMsg").textContent = "Failed to load users.";
-        document.getElementById("errorMsg").style.display = "block";
-        return;
-      }
+    function setLoading(msg) {
+      document.getElementById("loadingMsg").textContent = msg;
+    }
 
-      const data = await res.json();
-      users = data.users || [];
-      render();
-      document.getElementById("adminContent").style.display = "block";
+    async function init() {
+      try {
+        setLoading("Step 1: waiting for auth…");
+        const jwt = await fwAuth.getJWT();
+        setLoading("Step 2: got JWT — " + (jwt ? "yes" : "none"));
+        if (!jwt) { window.location.replace("index.html"); return; }
+
+        setLoading("Step 3: calling admin API…");
+        const headers = await fwAuth.authHeaders();
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), 10000);
+        const res = await fetch(ADMIN_URL, {
+          method: "POST",
+          headers: { ...headers, "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "list" }),
+          signal: ctrl.signal,
+        });
+        clearTimeout(timer);
+        setLoading("Step 4: got response " + res.status);
+
+        document.getElementById("loadingMsg").style.display = "none";
+
+        if (res.status === 403) { showError("Access denied — admin only."); return; }
+        if (!res.ok) { showError(`Failed to load users (${res.status}).`); return; }
+
+        const data = await res.json();
+        users = data.users || [];
+        render();
+        document.getElementById("adminContent").style.display = "block";
+      } catch (err) {
+        console.error("Admin init error:", err);
+        showError(`Error loading dashboard: ${err.message}`);
+      }
     }
 
     function fmt(iso) {
