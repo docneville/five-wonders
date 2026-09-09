@@ -116,28 +116,21 @@
       const userId = session.user.id;
       const meta = session.user.user_metadata ?? {};
 
-      let { data: profile } = await sb
-        .from("profiles")
-        .select("first_name, approval_status")
-        .eq("id", userId)
-        .maybeSingle();
+      // Upsert profile via server function — merges any existing account with
+      // the same email (e.g. manually-created) into this OAuth identity.
+      const fullParts = (meta.full_name || meta.name || "").trim().split(/\s+/);
+      const firstName = meta.given_name || fullParts[0] || "";
+      const lastName  = meta.family_name || fullParts.slice(1).join(" ") || "";
+      const email     = meta.email || session.user.email || "";
 
-      // First-time Google sign-in: create profile row
-      if (!profile) {
-        // Google provides full_name/name; only some providers give given_name/family_name
-        const fullParts = (meta.full_name || meta.name || "").trim().split(/\s+/);
-        const firstName = meta.given_name || fullParts[0] || "";
-        const lastName = meta.family_name || fullParts.slice(1).join(" ") || "";
-        await sb.from("profiles").insert({
-          id: userId,
-          first_name: firstName,
-          last_name: lastName,
-          email: meta.email || session.user.email || "",
-          approval_status: "pending",
-          is_admin: false,
-        });
-        profile = { first_name: firstName, approval_status: "pending" };
-      }
+      const { data: rpcRows } = await sb.rpc("upsert_oauth_profile", {
+        p_id:         userId,
+        p_email:      email,
+        p_first_name: firstName,
+        p_last_name:  lastName,
+        p_avatar_url: meta.picture || meta.avatar_url || null,
+      });
+      const profile = rpcRows?.[0] ?? { first_name: firstName, approval_status: "pending" };
 
       const status = profile?.approval_status ?? "pending";
 
